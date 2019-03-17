@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"net/rpc"
-	"os"
 
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/powerman/rpc-codec/jsonrpc2"
@@ -38,35 +37,35 @@ func resourceRecord() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			// "template": &schema.Schema{
-			// 	Type:     schema.TypeString,
-			// 	Required: true,
-			// 	ForceNew: true,
-			// },
-			"cloudConfig": &schema.Schema{
+			"template": &schema.Schema{
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"cloud_config": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			// "coreOs": &schema.Schema{
-			// 	Type:     schema.TypeBool,
-			// 	Optional: true,
-			// 	Default:  false,
-			// },
-			// "cpuCap": &schema.Schema{
-			// 	Type:     schema.TypeInt,
-			// 	Optional: true,
-			// 	Default:  0,
-			// },
-			// "cpuWeight": &schema.Schema{
-			// 	Type:     schema.TypeInt,
-			// 	Optional: true,
-			// 	Default:  0,
-			// },
-			"CPUs": &schema.Schema{
+			"core_os": &schema.Schema{
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
+			"cpu_cap": &schema.Schema{
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  0,
+			},
+			"cpu_weight": &schema.Schema{
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  0,
+			},
+			"cpus": &schema.Schema{
 				Type:     schema.TypeInt,
 				Required: true,
 			},
-			"memoryMax": &schema.Schema{
+			"memory_max": &schema.Schema{
 				Type:     schema.TypeInt,
 				Required: true,
 			},
@@ -110,6 +109,7 @@ func resourceVmRead(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 	vmObj := objsRes.Objects[xoaId]
+	log.Printf("vmobj: %v", vmObj)
 	recordToData(vmObj, d)
 	return nil
 }
@@ -124,13 +124,6 @@ func resourceVmDelete(d *schema.ResourceData, m interface{}) error {
 
 func RecordImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
 	xoaId := d.Id()
-
-	XenLog, err = os.OpenFile(logFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	if err != nil {
-		log.Fatalf("error opening file: %v", err)
-	}
-
-	log.SetOutput(XenLog)
 
 	var c *rpc.Client
 	c, err = newXoaClient(m)
@@ -179,9 +172,9 @@ func newXoaClient(m interface{}) (*rpc.Client, error) {
 
 func recordToData(resource VmObject, d *schema.ResourceData) error {
 	d.SetId(resource.Id)
-	// d.Set("cloudConfig", resource.cloudConfig)
-	d.Set("memoryMax", resource.Memory.Size)
-	d.Set("CPUs", resource.CPUs.Number)
+	d.Set("cloud_config", resource.CloudConfig)
+	d.Set("memory_max", resource.Memory.Size)
+	d.Set("cpus", resource.CPUs.Number)
 	d.Set("name_label", resource.NameLabel)
 	d.Set("name_description", resource.NameDescription)
 	return nil
@@ -209,8 +202,8 @@ type VmObject struct {
 	VIFs               []string     `json:"VIFs"`
 	VirtualizationMode string       `json:"virtualizationMode"`
 	PoolId             string       `json:"$poolId"`
-	// Template    string `json:"template"`
-	// CloudConfig string `json:"cloudConfig"`
+	Template           string       `json:"template"`
+	CloudConfig        string       `json:"cloudConfig"`
 }
 
 type allObjectResponse struct {

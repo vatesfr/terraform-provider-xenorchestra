@@ -1,201 +1,1433 @@
-2019/03/12 23:21:39 [INFO] Terraform version: 0.11.13  
-2019/03/12 23:21:39 [INFO] Go runtime version: go1.11.5
-2019/03/12 23:21:39 [INFO] CLI args: []string{"/usr/local/bin/terraform", "import", "xenorchestra_vm.testing", "77c6637c-fa3d-0a46-717e-296208c40169"}
-2019/03/12 23:21:39 [DEBUG] Attempting to open CLI config file: /home/ddelnano/.terraformrc
-2019/03/12 23:21:39 [DEBUG] File doesn't exist, but doesn't need to. Ignoring.
-2019/03/12 23:21:39 [INFO] CLI command args: []string{"import", "xenorchestra_vm.testing", "77c6637c-fa3d-0a46-717e-296208c40169"}
-2019/03/12 23:21:39 [INFO] command: empty terraform config, returning nil
-2019/03/12 23:21:39 [DEBUG] command: no data state file found for backend config
-2019/03/12 23:21:39 [DEBUG] New state was assigned lineage "85fa0428-c265-0fd0-22cb-9892b23fae82"
-2019/03/12 23:21:39 [INFO] command: backend initialized: <nil>
-2019/03/12 23:21:39 [DEBUG] checking for provider in "."
-2019/03/12 23:21:39 [WARN] found legacy provider "terraform-provider-xenorchestra"
-2019/03/12 23:21:39 [DEBUG] checking for provider in "/usr/local/bin"
-2019/03/12 23:21:39 [DEBUG] checking for provider in ".terraform/plugins/linux_amd64"
-2019/03/12 23:21:39 [DEBUG] found valid plugin: "xenorchestra", "0.0.0", "/home/ddelnano/code/terraform-provider-xenorchestra/terraform-provider-xenorchestra"
-2019/03/12 23:21:39 [DEBUG] checking for provisioner in "."
-2019/03/12 23:21:39 [DEBUG] checking for provisioner in "/usr/local/bin"
-2019/03/12 23:21:39 [DEBUG] checking for provisioner in ".terraform/plugins/linux_amd64"
-2019/03/12 23:21:39 [INFO] command: backend <nil> is not enhanced, wrapping in local
-2019/03/12 23:21:39 [DEBUG] New state was assigned lineage "1d4985ee-463f-9b76-87b8-fd7d94d48098"
-2019/03/12 23:21:39 [TRACE] ConfigTransformer: Starting for path: []
-2019/03/12 23:21:39 [TRACE] Graph after step *terraform.ConfigTransformer:
+2019/03/16 01:15:30 [INFO] Terraform version: 0.11.11  ac4fff416318bf0915a0ab80e062a99ef3724334
+2019/03/16 01:15:30 [INFO] Go runtime version: go1.11.1
+2019/03/16 01:15:30 [INFO] CLI args: []string{"/usr/local/bin/terraform", "apply"}
+2019/03/16 01:15:30 [DEBUG] Attempting to open CLI config file: /Users/ciserver/.terraformrc
+2019/03/16 01:15:30 [DEBUG] File doesn't exist, but doesn't need to. Ignoring.
+2019/03/16 01:15:30 [INFO] CLI command args: []string{"apply"}
+2019/03/16 01:15:30 [INFO] command: empty terraform config, returning nil
+2019/03/16 01:15:30 [DEBUG] command: no data state file found for backend config
+2019/03/16 01:15:30 [DEBUG] New state was assigned lineage "f7b83cb7-3e40-c09f-7872-b829b4d6c055"
+2019/03/16 01:15:30 [INFO] command: backend initialized: <nil>
+2019/03/16 01:15:30 [DEBUG] checking for provider in "."
+2019/03/16 01:15:30 [WARN] found legacy provider "terraform-provider-xenorchestra"
+2019/03/16 01:15:30 [DEBUG] checking for provider in "/usr/local/bin"
+2019/03/16 01:15:30 [WARN] found legacy provider "terraform-provider-mikrotik"
+2019/03/16 01:15:30 [DEBUG] checking for provider in ".terraform/plugins/darwin_amd64"
+2019/03/16 01:15:30 [DEBUG] found valid plugin: "mikrotik", "0.0.0", "/usr/local/bin/terraform-provider-mikrotik"
+2019/03/16 01:15:30 [DEBUG] found valid plugin: "xenorchestra", "0.0.0", "/Users/ciserver/Code/terraform-provider-xenorchestra/terraform-provider-xenorchestra"
+2019/03/16 01:15:30 [DEBUG] checking for provisioner in "."
+2019/03/16 01:15:30 [DEBUG] checking for provisioner in "/usr/local/bin"
+2019/03/16 01:15:30 [DEBUG] checking for provisioner in ".terraform/plugins/darwin_amd64"
+2019/03/16 01:15:30 [INFO] command: backend <nil> is not enhanced, wrapping in local
+2019/03/16 01:15:30 [INFO] backend/local: starting Apply operation
+2019/03/16 01:15:30 [TRACE] Preserving existing state lineage "6824299b-2f5f-51f3-1371-920ad7327f77"
+2019/03/16 01:15:30 [TRACE] Preserving existing state lineage "6824299b-2f5f-51f3-1371-920ad7327f77"
+2019/03/16 01:15:30 [INFO] terraform: building graph: GraphTypeInput
+2019/03/16 01:15:30 [TRACE] ConfigTransformer: Starting for path: []
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.ConfigTransformer:
 
 xenorchestra_vm.testing - *terraform.NodeAbstractResource
-2019/03/12 23:21:39 [TRACE] Graph after step *terraform.ImportStateTransformer:
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.LocalTransformer:
 
 xenorchestra_vm.testing - *terraform.NodeAbstractResource
-xenorchestra_vm.testing (import id: 77c6637c-fa3d-0a46-717e-296208c40169) - *terraform.graphNodeImportState
-2019/03/12 23:21:39 [TRACE] ProviderConfigTransformer: Starting for path: []
-2019/03/12 23:21:39 [TRACE] Attach provider request: []string{} xenorchestra
-2019/03/12 23:21:39 [TRACE] Attaching provider config: *config.ProviderConfig{Name:"xenorchestra", Alias:"", Version:"", RawConfig:(*config.RawConfig)(0xc00039f500)}
-2019/03/12 23:21:39 [TRACE] Graph after step *terraform.ProviderConfigTransformer:
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.OutputTransformer:
 
-provider.xenorchestra - *terraform.NodeApplyableProvider
 xenorchestra_vm.testing - *terraform.NodeAbstractResource
-xenorchestra_vm.testing (import id: 77c6637c-fa3d-0a46-717e-296208c40169) - *terraform.graphNodeImportState
-2019/03/12 23:21:39 [TRACE] Graph after step *terraform.MissingProviderTransformer:
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.OrphanResourceTransformer:
 
-provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
 xenorchestra_vm.testing - *terraform.NodeAbstractResource
-xenorchestra_vm.testing (import id: 77c6637c-fa3d-0a46-717e-296208c40169) - *terraform.graphNodeImportState
-2019/03/12 23:21:39 [DEBUG] resource xenorchestra_vm.testing using provider provider.xenorchestra
-2019/03/12 23:21:39 [DEBUG] resource xenorchestra_vm.testing (import id: 77c6637c-fa3d-0a46-717e-296208c40169) using provider provider.xenorchestra
-2019/03/12 23:21:39 [TRACE] Graph after step *terraform.ProviderTransformer:
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.OrphanOutputTransformer:
 
-provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
 xenorchestra_vm.testing - *terraform.NodeAbstractResource
-  provider.xenorchestra - *terraform.NodeApplyableProvider
-xenorchestra_vm.testing (import id: 77c6637c-fa3d-0a46-717e-296208c40169) - *terraform.graphNodeImportState
-  provider.xenorchestra - *terraform.NodeApplyableProvider
-2019/03/12 23:21:39 [TRACE] Graph after step *terraform.PruneProviderTransformer:
+2019/03/16 01:15:30 [TRACE] AttachResourceConfigTransformer: Beginning...
+2019/03/16 01:15:30 [TRACE] AttachResourceConfigTransformer: Attach resource config request: xenorchestra_vm.testing
+2019/03/16 01:15:30 [TRACE] Attaching resource config: &config.Resource{Mode:0, Name:"testing", Type:"xenorchestra_vm", RawCount:(*config.RawConfig)(0xc000416000), RawConfig:(*config.RawConfig)(0xc0002888c0), Provisioners:[]*config.Provisioner(nil), Provider:"", DependsOn:[]string(nil), Lifecycle:config.ResourceLifecycle{CreateBeforeDestroy:false, PreventDestroy:false, IgnoreChanges:[]string(nil)}}
+2019/03/16 01:15:30 [TRACE] AttachResourceConfigTransformer: Attach resource config request: xenorchestra_cloud_config.test_config
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.AttachResourceConfigTransformer:
 
-provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
 xenorchestra_vm.testing - *terraform.NodeAbstractResource
-  provider.xenorchestra - *terraform.NodeApplyableProvider
-xenorchestra_vm.testing (import id: 77c6637c-fa3d-0a46-717e-296208c40169) - *terraform.graphNodeImportState
-  provider.xenorchestra - *terraform.NodeApplyableProvider
-2019/03/12 23:21:39 [TRACE] Graph after step *terraform.ParentProviderTransformer:
+2019/03/16 01:15:30 [DEBUG] Attaching resource state to "xenorchestra_cloud_config.test_config": &terraform.ResourceState{Type:"xenorchestra_cloud_config", Dependencies:[]string{}, Primary:(*terraform.InstanceState)(0xc00042aaf0), Deposed:[]*terraform.InstanceState{}, Provider:"provider.xenorchestra", mu:sync.Mutex{state:0, sema:0x0}}
+2019/03/16 01:15:30 [DEBUG] Attaching resource state to "xenorchestra_vm.testing": &terraform.ResourceState{Type:"xenorchestra_vm", Dependencies:[]string{}, Primary:(*terraform.InstanceState)(0xc00042ab90), Deposed:[]*terraform.InstanceState{}, Provider:"provider.xenorchestra", mu:sync.Mutex{state:0, sema:0x0}}
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.AttachStateTransformer:
 
-provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
 xenorchestra_vm.testing - *terraform.NodeAbstractResource
-  provider.xenorchestra - *terraform.NodeApplyableProvider
-xenorchestra_vm.testing (import id: 77c6637c-fa3d-0a46-717e-296208c40169) - *terraform.graphNodeImportState
-  provider.xenorchestra - *terraform.NodeApplyableProvider
-2019/03/12 23:21:39 [TRACE] Graph after step *terraform.graphTransformerMulti:
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.RootVariableTransformer:
 
-provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
 xenorchestra_vm.testing - *terraform.NodeAbstractResource
-  provider.xenorchestra - *terraform.NodeApplyableProvider
-xenorchestra_vm.testing (import id: 77c6637c-fa3d-0a46-717e-296208c40169) - *terraform.graphNodeImportState
-  provider.xenorchestra - *terraform.NodeApplyableProvider
-2019/03/12 23:21:39 [TRACE] Graph after step *terraform.ImportProviderValidateTransformer:
+2019/03/16 01:15:30 [TRACE] ProviderConfigTransformer: Starting for path: []
+2019/03/16 01:15:30 [TRACE] Attach provider request: []string{} xenorchestra
+2019/03/16 01:15:30 [TRACE] Attaching provider config: *config.ProviderConfig{Name:"xenorchestra", Alias:"", Version:"", RawConfig:(*config.RawConfig)(0xc000288850)}
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.ProviderConfigTransformer:
 
 provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+xenorchestra_vm.testing - *terraform.NodeAbstractResource
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.MissingProviderTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+xenorchestra_vm.testing - *terraform.NodeAbstractResource
+2019/03/16 01:15:30 [DEBUG] resource xenorchestra_vm.testing using provider provider.xenorchestra
+2019/03/16 01:15:30 [DEBUG] resource xenorchestra_cloud_config.test_config using provider provider.xenorchestra
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.ProviderTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
 xenorchestra_vm.testing - *terraform.NodeAbstractResource
   provider.xenorchestra - *terraform.NodeApplyableProvider
-xenorchestra_vm.testing (import id: 77c6637c-fa3d-0a46-717e-296208c40169) - *terraform.graphNodeImportState
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.PruneProviderTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
   provider.xenorchestra - *terraform.NodeApplyableProvider
-2019/03/12 23:21:39 [TRACE] Graph after step *terraform.CloseProviderTransformer:
+xenorchestra_vm.testing - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.ParentProviderTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.graphTransformerMulti:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.ModuleVariableTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.RemovedModuleTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:30 [DEBUG] ReferenceTransformer: "xenorchestra_vm.testing" references: []
+2019/03/16 01:15:30 [DEBUG] ReferenceTransformer: "xenorchestra_cloud_config.test_config" references: []
+2019/03/16 01:15:30 [DEBUG] ReferenceTransformer: "provider.xenorchestra" references: []
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.ReferenceTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.CountBoundaryTransformer:
+
+meta.count-boundary (count boundary fixup) - *terraform.NodeCountBoundary
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+  xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  xenorchestra_vm.testing - *terraform.NodeAbstractResource
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.TargetsTransformer:
+
+meta.count-boundary (count boundary fixup) - *terraform.NodeCountBoundary
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+  xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  xenorchestra_vm.testing - *terraform.NodeAbstractResource
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.CloseProviderTransformer:
+
+meta.count-boundary (count boundary fixup) - *terraform.NodeCountBoundary
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+  xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  xenorchestra_vm.testing - *terraform.NodeAbstractResource
+provider.xenorchestra - *terraform.NodeApplyableProvider
+provider.xenorchestra (close) - *terraform.graphNodeCloseProvider
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+  xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  xenorchestra_vm.testing - *terraform.NodeAbstractResource
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.CloseProvisionerTransformer:
+
+meta.count-boundary (count boundary fixup) - *terraform.NodeCountBoundary
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+  xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  xenorchestra_vm.testing - *terraform.NodeAbstractResource
+provider.xenorchestra - *terraform.NodeApplyableProvider
+provider.xenorchestra (close) - *terraform.graphNodeCloseProvider
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+  xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  xenorchestra_vm.testing - *terraform.NodeAbstractResource
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.RootTransformer:
+
+meta.count-boundary (count boundary fixup) - *terraform.NodeCountBoundary
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+  xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  xenorchestra_vm.testing - *terraform.NodeAbstractResource
+provider.xenorchestra - *terraform.NodeApplyableProvider
+provider.xenorchestra (close) - *terraform.graphNodeCloseProvider
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+  xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  xenorchestra_vm.testing - *terraform.NodeAbstractResource
+root - terraform.graphNodeRoot
+  meta.count-boundary (count boundary fixup) - *terraform.NodeCountBoundary
+  provider.xenorchestra (close) - *terraform.graphNodeCloseProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.TransitiveReductionTransformer:
+
+meta.count-boundary (count boundary fixup) - *terraform.NodeCountBoundary
+  xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  xenorchestra_vm.testing - *terraform.NodeAbstractResource
+provider.xenorchestra - *terraform.NodeApplyableProvider
+provider.xenorchestra (close) - *terraform.graphNodeCloseProvider
+  xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  xenorchestra_vm.testing - *terraform.NodeAbstractResource
+root - terraform.graphNodeRoot
+  meta.count-boundary (count boundary fixup) - *terraform.NodeCountBoundary
+  provider.xenorchestra (close) - *terraform.graphNodeCloseProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:30 [DEBUG] Starting graph walk: walkInput
+2019/03/16 01:15:30 [TRACE] dag/walk: added new vertex: "root"
+2019/03/16 01:15:30 [TRACE] dag/walk: added new vertex: "xenorchestra_vm.testing"
+2019/03/16 01:15:30 [TRACE] dag/walk: added new vertex: "xenorchestra_cloud_config.test_config"
+2019/03/16 01:15:30 [TRACE] dag/walk: added new vertex: "provider.xenorchestra"
+2019/03/16 01:15:30 [TRACE] dag/walk: added new vertex: "meta.count-boundary (count boundary fixup)"
+2019/03/16 01:15:30 [TRACE] dag/walk: added new vertex: "provider.xenorchestra (close)"
+2019/03/16 01:15:30 [TRACE] dag/walk: added edge: "root" waiting on "provider.xenorchestra (close)"
+2019/03/16 01:15:30 [TRACE] dag/walk: added edge: "meta.count-boundary (count boundary fixup)" waiting on "xenorchestra_vm.testing"
+2019/03/16 01:15:30 [TRACE] dag/walk: added edge: "meta.count-boundary (count boundary fixup)" waiting on "xenorchestra_cloud_config.test_config"
+2019/03/16 01:15:30 [TRACE] dag/walk: added edge: "provider.xenorchestra (close)" waiting on "xenorchestra_cloud_config.test_config"
+2019/03/16 01:15:30 [TRACE] dag/walk: added edge: "xenorchestra_vm.testing" waiting on "provider.xenorchestra"
+2019/03/16 01:15:30 [TRACE] dag/walk: added edge: "xenorchestra_cloud_config.test_config" waiting on "provider.xenorchestra"
+2019/03/16 01:15:30 [TRACE] dag/walk: added edge: "provider.xenorchestra (close)" waiting on "xenorchestra_vm.testing"
+2019/03/16 01:15:30 [TRACE] dag/walk: added edge: "root" waiting on "meta.count-boundary (count boundary fixup)"
+2019/03/16 01:15:30 [TRACE] dag/walk: dependencies changed for "provider.xenorchestra (close)", sending new deps
+2019/03/16 01:15:30 [TRACE] dag/walk: dependencies changed for "xenorchestra_vm.testing", sending new deps
+2019/03/16 01:15:30 [TRACE] dag/walk: dependencies changed for "xenorchestra_cloud_config.test_config", sending new deps
+2019/03/16 01:15:30 [TRACE] dag/walk: dependencies changed for "root", sending new deps
+2019/03/16 01:15:30 [TRACE] dag/walk: dependencies changed for "meta.count-boundary (count boundary fixup)", sending new deps
+2019/03/16 01:15:30 [TRACE] dag/walk: walking "provider.xenorchestra"
+2019/03/16 01:15:30 [TRACE] vertex 'root.provider.xenorchestra': walking
+2019/03/16 01:15:30 [TRACE] vertex 'root.provider.xenorchestra': evaluating
+2019/03/16 01:15:30 [TRACE] [walkInput] Entering eval tree: provider.xenorchestra
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalSequence
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalInitProvider
+2019-03-16T01:15:30.554-0400 [DEBUG] plugin: starting plugin: path=/Users/ciserver/Code/terraform-provider-xenorchestra/terraform-provider-xenorchestra args=[/Users/ciserver/Code/terraform-provider-xenorchestra/terraform-provider-xenorchestra]
+2019-03-16T01:15:30.557-0400 [DEBUG] plugin: waiting for RPC address: path=/Users/ciserver/Code/terraform-provider-xenorchestra/terraform-provider-xenorchestra
+2019-03-16T01:15:30.578-0400 [DEBUG] plugin.terraform-provider-xenorchestra: plugin address: timestamp=2019-03-16T01:15:30.577-0400 address=/var/folders/j0/pdpz5vss1837py8xktt6tw9h0000gn/T/plugin556765758 network=unix
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalOpFilter
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalSequence
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalGetProvider
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalInterpolateProvider
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalBuildProviderConfig
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalInputProvider
+2019/03/16 01:15:30 [TRACE] root: eval: terraform.EvalNoop
+2019/03/16 01:15:30 [TRACE] root: eval: terraform.EvalNoop
+2019/03/16 01:15:30 [TRACE] root: eval: terraform.EvalNoop
+2019/03/16 01:15:30 [TRACE] [walkInput] Exiting eval tree: provider.xenorchestra
+2019/03/16 01:15:30 [TRACE] dag/walk: walking "xenorchestra_cloud_config.test_config"
+2019/03/16 01:15:30 [TRACE] vertex 'root.xenorchestra_cloud_config.test_config': walking
+2019/03/16 01:15:30 [TRACE] dag/walk: walking "xenorchestra_vm.testing"
+2019/03/16 01:15:30 [TRACE] vertex 'root.xenorchestra_vm.testing': walking
+2019/03/16 01:15:30 [TRACE] dag/walk: walking "meta.count-boundary (count boundary fixup)"
+2019/03/16 01:15:30 [TRACE] vertex 'root.meta.count-boundary (count boundary fixup)': walking
+2019/03/16 01:15:30 [TRACE] dag/walk: walking "provider.xenorchestra (close)"
+2019/03/16 01:15:30 [TRACE] vertex 'root.provider.xenorchestra (close)': walking
+2019/03/16 01:15:30 [TRACE] vertex 'root.meta.count-boundary (count boundary fixup)': evaluating
+2019/03/16 01:15:30 [TRACE] vertex 'root.provider.xenorchestra (close)': evaluating
+2019/03/16 01:15:30 [TRACE] [walkInput] Entering eval tree: meta.count-boundary (count boundary fixup)
+2019/03/16 01:15:30 [TRACE] [walkInput] Entering eval tree: provider.xenorchestra (close)
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalCountFixZeroOneBoundaryGlobal
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalCloseProvider
+2019/03/16 01:15:30 [TRACE] EvalCountFixZeroOneBoundaryGlobal: count 1, search "xenorchestra_vm.testing.0", replace "xenorchestra_vm.testing"
+2019/03/16 01:15:30 [TRACE] EvalCountFixZeroOneBoundaryGlobal: count 1, search "xenorchestra_cloud_config.test_config.0", replace "xenorchestra_cloud_config.test_config"
+2019/03/16 01:15:30 [TRACE] [walkInput] Exiting eval tree: meta.count-boundary (count boundary fixup)
+2019/03/16 01:15:30 [TRACE] [walkInput] Exiting eval tree: provider.xenorchestra (close)
+2019/03/16 01:15:30 [TRACE] dag/walk: walking "root"
+2019/03/16 01:15:30 [TRACE] vertex 'root.root': walking
+2019/03/16 01:15:30 [INFO] terraform: building graph: GraphTypeValidate
+2019/03/16 01:15:30 [TRACE] ConfigTransformer: Starting for path: []
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.ConfigTransformer:
+
+xenorchestra_vm.testing - *terraform.NodeValidatableResource
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.LocalTransformer:
+
+xenorchestra_vm.testing - *terraform.NodeValidatableResource
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.OutputTransformer:
+
+xenorchestra_vm.testing - *terraform.NodeValidatableResource
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.OrphanResourceTransformer:
+
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+xenorchestra_vm.testing - *terraform.NodeValidatableResource
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.OrphanOutputTransformer:
+
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+xenorchestra_vm.testing - *terraform.NodeValidatableResource
+2019/03/16 01:15:30 [TRACE] AttachResourceConfigTransformer: Beginning...
+2019/03/16 01:15:30 [TRACE] AttachResourceConfigTransformer: Attach resource config request: xenorchestra_vm.testing
+2019/03/16 01:15:30 [TRACE] Attaching resource config: &config.Resource{Mode:0, Name:"testing", Type:"xenorchestra_vm", RawCount:(*config.RawConfig)(0xc000416000), RawConfig:(*config.RawConfig)(0xc0002888c0), Provisioners:[]*config.Provisioner(nil), Provider:"", DependsOn:[]string(nil), Lifecycle:config.ResourceLifecycle{CreateBeforeDestroy:false, PreventDestroy:false, IgnoreChanges:[]string(nil)}}
+2019/03/16 01:15:30 [TRACE] AttachResourceConfigTransformer: Attach resource config request: xenorchestra_cloud_config.test_config
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.AttachResourceConfigTransformer:
+
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+xenorchestra_vm.testing - *terraform.NodeValidatableResource
+2019/03/16 01:15:30 [DEBUG] Attaching resource state to "xenorchestra_vm.testing": &terraform.ResourceState{Type:"xenorchestra_vm", Dependencies:[]string{}, Primary:(*terraform.InstanceState)(0xc00042ab90), Deposed:[]*terraform.InstanceState{}, Provider:"provider.xenorchestra", mu:sync.Mutex{state:0, sema:0x0}}
+2019/03/16 01:15:30 [DEBUG] Attaching resource state to "xenorchestra_cloud_config.test_config": &terraform.ResourceState{Type:"xenorchestra_cloud_config", Dependencies:[]string{}, Primary:(*terraform.InstanceState)(0xc00042aaf0), Deposed:[]*terraform.InstanceState{}, Provider:"provider.xenorchestra", mu:sync.Mutex{state:0, sema:0x0}}
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.AttachStateTransformer:
+
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+xenorchestra_vm.testing - *terraform.NodeValidatableResource
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.RootVariableTransformer:
+
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+xenorchestra_vm.testing - *terraform.NodeValidatableResource
+2019/03/16 01:15:30 [TRACE] ProviderConfigTransformer: Starting for path: []
+2019/03/16 01:15:30 [TRACE] Attach provider request: []string{} xenorchestra
+2019/03/16 01:15:30 [TRACE] Attaching provider config: *config.ProviderConfig{Name:"xenorchestra", Alias:"", Version:"", RawConfig:(*config.RawConfig)(0xc000288850)}
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.ProviderConfigTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+xenorchestra_vm.testing - *terraform.NodeValidatableResource
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.MissingProviderTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+xenorchestra_vm.testing - *terraform.NodeValidatableResource
+2019/03/16 01:15:30 [DEBUG] resource xenorchestra_vm.testing using provider provider.xenorchestra
+2019/03/16 01:15:30 [DEBUG] resource xenorchestra_cloud_config.test_config using provider provider.xenorchestra
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.ProviderTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodeValidatableResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.PruneProviderTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodeValidatableResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.ParentProviderTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodeValidatableResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.graphTransformerMulti:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodeValidatableResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.MissingProvisionerTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodeValidatableResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.ProvisionerTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodeValidatableResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.graphTransformerMulti:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodeValidatableResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.ModuleVariableTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodeValidatableResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.RemovedModuleTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodeValidatableResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:30 [DEBUG] ReferenceTransformer: "xenorchestra_vm.testing" references: []
+2019/03/16 01:15:30 [DEBUG] ReferenceTransformer: "xenorchestra_cloud_config.test_config" references: []
+2019/03/16 01:15:30 [DEBUG] ReferenceTransformer: "provider.xenorchestra" references: []
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.ReferenceTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodeValidatableResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.CountBoundaryTransformer:
+
+meta.count-boundary (count boundary fixup) - *terraform.NodeCountBoundary
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+  xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  xenorchestra_vm.testing - *terraform.NodeValidatableResource
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodeValidatableResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.TargetsTransformer:
+
+meta.count-boundary (count boundary fixup) - *terraform.NodeCountBoundary
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+  xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  xenorchestra_vm.testing - *terraform.NodeValidatableResource
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodeValidatableResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.CloseProviderTransformer:
+
+meta.count-boundary (count boundary fixup) - *terraform.NodeCountBoundary
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+  xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  xenorchestra_vm.testing - *terraform.NodeValidatableResource
+provider.xenorchestra - *terraform.NodeApplyableProvider
+provider.xenorchestra (close) - *terraform.graphNodeCloseProvider
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+  xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  xenorchestra_vm.testing - *terraform.NodeValidatableResource
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodeValidatableResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.CloseProvisionerTransformer:
+
+meta.count-boundary (count boundary fixup) - *terraform.NodeCountBoundary
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+  xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  xenorchestra_vm.testing - *terraform.NodeValidatableResource
+provider.xenorchestra - *terraform.NodeApplyableProvider
+provider.xenorchestra (close) - *terraform.graphNodeCloseProvider
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+  xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  xenorchestra_vm.testing - *terraform.NodeValidatableResource
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodeValidatableResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.RootTransformer:
+
+meta.count-boundary (count boundary fixup) - *terraform.NodeCountBoundary
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+  xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  xenorchestra_vm.testing - *terraform.NodeValidatableResource
+provider.xenorchestra - *terraform.NodeApplyableProvider
+provider.xenorchestra (close) - *terraform.graphNodeCloseProvider
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+  xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  xenorchestra_vm.testing - *terraform.NodeValidatableResource
+root - terraform.graphNodeRoot
+  meta.count-boundary (count boundary fixup) - *terraform.NodeCountBoundary
+  provider.xenorchestra (close) - *terraform.graphNodeCloseProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodeValidatableResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.TransitiveReductionTransformer:
+
+meta.count-boundary (count boundary fixup) - *terraform.NodeCountBoundary
+  xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  xenorchestra_vm.testing - *terraform.NodeValidatableResource
+provider.xenorchestra - *terraform.NodeApplyableProvider
+provider.xenorchestra (close) - *terraform.graphNodeCloseProvider
+  xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  xenorchestra_vm.testing - *terraform.NodeValidatableResource
+root - terraform.graphNodeRoot
+  meta.count-boundary (count boundary fixup) - *terraform.NodeCountBoundary
+  provider.xenorchestra (close) - *terraform.graphNodeCloseProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodeValidatableResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:30 [DEBUG] Starting graph walk: walkValidate
+2019/03/16 01:15:30 [TRACE] dag/walk: added new vertex: "provider.xenorchestra"
+2019/03/16 01:15:30 [TRACE] dag/walk: added new vertex: "meta.count-boundary (count boundary fixup)"
+2019/03/16 01:15:30 [TRACE] dag/walk: added new vertex: "provider.xenorchestra (close)"
+2019/03/16 01:15:30 [TRACE] dag/walk: added new vertex: "root"
+2019/03/16 01:15:30 [TRACE] dag/walk: added new vertex: "xenorchestra_vm.testing"
+2019/03/16 01:15:30 [TRACE] dag/walk: added new vertex: "xenorchestra_cloud_config.test_config"
+2019/03/16 01:15:30 [TRACE] dag/walk: added edge: "provider.xenorchestra (close)" waiting on "xenorchestra_cloud_config.test_config"
+2019/03/16 01:15:30 [TRACE] dag/walk: added edge: "xenorchestra_cloud_config.test_config" waiting on "provider.xenorchestra"
+2019/03/16 01:15:30 [TRACE] dag/walk: added edge: "provider.xenorchestra (close)" waiting on "xenorchestra_vm.testing"
+2019/03/16 01:15:30 [TRACE] dag/walk: added edge: "root" waiting on "meta.count-boundary (count boundary fixup)"
+2019/03/16 01:15:30 [TRACE] dag/walk: added edge: "root" waiting on "provider.xenorchestra (close)"
+2019/03/16 01:15:30 [TRACE] dag/walk: added edge: "xenorchestra_vm.testing" waiting on "provider.xenorchestra"
+2019/03/16 01:15:30 [TRACE] dag/walk: added edge: "meta.count-boundary (count boundary fixup)" waiting on "xenorchestra_vm.testing"
+2019/03/16 01:15:30 [TRACE] dag/walk: added edge: "meta.count-boundary (count boundary fixup)" waiting on "xenorchestra_cloud_config.test_config"
+2019/03/16 01:15:30 [TRACE] dag/walk: dependencies changed for "provider.xenorchestra (close)", sending new deps
+2019/03/16 01:15:30 [TRACE] dag/walk: dependencies changed for "xenorchestra_cloud_config.test_config", sending new deps
+2019/03/16 01:15:30 [TRACE] dag/walk: dependencies changed for "root", sending new deps
+2019/03/16 01:15:30 [TRACE] dag/walk: dependencies changed for "xenorchestra_vm.testing", sending new deps
+2019/03/16 01:15:30 [TRACE] dag/walk: dependencies changed for "meta.count-boundary (count boundary fixup)", sending new deps
+2019/03/16 01:15:30 [TRACE] dag/walk: walking "provider.xenorchestra"
+2019/03/16 01:15:30 [TRACE] vertex 'root.provider.xenorchestra': walking
+2019/03/16 01:15:30 [TRACE] vertex 'root.provider.xenorchestra': evaluating
+2019/03/16 01:15:30 [TRACE] [walkValidate] Entering eval tree: provider.xenorchestra
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalSequence
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalInitProvider
+2019/03/16 01:15:30 [TRACE] root: eval: terraform.EvalNoop
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalOpFilter
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalSequence
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalGetProvider
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalInterpolateProvider
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalBuildProviderConfig
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalValidateProvider
+2019/03/16 01:15:30 [TRACE] root: eval: terraform.EvalNoop
+2019/03/16 01:15:30 [TRACE] root: eval: terraform.EvalNoop
+2019/03/16 01:15:30 [TRACE] [walkValidate] Exiting eval tree: provider.xenorchestra
+2019/03/16 01:15:30 [TRACE] dag/walk: walking "xenorchestra_vm.testing"
+2019/03/16 01:15:30 [TRACE] vertex 'root.xenorchestra_vm.testing': walking
+2019/03/16 01:15:30 [TRACE] vertex 'root.xenorchestra_vm.testing': evaluating
+2019/03/16 01:15:30 [TRACE] [walkValidate] Entering eval tree: xenorchestra_vm.testing
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalSequence
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalInterpolate
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalIf
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalValidateCount
+2019/03/16 01:15:30 [TRACE] dag/walk: walking "xenorchestra_cloud_config.test_config"
+2019/03/16 01:15:30 [TRACE] vertex 'root.xenorchestra_cloud_config.test_config': walking
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalCountFixZeroOneBoundary
+2019/03/16 01:15:30 [TRACE] [walkValidate] Exiting eval tree: xenorchestra_vm.testing
+2019/03/16 01:15:30 [TRACE] vertex 'root.xenorchestra_vm.testing': expanding/walking dynamic subgraph
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.ResourceCountTransformer:
+
+xenorchestra_vm.testing - *terraform.NodeValidatableResourceInstance
+2019/03/16 01:15:30 [DEBUG] Attaching resource state to "xenorchestra_vm.testing": &terraform.ResourceState{Type:"xenorchestra_vm", Dependencies:[]string{}, Primary:(*terraform.InstanceState)(0xc00042ab90), Deposed:[]*terraform.InstanceState{}, Provider:"provider.xenorchestra", mu:sync.Mutex{state:0, sema:0x0}}
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.AttachStateTransformer:
+
+xenorchestra_vm.testing - *terraform.NodeValidatableResourceInstance
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.TargetsTransformer:
+
+xenorchestra_vm.testing - *terraform.NodeValidatableResourceInstance
+2019/03/16 01:15:30 [DEBUG] ReferenceTransformer: "xenorchestra_vm.testing" references: []
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.ReferenceTransformer:
+
+xenorchestra_vm.testing - *terraform.NodeValidatableResourceInstance
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.RootTransformer:
+
+xenorchestra_vm.testing - *terraform.NodeValidatableResourceInstance
+2019/03/16 01:15:30 [TRACE] dag/walk: added new vertex: "xenorchestra_vm.testing"
+2019/03/16 01:15:30 [TRACE] dag/walk: walking "xenorchestra_vm.testing"
+2019/03/16 01:15:30 [TRACE] vertex 'root.xenorchestra_vm.testing': walking
+2019/03/16 01:15:30 [TRACE] vertex 'root.xenorchestra_vm.testing': evaluating
+2019/03/16 01:15:30 [TRACE] [walkValidate] Entering eval tree: xenorchestra_vm.testing
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalSequence
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalValidateResourceSelfRef
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalGetProvider
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalInterpolate
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalValidateResource
+2019/03/16 01:15:30 [TRACE] [walkValidate] Exiting eval tree: xenorchestra_vm.testing
+2019/03/16 01:15:30 [TRACE] dag/walk: walking "provider.xenorchestra (close)"
+2019/03/16 01:15:30 [TRACE] vertex 'root.provider.xenorchestra (close)': walking
+2019/03/16 01:15:30 [TRACE] dag/walk: walking "meta.count-boundary (count boundary fixup)"
+2019/03/16 01:15:30 [TRACE] vertex 'root.meta.count-boundary (count boundary fixup)': walking
+2019/03/16 01:15:30 [TRACE] vertex 'root.provider.xenorchestra (close)': evaluating
+2019/03/16 01:15:30 [TRACE] [walkValidate] Entering eval tree: provider.xenorchestra (close)
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalCloseProvider
+2019/03/16 01:15:30 [TRACE] [walkValidate] Exiting eval tree: provider.xenorchestra (close)
+2019/03/16 01:15:30 [TRACE] vertex 'root.meta.count-boundary (count boundary fixup)': evaluating
+2019/03/16 01:15:30 [TRACE] [walkValidate] Entering eval tree: meta.count-boundary (count boundary fixup)
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalCountFixZeroOneBoundaryGlobal
+2019/03/16 01:15:30 [TRACE] EvalCountFixZeroOneBoundaryGlobal: count 1, search "xenorchestra_cloud_config.test_config.0", replace "xenorchestra_cloud_config.test_config"
+2019/03/16 01:15:30 [TRACE] EvalCountFixZeroOneBoundaryGlobal: count 1, search "xenorchestra_vm.testing.0", replace "xenorchestra_vm.testing"
+2019/03/16 01:15:30 [TRACE] [walkValidate] Exiting eval tree: meta.count-boundary (count boundary fixup)
+2019/03/16 01:15:30 [TRACE] dag/walk: walking "root"
+2019/03/16 01:15:30 [TRACE] vertex 'root.root': walking
+2019/03/16 01:15:30 [INFO] backend/local: apply calling Refresh
+2019/03/16 01:15:30 [INFO] terraform: building graph: GraphTypeRefresh
+2019/03/16 01:15:30 [TRACE] ConfigTransformer: Starting for path: []
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.ConfigTransformer:
+
+xenorchestra_vm.testing - *terraform.NodeRefreshableManagedResource
+2019/03/16 01:15:30 [TRACE] ConfigTransformer: Starting for path: []
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.ConfigTransformer:
+
+xenorchestra_vm.testing - *terraform.NodeRefreshableManagedResource
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.OrphanResourceTransformer:
+
+xenorchestra_cloud_config.test_config - *terraform.NodeRefreshableManagedResourceInstance
+xenorchestra_vm.testing - *terraform.NodeRefreshableManagedResource
+2019/03/16 01:15:30 [DEBUG] Attaching resource state to "xenorchestra_vm.testing": &terraform.ResourceState{Type:"xenorchestra_vm", Dependencies:[]string{}, Primary:(*terraform.InstanceState)(0xc00042acd0), Deposed:[]*terraform.InstanceState{}, Provider:"provider.xenorchestra", mu:sync.Mutex{state:0, sema:0x0}}
+2019/03/16 01:15:30 [DEBUG] Attaching resource state to "xenorchestra_cloud_config.test_config": &terraform.ResourceState{Type:"xenorchestra_cloud_config", Dependencies:[]string{}, Primary:(*terraform.InstanceState)(0xc00042ac30), Deposed:[]*terraform.InstanceState{}, Provider:"provider.xenorchestra", mu:sync.Mutex{state:0, sema:0x0}}
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.AttachStateTransformer:
+
+xenorchestra_cloud_config.test_config - *terraform.NodeRefreshableManagedResourceInstance
+xenorchestra_vm.testing - *terraform.NodeRefreshableManagedResource
+2019/03/16 01:15:30 [TRACE] AttachResourceConfigTransformer: Beginning...
+2019/03/16 01:15:30 [TRACE] AttachResourceConfigTransformer: Attach resource config request: xenorchestra_vm.testing
+2019/03/16 01:15:30 [TRACE] Attaching resource config: &config.Resource{Mode:0, Name:"testing", Type:"xenorchestra_vm", RawCount:(*config.RawConfig)(0xc000416000), RawConfig:(*config.RawConfig)(0xc0002888c0), Provisioners:[]*config.Provisioner(nil), Provider:"", DependsOn:[]string(nil), Lifecycle:config.ResourceLifecycle{CreateBeforeDestroy:false, PreventDestroy:false, IgnoreChanges:[]string(nil)}}
+2019/03/16 01:15:30 [TRACE] AttachResourceConfigTransformer: Attach resource config request: xenorchestra_cloud_config.test_config
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.AttachResourceConfigTransformer:
+
+xenorchestra_cloud_config.test_config - *terraform.NodeRefreshableManagedResourceInstance
+xenorchestra_vm.testing - *terraform.NodeRefreshableManagedResource
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.RootVariableTransformer:
+
+xenorchestra_cloud_config.test_config - *terraform.NodeRefreshableManagedResourceInstance
+xenorchestra_vm.testing - *terraform.NodeRefreshableManagedResource
+2019/03/16 01:15:30 [TRACE] ProviderConfigTransformer: Starting for path: []
+2019/03/16 01:15:30 [TRACE] Attach provider request: []string{} xenorchestra
+2019/03/16 01:15:30 [TRACE] Attaching provider config: *config.ProviderConfig{Name:"xenorchestra", Alias:"", Version:"", RawConfig:(*config.RawConfig)(0xc000288850)}
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.ProviderConfigTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeRefreshableManagedResourceInstance
+xenorchestra_vm.testing - *terraform.NodeRefreshableManagedResource
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.MissingProviderTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeRefreshableManagedResourceInstance
+xenorchestra_vm.testing - *terraform.NodeRefreshableManagedResource
+2019/03/16 01:15:30 [DEBUG] resource xenorchestra_vm.testing using provider provider.xenorchestra
+2019/03/16 01:15:30 [DEBUG] resource xenorchestra_cloud_config.test_config using provider provider.xenorchestra
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.ProviderTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeRefreshableManagedResourceInstance
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodeRefreshableManagedResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.PruneProviderTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeRefreshableManagedResourceInstance
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodeRefreshableManagedResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.ParentProviderTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeRefreshableManagedResourceInstance
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodeRefreshableManagedResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.graphTransformerMulti:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeRefreshableManagedResourceInstance
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodeRefreshableManagedResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.LocalTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeRefreshableManagedResourceInstance
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodeRefreshableManagedResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.OutputTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeRefreshableManagedResourceInstance
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodeRefreshableManagedResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.ModuleVariableTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeRefreshableManagedResourceInstance
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodeRefreshableManagedResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:30 [DEBUG] ReferenceTransformer: "xenorchestra_vm.testing" references: []
+2019/03/16 01:15:30 [DEBUG] ReferenceTransformer: "xenorchestra_cloud_config.test_config" references: []
+2019/03/16 01:15:30 [DEBUG] ReferenceTransformer: "provider.xenorchestra" references: []
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.ReferenceTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeRefreshableManagedResourceInstance
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodeRefreshableManagedResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.TargetsTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeRefreshableManagedResourceInstance
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodeRefreshableManagedResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.CloseProviderTransformer:
 
 provider.xenorchestra - *terraform.NodeApplyableProvider
 provider.xenorchestra (close) - *terraform.graphNodeCloseProvider
   provider.xenorchestra - *terraform.NodeApplyableProvider
-  xenorchestra_vm.testing - *terraform.NodeAbstractResource
-  xenorchestra_vm.testing (import id: 77c6637c-fa3d-0a46-717e-296208c40169) - *terraform.graphNodeImportState
-xenorchestra_vm.testing - *terraform.NodeAbstractResource
+  xenorchestra_cloud_config.test_config - *terraform.NodeRefreshableManagedResourceInstance
+  xenorchestra_vm.testing - *terraform.NodeRefreshableManagedResource
+xenorchestra_cloud_config.test_config - *terraform.NodeRefreshableManagedResourceInstance
   provider.xenorchestra - *terraform.NodeApplyableProvider
-xenorchestra_vm.testing (import id: 77c6637c-fa3d-0a46-717e-296208c40169) - *terraform.graphNodeImportState
+xenorchestra_vm.testing - *terraform.NodeRefreshableManagedResource
   provider.xenorchestra - *terraform.NodeApplyableProvider
-2019/03/12 23:21:39 [TRACE] Graph after step *terraform.RootTransformer:
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.RootTransformer:
 
 provider.xenorchestra - *terraform.NodeApplyableProvider
 provider.xenorchestra (close) - *terraform.graphNodeCloseProvider
   provider.xenorchestra - *terraform.NodeApplyableProvider
-  xenorchestra_vm.testing - *terraform.NodeAbstractResource
-  xenorchestra_vm.testing (import id: 77c6637c-fa3d-0a46-717e-296208c40169) - *terraform.graphNodeImportState
-xenorchestra_vm.testing - *terraform.NodeAbstractResource
+  xenorchestra_cloud_config.test_config - *terraform.NodeRefreshableManagedResourceInstance
+  xenorchestra_vm.testing - *terraform.NodeRefreshableManagedResource
+xenorchestra_cloud_config.test_config - *terraform.NodeRefreshableManagedResourceInstance
   provider.xenorchestra - *terraform.NodeApplyableProvider
-xenorchestra_vm.testing (import id: 77c6637c-fa3d-0a46-717e-296208c40169) - *terraform.graphNodeImportState
+xenorchestra_vm.testing - *terraform.NodeRefreshableManagedResource
   provider.xenorchestra - *terraform.NodeApplyableProvider
-2019/03/12 23:21:39 [TRACE] Graph after step *terraform.TransitiveReductionTransformer:
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.TransitiveReductionTransformer:
 
 provider.xenorchestra - *terraform.NodeApplyableProvider
 provider.xenorchestra (close) - *terraform.graphNodeCloseProvider
-  xenorchestra_vm.testing - *terraform.NodeAbstractResource
-  xenorchestra_vm.testing (import id: 77c6637c-fa3d-0a46-717e-296208c40169) - *terraform.graphNodeImportState
-xenorchestra_vm.testing - *terraform.NodeAbstractResource
+  xenorchestra_cloud_config.test_config - *terraform.NodeRefreshableManagedResourceInstance
+  xenorchestra_vm.testing - *terraform.NodeRefreshableManagedResource
+xenorchestra_cloud_config.test_config - *terraform.NodeRefreshableManagedResourceInstance
   provider.xenorchestra - *terraform.NodeApplyableProvider
-xenorchestra_vm.testing (import id: 77c6637c-fa3d-0a46-717e-296208c40169) - *terraform.graphNodeImportState
+xenorchestra_vm.testing - *terraform.NodeRefreshableManagedResource
   provider.xenorchestra - *terraform.NodeApplyableProvider
-2019/03/12 23:21:39 [DEBUG] Starting graph walk: walkImport
-2019/03/12 23:21:39 [TRACE] dag/walk: added new vertex: "xenorchestra_vm.testing"
-2019/03/12 23:21:39 [TRACE] dag/walk: added new vertex: "xenorchestra_vm.testing (import id: 77c6637c-fa3d-0a46-717e-296208c40169)"
-2019/03/12 23:21:39 [TRACE] dag/walk: added new vertex: "provider.xenorchestra"
-2019/03/12 23:21:39 [TRACE] dag/walk: added new vertex: "provider.xenorchestra (close)"
-2019/03/12 23:21:39 [TRACE] dag/walk: added edge: "xenorchestra_vm.testing" waiting on "provider.xenorchestra"
-2019/03/12 23:21:39 [TRACE] dag/walk: added edge: "xenorchestra_vm.testing (import id: 77c6637c-fa3d-0a46-717e-296208c40169)" waiting on "provider.xenorchestra"
-2019/03/12 23:21:39 [TRACE] dag/walk: added edge: "provider.xenorchestra (close)" waiting on "xenorchestra_vm.testing"
-2019/03/12 23:21:39 [TRACE] dag/walk: added edge: "provider.xenorchestra (close)" waiting on "xenorchestra_vm.testing (import id: 77c6637c-fa3d-0a46-717e-296208c40169)"
-2019/03/12 23:21:39 [TRACE] dag/walk: dependencies changed for "xenorchestra_vm.testing", sending new deps
-2019/03/12 23:21:39 [TRACE] dag/walk: dependencies changed for "xenorchestra_vm.testing (import id: 77c6637c-fa3d-0a46-717e-296208c40169)", sending new deps
-2019/03/12 23:21:39 [TRACE] dag/walk: dependencies changed for "provider.xenorchestra (close)", sending new deps
-2019/03/12 23:21:39 [TRACE] dag/walk: walking "provider.xenorchestra"
-2019/03/12 23:21:39 [TRACE] vertex 'root.provider.xenorchestra': walking
-2019/03/12 23:21:39 [TRACE] vertex 'root.provider.xenorchestra': evaluating
-2019/03/12 23:21:39 [TRACE] [walkImport] Entering eval tree: provider.xenorchestra
-2019/03/12 23:21:39 [TRACE] root: eval: *terraform.EvalSequence
-2019/03/12 23:21:39 [TRACE] root: eval: *terraform.EvalInitProvider
-2019-03-12T23:21:39.569-0700 [DEBUG] plugin: starting plugin: path=/home/ddelnano/code/terraform-provider-xenorchestra/terraform-provider-xenorchestra args=[/home/ddelnano/code/terraform-provider-xenorchestra/terraform-provider-xenorchestra]
-2019-03-12T23:21:39.570-0700 [DEBUG] plugin: waiting for RPC address: path=/home/ddelnano/code/terraform-provider-xenorchestra/terraform-provider-xenorchestra
-2019-03-12T23:21:39.576-0700 [DEBUG] plugin.terraform-provider-xenorchestra: plugin address: timestamp=2019-03-12T23:21:39.576-0700 address=/tmp/plugin236751092 network=unix
-2019/03/12 23:21:39 [TRACE] root: eval: *terraform.EvalOpFilter
-2019/03/12 23:21:39 [TRACE] root: eval: *terraform.EvalSequence
-2019/03/12 23:21:39 [TRACE] root: eval: *terraform.EvalGetProvider
-2019/03/12 23:21:39 [TRACE] root: eval: *terraform.EvalInterpolateProvider
-2019/03/12 23:21:39 [TRACE] root: eval: *terraform.EvalBuildProviderConfig
-2019/03/12 23:21:39 [TRACE] root: eval: *terraform.EvalInputProvider
-2019/03/12 23:21:39 [TRACE] root: eval: terraform.EvalNoop
-2019/03/12 23:21:39 [TRACE] root: eval: *terraform.EvalOpFilter
-2019/03/12 23:21:39 [TRACE] root: eval: *terraform.EvalSequence
-2019/03/12 23:21:39 [TRACE] root: eval: *terraform.EvalGetProvider
-2019/03/12 23:21:39 [TRACE] root: eval: *terraform.EvalInterpolateProvider
-2019/03/12 23:21:39 [TRACE] root: eval: *terraform.EvalBuildProviderConfig
-2019/03/12 23:21:39 [TRACE] root: eval: *terraform.EvalOpFilter
-2019/03/12 23:21:39 [TRACE] root: eval: *terraform.EvalSequence
-2019/03/12 23:21:39 [TRACE] root: eval: *terraform.EvalConfigProvider
-2019/03/12 23:21:39 [TRACE] [walkImport] Exiting eval tree: provider.xenorchestra
-2019/03/12 23:21:39 [TRACE] dag/walk: walking "xenorchestra_vm.testing"
-2019/03/12 23:21:39 [TRACE] vertex 'root.xenorchestra_vm.testing': walking
-2019/03/12 23:21:39 [TRACE] dag/walk: walking "xenorchestra_vm.testing (import id: 77c6637c-fa3d-0a46-717e-296208c40169)"
-2019/03/12 23:21:39 [TRACE] vertex 'root.xenorchestra_vm.testing (import id: 77c6637c-fa3d-0a46-717e-296208c40169)': walking
-2019/03/12 23:21:39 [TRACE] vertex 'root.xenorchestra_vm.testing (import id: 77c6637c-fa3d-0a46-717e-296208c40169)': evaluating
-2019/03/12 23:21:39 [TRACE] [walkImport] Entering eval tree: xenorchestra_vm.testing (import id: 77c6637c-fa3d-0a46-717e-296208c40169)
-2019/03/12 23:21:39 [TRACE] root: eval: *terraform.EvalSequence
-2019/03/12 23:21:39 [TRACE] root: eval: *terraform.EvalGetProvider
-2019/03/12 23:21:39 [TRACE] root: eval: *terraform.EvalImportState
-2019/03/12 23:21:39 [TRACE] [walkImport] Exiting eval tree: xenorchestra_vm.testing (import id: 77c6637c-fa3d-0a46-717e-296208c40169)
-2019/03/12 23:21:39 [TRACE] vertex 'root.xenorchestra_vm.testing (import id: 77c6637c-fa3d-0a46-717e-296208c40169)': expanding/walking dynamic subgraph
-2019/03/12 23:21:39 [TRACE] dag/walk: added new vertex: "import xenorchestra_vm.testing result: 77c6637c-fa3d-0a46-717e-296208c40169"
-2019/03/12 23:21:39 [TRACE] dag/walk: walking "import xenorchestra_vm.testing result: 77c6637c-fa3d-0a46-717e-296208c40169"
-2019/03/12 23:21:39 [TRACE] vertex 'root.import xenorchestra_vm.testing result: 77c6637c-fa3d-0a46-717e-296208c40169': walking
-2019/03/12 23:21:39 [TRACE] vertex 'root.import xenorchestra_vm.testing result: 77c6637c-fa3d-0a46-717e-296208c40169': evaluating
-2019/03/12 23:21:39 [TRACE] [walkImport] Entering eval tree: import xenorchestra_vm.testing result: 77c6637c-fa3d-0a46-717e-296208c40169
-2019/03/12 23:21:39 [TRACE] root: eval: *terraform.EvalSequence
-2019/03/12 23:21:39 [TRACE] root: eval: *terraform.EvalGetProvider
-2019/03/12 23:21:39 [TRACE] root: eval: *terraform.EvalRefresh
-2019-03-12T23:21:40.012-0700 [DEBUG] plugin.terraform-provider-xenorchestra: panic: runtime error: invalid memory address or nil pointer dereference
-2019-03-12T23:21:40.012-0700 [DEBUG] plugin.terraform-provider-xenorchestra: [signal SIGSEGV: segmentation violation code=0x1 addr=0x98 pc=0x78129c]
-2019-03-12T23:21:40.012-0700 [DEBUG] plugin.terraform-provider-xenorchestra: 
-2019-03-12T23:21:40.012-0700 [DEBUG] plugin.terraform-provider-xenorchestra: goroutine 54 [running]:
-2019-03-12T23:21:40.012-0700 [DEBUG] plugin.terraform-provider-xenorchestra: github.com/powerman/rpc-codec/jsonrpc2.(*clientCodec).WriteRequest(0xc000112120, 0xc000112198, 0x0, 0x0, 0xc0000bf850, 0x40dd68)
-2019-03-12T23:21:40.012-0700 [DEBUG] plugin.terraform-provider-xenorchestra: 	/home/ddelnano/go/pkg/mod/github.com/powerman/rpc-codec@v1.0.1/jsonrpc2/client.go:59 +0x6c
-2019-03-12T23:21:40.012-0700 [DEBUG] plugin.terraform-provider-xenorchestra: net/rpc.(*Client).send(0xc000112180, 0xc0000a03c0)
-2019-03-12T23:21:40.012-0700 [DEBUG] plugin.terraform-provider-xenorchestra: 	/usr/local/go/src/net/rpc/client.go:91 +0x196
-2019-03-12T23:21:40.012-0700 [DEBUG] plugin.terraform-provider-xenorchestra: net/rpc.(*Client).Go(0xc000112180, 0xe92907, 0x10, 0x0, 0x0, 0xd020e0, 0xc0000109a0, 0xc00011c840, 0x10)
-2019-03-12T23:21:40.012-0700 [DEBUG] plugin.terraform-provider-xenorchestra: 	/usr/local/go/src/net/rpc/client.go:316 +0xcc
-2019-03-12T23:21:40.012-0700 [DEBUG] plugin.terraform-provider-xenorchestra: net/rpc.(*Client).Call(...)
-2019-03-12T23:21:40.012-0700 [DEBUG] plugin.terraform-provider-xenorchestra: 	/usr/local/go/src/net/rpc/client.go:322
-2019-03-12T23:21:40.012-0700 [DEBUG] plugin.terraform-provider-xenorchestra: github.com/ddelnano/terraform-provider-xenorchestra/xoa.resourceVmRead(0xc000196460, 0xde39e0, 0xc0003d8900, 0xc000196460, 0x0)
-2019-03-12T23:21:40.012-0700 [DEBUG] plugin.terraform-provider-xenorchestra: 	/home/ddelnano/code/terraform-provider-xenorchestra/xoa/resource_xenorchestra_vm.go:100 +0x139
-2019-03-12T23:21:40.012-0700 [DEBUG] plugin.terraform-provider-xenorchestra: github.com/hashicorp/terraform/helper/schema.(*Resource).Refresh(0xc00030ff10, 0xc00013a140, 0xde39e0, 0xc0003d8900, 0xc000235c28, 0x1, 0xc00039fbf8)
-2019-03-12T23:21:40.012-0700 [DEBUG] plugin.terraform-provider-xenorchestra: 	/home/ddelnano/go/pkg/mod/github.com/hashicorp/terraform@v0.11.13/helper/schema/resource.go:352 +0x15a
-2019-03-12T23:21:40.012-0700 [DEBUG] plugin.terraform-provider-xenorchestra: github.com/hashicorp/terraform/helper/schema.(*Provider).Refresh(0xc00030ff80, 0xc00013a0a0, 0xc00013a140, 0xc00011e480, 0x0, 0x0)
-2019-03-12T23:21:40.012-0700 [DEBUG] plugin.terraform-provider-xenorchestra: 	/home/ddelnano/go/pkg/mod/github.com/hashicorp/terraform@v0.11.13/helper/schema/provider.go:308 +0x17f
-2019-03-12T23:21:40.012-0700 [DEBUG] plugin.terraform-provider-xenorchestra: github.com/hashicorp/terraform/plugin.(*ResourceProviderServer).Refresh(0xc000341be0, 0xc0003ce1e0, 0xc0003ce5b0, 0x0, 0x0)
-2019-03-12T23:21:40.012-0700 [DEBUG] plugin.terraform-provider-xenorchestra: 	/home/ddelnano/go/pkg/mod/github.com/hashicorp/terraform@v0.11.13/plugin/resource_provider.go:549 +0x4e
-2019-03-12T23:21:40.012-0700 [DEBUG] plugin.terraform-provider-xenorchestra: reflect.Value.call(0xc000080cc0, 0xc000010670, 0x13, 0xe87839, 0x4, 0xc00039ff18, 0x3, 0x3, 0xc00007fe80, 0x0, ...)
-2019-03-12T23:21:40.012-0700 [DEBUG] plugin.terraform-provider-xenorchestra: 	/usr/local/go/src/reflect/value.go:447 +0x461
-2019-03-12T23:21:40.012-0700 [DEBUG] plugin.terraform-provider-xenorchestra: reflect.Value.Call(0xc000080cc0, 0xc000010670, 0x13, 0xc000378718, 0x3, 0x3, 0x0, 0x0, 0x0)
-2019-03-12T23:21:40.012-0700 [DEBUG] plugin.terraform-provider-xenorchestra: 	/usr/local/go/src/reflect/value.go:308 +0xa4
-2019-03-12T23:21:40.012-0700 [DEBUG] plugin.terraform-provider-xenorchestra: net/rpc.(*service).call(0xc00007f900, 0xc0000a0410, 0xc00003a6a0, 0xc00003a6b0, 0xc000102500, 0xc00000f3c0, 0xcf7de0, 0xc0003ce1e0, 0x16, 0xcf7e20, ...)
-2019-03-12T23:21:40.013-0700 [DEBUG] plugin.terraform-provider-xenorchestra: 	/usr/local/go/src/net/rpc/server.go:384 +0x14e
-2019-03-12T23:21:40.013-0700 [DEBUG] plugin.terraform-provider-xenorchestra: created by net/rpc.(*Server).ServeCodec
-2019-03-12T23:21:40.013-0700 [DEBUG] plugin.terraform-provider-xenorchestra: 	/usr/local/go/src/net/rpc/server.go:481 +0x440
-2019/03/12 23:21:40 [ERROR] root: eval: *terraform.EvalRefresh, err: xenorchestra_vm.testing: unexpected EOF
-2019/03/12 23:21:40 [ERROR] root: eval: *terraform.EvalSequence, err: xenorchestra_vm.testing: unexpected EOF
-2019/03/12 23:21:40 [TRACE] [walkImport] Exiting eval tree: import xenorchestra_vm.testing result: 77c6637c-fa3d-0a46-717e-296208c40169
-2019-03-12T23:21:40.014-0700 [DEBUG] plugin: plugin process exited: path=/home/ddelnano/code/terraform-provider-xenorchestra/terraform-provider-xenorchestra
-2019/03/12 23:21:40 [TRACE] dag/walk: upstream errored, not walking "provider.xenorchestra (close)"
-2019/03/12 23:21:40 [DEBUG] plugin: waiting for all plugin processes to complete...
-2019-03-12T23:21:40.014-0700 [WARN ] plugin: error closing client during Kill: err="connection is shut down"
+2019/03/16 01:15:30 [DEBUG] Starting graph walk: walkRefresh
+2019/03/16 01:15:30 [TRACE] dag/walk: added new vertex: "xenorchestra_vm.testing"
+2019/03/16 01:15:30 [TRACE] dag/walk: added new vertex: "xenorchestra_cloud_config.test_config"
+2019/03/16 01:15:30 [TRACE] dag/walk: added new vertex: "provider.xenorchestra"
+2019/03/16 01:15:30 [TRACE] dag/walk: added new vertex: "provider.xenorchestra (close)"
+2019/03/16 01:15:30 [TRACE] dag/walk: added edge: "provider.xenorchestra (close)" waiting on "xenorchestra_vm.testing"
+2019/03/16 01:15:30 [TRACE] dag/walk: added edge: "provider.xenorchestra (close)" waiting on "xenorchestra_cloud_config.test_config"
+2019/03/16 01:15:30 [TRACE] dag/walk: added edge: "xenorchestra_vm.testing" waiting on "provider.xenorchestra"
+2019/03/16 01:15:30 [TRACE] dag/walk: added edge: "xenorchestra_cloud_config.test_config" waiting on "provider.xenorchestra"
+2019/03/16 01:15:30 [TRACE] dag/walk: dependencies changed for "provider.xenorchestra (close)", sending new deps
+2019/03/16 01:15:30 [TRACE] dag/walk: dependencies changed for "xenorchestra_vm.testing", sending new deps
+2019/03/16 01:15:30 [TRACE] dag/walk: dependencies changed for "xenorchestra_cloud_config.test_config", sending new deps
+2019/03/16 01:15:30 [TRACE] dag/walk: walking "provider.xenorchestra"
+2019/03/16 01:15:30 [TRACE] vertex 'root.provider.xenorchestra': walking
+2019/03/16 01:15:30 [TRACE] vertex 'root.provider.xenorchestra': evaluating
+2019/03/16 01:15:30 [TRACE] [walkRefresh] Entering eval tree: provider.xenorchestra
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalSequence
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalInitProvider
+2019/03/16 01:15:30 [TRACE] root: eval: terraform.EvalNoop
+2019/03/16 01:15:30 [TRACE] root: eval: terraform.EvalNoop
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalOpFilter
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalSequence
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalGetProvider
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalInterpolateProvider
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalBuildProviderConfig
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalOpFilter
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalSequence
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalConfigProvider
+2019/03/16 01:15:30 [TRACE] [walkRefresh] Exiting eval tree: provider.xenorchestra
+2019/03/16 01:15:30 [TRACE] dag/walk: walking "xenorchestra_vm.testing"
+2019/03/16 01:15:30 [TRACE] vertex 'root.xenorchestra_vm.testing': walking
+2019/03/16 01:15:30 [TRACE] vertex 'root.xenorchestra_vm.testing': evaluating
+2019/03/16 01:15:30 [TRACE] dag/walk: walking "xenorchestra_cloud_config.test_config"
+2019/03/16 01:15:30 [TRACE] [walkRefresh] Entering eval tree: xenorchestra_vm.testing
+2019/03/16 01:15:30 [TRACE] vertex 'root.xenorchestra_cloud_config.test_config': walking
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalSequence
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalInterpolate
+2019/03/16 01:15:30 [TRACE] vertex 'root.xenorchestra_cloud_config.test_config': evaluating
+2019/03/16 01:15:30 [TRACE] [walkRefresh] Entering eval tree: xenorchestra_cloud_config.test_config
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalSequence
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalGetProvider
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalReadState
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalRefresh
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalCountCheckComputed
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalIf
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalCountFixZeroOneBoundary
+2019/03/16 01:15:30 [TRACE] [walkRefresh] Exiting eval tree: xenorchestra_vm.testing
+2019/03/16 01:15:30 [TRACE] vertex 'root.xenorchestra_vm.testing': expanding/walking dynamic subgraph
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.ResourceCountTransformer:
+
+xenorchestra_vm.testing - *terraform.NodeRefreshableManagedResourceInstance
+2019/03/16 01:15:30 [TRACE] OrphanResourceCount: Starting...
+2019/03/16 01:15:30 [TRACE] OrphanResourceCount: Checking: xenorchestra_vm.testing
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.OrphanResourceCountTransformer:
+
+xenorchestra_vm.testing - *terraform.NodeRefreshableManagedResourceInstance
+2019/03/16 01:15:30 [DEBUG] Attaching resource state to "xenorchestra_vm.testing": &terraform.ResourceState{Type:"xenorchestra_vm", Dependencies:[]string{}, Primary:(*terraform.InstanceState)(0xc00042acd0), Deposed:[]*terraform.InstanceState{}, Provider:"provider.xenorchestra", mu:sync.Mutex{state:0, sema:0x0}}
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.AttachStateTransformer:
+
+xenorchestra_vm.testing - *terraform.NodeRefreshableManagedResourceInstance
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.TargetsTransformer:
+
+xenorchestra_vm.testing - *terraform.NodeRefreshableManagedResourceInstance
+2019/03/16 01:15:30 [DEBUG] ReferenceTransformer: "xenorchestra_vm.testing" references: []
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.ReferenceTransformer:
+
+xenorchestra_vm.testing - *terraform.NodeRefreshableManagedResourceInstance
+2019/03/16 01:15:30 [TRACE] Graph after step *terraform.RootTransformer:
+
+xenorchestra_vm.testing - *terraform.NodeRefreshableManagedResourceInstance
+2019/03/16 01:15:30 [TRACE] dag/walk: added new vertex: "xenorchestra_vm.testing"
+2019/03/16 01:15:30 [TRACE] dag/walk: walking "xenorchestra_vm.testing"
+2019/03/16 01:15:30 [TRACE] vertex 'root.xenorchestra_vm.testing': walking
+2019/03/16 01:15:30 [TRACE] vertex 'root.xenorchestra_vm.testing': evaluating
+2019/03/16 01:15:30 [TRACE] [walkRefresh] Entering eval tree: xenorchestra_vm.testing
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalSequence
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalGetProvider
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalReadState
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalRefresh
+2019/03/16 01:15:30 [TRACE] root: eval: *terraform.EvalWriteState
+2019/03/16 01:15:30 [TRACE] [walkRefresh] Exiting eval tree: xenorchestra_cloud_config.test_config
+2019-03-16T01:15:31.316-0400 [DEBUG] plugin.terraform-provider-xenorchestra: 2019/03/16 01:15:31 raw bytes: {"id":"3b480e98-af4e-4dbf-9f1e-29ac59d6364f","email":"admin@admin.net","groups":[],"permission":"admin","preferences":{}}
+2019-03-16T01:15:33.038-0400 [DEBUG] plugin.terraform-provider-xenorchestra: 2019/03/16 01:15:33 vmobj: {VM 77c6637c-fa3d-0a46-717e-296208c40169  Testingsdfsdf Hello from terraform! {1} {[1073741824 1073741824] [536870912 1073741824] 1073733632} Running [13793e84-110e-7f0d-8544-cb2f39adf2f4] hvm cadf25ab-91ff-6fc0-041f-5a7033c4bc78  }
+2019/03/16 01:15:33 [TRACE] root: eval: *terraform.EvalWriteState
+2019/03/16 01:15:33 [TRACE] [walkRefresh] Exiting eval tree: xenorchestra_vm.testing
+2019/03/16 01:15:33 [TRACE] dag/walk: walking "provider.xenorchestra (close)"
+2019/03/16 01:15:33 [TRACE] vertex 'root.provider.xenorchestra (close)': walking
+2019/03/16 01:15:33 [TRACE] vertex 'root.provider.xenorchestra (close)': evaluating
+2019/03/16 01:15:33 [TRACE] [walkRefresh] Entering eval tree: provider.xenorchestra (close)
+2019/03/16 01:15:33 [TRACE] root: eval: *terraform.EvalCloseProvider
+2019/03/16 01:15:33 [TRACE] [walkRefresh] Exiting eval tree: provider.xenorchestra (close)
+2019/03/16 01:15:33 [INFO] backend/local: apply calling Plan
+2019/03/16 01:15:33 [INFO] terraform: building graph: GraphTypePlan
+2019/03/16 01:15:33 [TRACE] ConfigTransformer: Starting for path: []
+2019/03/16 01:15:33 [TRACE] Graph after step *terraform.ConfigTransformer:
+
+xenorchestra_vm.testing - *terraform.NodePlannableResource
+2019/03/16 01:15:33 [TRACE] Graph after step *terraform.LocalTransformer:
+
+xenorchestra_vm.testing - *terraform.NodePlannableResource
+2019/03/16 01:15:33 [TRACE] Graph after step *terraform.OutputTransformer:
+
+xenorchestra_vm.testing - *terraform.NodePlannableResource
+2019/03/16 01:15:33 [TRACE] Graph after step *terraform.OrphanResourceTransformer:
+
+xenorchestra_cloud_config.test_config (orphan) - *terraform.NodePlannableResourceOrphan
+xenorchestra_vm.testing - *terraform.NodePlannableResource
+2019/03/16 01:15:33 [TRACE] Graph after step *terraform.OrphanOutputTransformer:
+
+xenorchestra_cloud_config.test_config (orphan) - *terraform.NodePlannableResourceOrphan
+xenorchestra_vm.testing - *terraform.NodePlannableResource
+2019/03/16 01:15:33 [TRACE] AttachResourceConfigTransformer: Beginning...
+2019/03/16 01:15:33 [TRACE] AttachResourceConfigTransformer: Attach resource config request: xenorchestra_cloud_config.test_config
+2019/03/16 01:15:33 [TRACE] AttachResourceConfigTransformer: Attach resource config request: xenorchestra_vm.testing
+2019/03/16 01:15:33 [TRACE] Attaching resource config: &config.Resource{Mode:0, Name:"testing", Type:"xenorchestra_vm", RawCount:(*config.RawConfig)(0xc000416000), RawConfig:(*config.RawConfig)(0xc0002888c0), Provisioners:[]*config.Provisioner(nil), Provider:"", DependsOn:[]string(nil), Lifecycle:config.ResourceLifecycle{CreateBeforeDestroy:false, PreventDestroy:false, IgnoreChanges:[]string(nil)}}
+2019/03/16 01:15:33 [TRACE] Graph after step *terraform.AttachResourceConfigTransformer:
+
+xenorchestra_cloud_config.test_config (orphan) - *terraform.NodePlannableResourceOrphan
+xenorchestra_vm.testing - *terraform.NodePlannableResource
+2019/03/16 01:15:33 [DEBUG] Attaching resource state to "xenorchestra_vm.testing": &terraform.ResourceState{Type:"xenorchestra_vm", Dependencies:[]string{}, Primary:(*terraform.InstanceState)(0xc0001ba500), Deposed:[]*terraform.InstanceState{}, Provider:"provider.xenorchestra", mu:sync.Mutex{state:0, sema:0x0}}
+2019/03/16 01:15:33 [DEBUG] Attaching resource state to "xenorchestra_cloud_config.test_config (orphan)": &terraform.ResourceState{Type:"xenorchestra_cloud_config", Dependencies:[]string{}, Primary:(*terraform.InstanceState)(0xc0001ba460), Deposed:[]*terraform.InstanceState{}, Provider:"provider.xenorchestra", mu:sync.Mutex{state:0, sema:0x0}}
+2019/03/16 01:15:33 [TRACE] Graph after step *terraform.AttachStateTransformer:
+
+xenorchestra_cloud_config.test_config (orphan) - *terraform.NodePlannableResourceOrphan
+xenorchestra_vm.testing - *terraform.NodePlannableResource
+2019/03/16 01:15:33 [TRACE] Graph after step *terraform.RootVariableTransformer:
+
+xenorchestra_cloud_config.test_config (orphan) - *terraform.NodePlannableResourceOrphan
+xenorchestra_vm.testing - *terraform.NodePlannableResource
+2019/03/16 01:15:33 [TRACE] ProviderConfigTransformer: Starting for path: []
+2019/03/16 01:15:33 [TRACE] Attach provider request: []string{} xenorchestra
+2019/03/16 01:15:33 [TRACE] Attaching provider config: *config.ProviderConfig{Name:"xenorchestra", Alias:"", Version:"", RawConfig:(*config.RawConfig)(0xc000288850)}
+2019/03/16 01:15:33 [TRACE] Graph after step *terraform.ProviderConfigTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config (orphan) - *terraform.NodePlannableResourceOrphan
+xenorchestra_vm.testing - *terraform.NodePlannableResource
+2019/03/16 01:15:33 [TRACE] Graph after step *terraform.MissingProviderTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config (orphan) - *terraform.NodePlannableResourceOrphan
+xenorchestra_vm.testing - *terraform.NodePlannableResource
+2019/03/16 01:15:33 [DEBUG] resource xenorchestra_vm.testing using provider provider.xenorchestra
+2019/03/16 01:15:33 [DEBUG] resource xenorchestra_cloud_config.test_config (orphan) using provider provider.xenorchestra
+2019/03/16 01:15:33 [TRACE] Graph after step *terraform.ProviderTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config (orphan) - *terraform.NodePlannableResourceOrphan
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodePlannableResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:33 [TRACE] Graph after step *terraform.PruneProviderTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config (orphan) - *terraform.NodePlannableResourceOrphan
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodePlannableResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:33 [TRACE] Graph after step *terraform.ParentProviderTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config (orphan) - *terraform.NodePlannableResourceOrphan
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodePlannableResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:33 [TRACE] Graph after step *terraform.graphTransformerMulti:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config (orphan) - *terraform.NodePlannableResourceOrphan
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodePlannableResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:33 [TRACE] Graph after step *terraform.ModuleVariableTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config (orphan) - *terraform.NodePlannableResourceOrphan
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodePlannableResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:33 [TRACE] Graph after step *terraform.RemovedModuleTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config (orphan) - *terraform.NodePlannableResourceOrphan
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodePlannableResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:33 [DEBUG] ReferenceTransformer: "xenorchestra_vm.testing" references: []
+2019/03/16 01:15:33 [DEBUG] ReferenceTransformer: "xenorchestra_cloud_config.test_config (orphan)" references: []
+2019/03/16 01:15:33 [DEBUG] ReferenceTransformer: "provider.xenorchestra" references: []
+2019/03/16 01:15:33 [TRACE] Graph after step *terraform.ReferenceTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config (orphan) - *terraform.NodePlannableResourceOrphan
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodePlannableResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:33 [TRACE] Graph after step *terraform.CountBoundaryTransformer:
+
+meta.count-boundary (count boundary fixup) - *terraform.NodeCountBoundary
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+  xenorchestra_cloud_config.test_config (orphan) - *terraform.NodePlannableResourceOrphan
+  xenorchestra_vm.testing - *terraform.NodePlannableResource
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config (orphan) - *terraform.NodePlannableResourceOrphan
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodePlannableResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:33 [TRACE] Graph after step *terraform.TargetsTransformer:
+
+meta.count-boundary (count boundary fixup) - *terraform.NodeCountBoundary
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+  xenorchestra_cloud_config.test_config (orphan) - *terraform.NodePlannableResourceOrphan
+  xenorchestra_vm.testing - *terraform.NodePlannableResource
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config (orphan) - *terraform.NodePlannableResourceOrphan
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodePlannableResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:33 [TRACE] Graph after step *terraform.CloseProviderTransformer:
+
+meta.count-boundary (count boundary fixup) - *terraform.NodeCountBoundary
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+  xenorchestra_cloud_config.test_config (orphan) - *terraform.NodePlannableResourceOrphan
+  xenorchestra_vm.testing - *terraform.NodePlannableResource
+provider.xenorchestra - *terraform.NodeApplyableProvider
+provider.xenorchestra (close) - *terraform.graphNodeCloseProvider
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+  xenorchestra_cloud_config.test_config (orphan) - *terraform.NodePlannableResourceOrphan
+  xenorchestra_vm.testing - *terraform.NodePlannableResource
+xenorchestra_cloud_config.test_config (orphan) - *terraform.NodePlannableResourceOrphan
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodePlannableResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:33 [TRACE] Graph after step *terraform.CloseProvisionerTransformer:
+
+meta.count-boundary (count boundary fixup) - *terraform.NodeCountBoundary
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+  xenorchestra_cloud_config.test_config (orphan) - *terraform.NodePlannableResourceOrphan
+  xenorchestra_vm.testing - *terraform.NodePlannableResource
+provider.xenorchestra - *terraform.NodeApplyableProvider
+provider.xenorchestra (close) - *terraform.graphNodeCloseProvider
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+  xenorchestra_cloud_config.test_config (orphan) - *terraform.NodePlannableResourceOrphan
+  xenorchestra_vm.testing - *terraform.NodePlannableResource
+xenorchestra_cloud_config.test_config (orphan) - *terraform.NodePlannableResourceOrphan
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodePlannableResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:33 [TRACE] Graph after step *terraform.RootTransformer:
+
+meta.count-boundary (count boundary fixup) - *terraform.NodeCountBoundary
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+  xenorchestra_cloud_config.test_config (orphan) - *terraform.NodePlannableResourceOrphan
+  xenorchestra_vm.testing - *terraform.NodePlannableResource
+provider.xenorchestra - *terraform.NodeApplyableProvider
+provider.xenorchestra (close) - *terraform.graphNodeCloseProvider
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+  xenorchestra_cloud_config.test_config (orphan) - *terraform.NodePlannableResourceOrphan
+  xenorchestra_vm.testing - *terraform.NodePlannableResource
+root - terraform.graphNodeRoot
+  meta.count-boundary (count boundary fixup) - *terraform.NodeCountBoundary
+  provider.xenorchestra (close) - *terraform.graphNodeCloseProvider
+xenorchestra_cloud_config.test_config (orphan) - *terraform.NodePlannableResourceOrphan
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodePlannableResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:33 [TRACE] Graph after step *terraform.TransitiveReductionTransformer:
+
+meta.count-boundary (count boundary fixup) - *terraform.NodeCountBoundary
+  xenorchestra_cloud_config.test_config (orphan) - *terraform.NodePlannableResourceOrphan
+  xenorchestra_vm.testing - *terraform.NodePlannableResource
+provider.xenorchestra - *terraform.NodeApplyableProvider
+provider.xenorchestra (close) - *terraform.graphNodeCloseProvider
+  xenorchestra_cloud_config.test_config (orphan) - *terraform.NodePlannableResourceOrphan
+  xenorchestra_vm.testing - *terraform.NodePlannableResource
+root - terraform.graphNodeRoot
+  meta.count-boundary (count boundary fixup) - *terraform.NodeCountBoundary
+  provider.xenorchestra (close) - *terraform.graphNodeCloseProvider
+xenorchestra_cloud_config.test_config (orphan) - *terraform.NodePlannableResourceOrphan
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_vm.testing - *terraform.NodePlannableResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:33 [DEBUG] Starting graph walk: walkPlan
+2019/03/16 01:15:33 [TRACE] dag/walk: added new vertex: "provider.xenorchestra (close)"
+2019/03/16 01:15:33 [TRACE] dag/walk: added new vertex: "root"
+2019/03/16 01:15:33 [TRACE] dag/walk: added new vertex: "xenorchestra_vm.testing"
+2019/03/16 01:15:33 [TRACE] dag/walk: added new vertex: "xenorchestra_cloud_config.test_config (orphan)"
+2019/03/16 01:15:33 [TRACE] dag/walk: added new vertex: "provider.xenorchestra"
+2019/03/16 01:15:33 [TRACE] dag/walk: added new vertex: "meta.count-boundary (count boundary fixup)"
+2019/03/16 01:15:33 [TRACE] dag/walk: added edge: "provider.xenorchestra (close)" waiting on "xenorchestra_vm.testing"
+2019/03/16 01:15:33 [TRACE] dag/walk: added edge: "provider.xenorchestra (close)" waiting on "xenorchestra_cloud_config.test_config (orphan)"
+2019/03/16 01:15:33 [TRACE] dag/walk: added edge: "root" waiting on "meta.count-boundary (count boundary fixup)"
+2019/03/16 01:15:33 [TRACE] dag/walk: added edge: "xenorchestra_cloud_config.test_config (orphan)" waiting on "provider.xenorchestra"
+2019/03/16 01:15:33 [TRACE] dag/walk: added edge: "meta.count-boundary (count boundary fixup)" waiting on "xenorchestra_vm.testing"
+2019/03/16 01:15:33 [TRACE] dag/walk: added edge: "root" waiting on "provider.xenorchestra (close)"
+2019/03/16 01:15:33 [TRACE] dag/walk: added edge: "xenorchestra_vm.testing" waiting on "provider.xenorchestra"
+2019/03/16 01:15:33 [TRACE] dag/walk: added edge: "meta.count-boundary (count boundary fixup)" waiting on "xenorchestra_cloud_config.test_config (orphan)"
+2019/03/16 01:15:33 [TRACE] dag/walk: dependencies changed for "xenorchestra_cloud_config.test_config (orphan)", sending new deps
+2019/03/16 01:15:33 [TRACE] dag/walk: dependencies changed for "meta.count-boundary (count boundary fixup)", sending new deps
+2019/03/16 01:15:33 [TRACE] dag/walk: dependencies changed for "xenorchestra_vm.testing", sending new deps
+2019/03/16 01:15:33 [TRACE] dag/walk: dependencies changed for "provider.xenorchestra (close)", sending new deps
+2019/03/16 01:15:33 [TRACE] dag/walk: dependencies changed for "root", sending new deps
+2019/03/16 01:15:33 [TRACE] dag/walk: walking "provider.xenorchestra"
+2019/03/16 01:15:33 [TRACE] vertex 'root.provider.xenorchestra': walking
+2019/03/16 01:15:33 [TRACE] vertex 'root.provider.xenorchestra': evaluating
+2019/03/16 01:15:33 [TRACE] [walkPlan] Entering eval tree: provider.xenorchestra
+2019/03/16 01:15:33 [TRACE] root: eval: *terraform.EvalSequence
+2019/03/16 01:15:33 [TRACE] root: eval: *terraform.EvalInitProvider
+2019/03/16 01:15:33 [TRACE] root: eval: terraform.EvalNoop
+2019/03/16 01:15:33 [TRACE] root: eval: terraform.EvalNoop
+2019/03/16 01:15:33 [TRACE] root: eval: *terraform.EvalOpFilter
+2019/03/16 01:15:33 [TRACE] root: eval: *terraform.EvalSequence
+2019/03/16 01:15:33 [TRACE] root: eval: *terraform.EvalGetProvider
+2019/03/16 01:15:33 [TRACE] root: eval: *terraform.EvalInterpolateProvider
+2019/03/16 01:15:33 [TRACE] root: eval: *terraform.EvalBuildProviderConfig
+2019/03/16 01:15:33 [TRACE] root: eval: *terraform.EvalOpFilter
+2019/03/16 01:15:33 [TRACE] root: eval: *terraform.EvalSequence
+2019/03/16 01:15:33 [TRACE] root: eval: *terraform.EvalConfigProvider
+2019/03/16 01:15:33 [TRACE] [walkPlan] Exiting eval tree: provider.xenorchestra
+2019/03/16 01:15:33 [TRACE] dag/walk: walking "xenorchestra_cloud_config.test_config (orphan)"
+2019/03/16 01:15:33 [TRACE] dag/walk: walking "xenorchestra_vm.testing"
+2019/03/16 01:15:33 [TRACE] vertex 'root.xenorchestra_vm.testing': walking
+2019/03/16 01:15:33 [TRACE] vertex 'root.xenorchestra_vm.testing': evaluating
+2019/03/16 01:15:33 [TRACE] [walkPlan] Entering eval tree: xenorchestra_vm.testing
+2019/03/16 01:15:33 [TRACE] vertex 'root.xenorchestra_cloud_config.test_config (orphan)': walking
+2019/03/16 01:15:33 [TRACE] root: eval: *terraform.EvalSequence
+2019/03/16 01:15:33 [TRACE] vertex 'root.xenorchestra_cloud_config.test_config (orphan)': evaluating
+2019/03/16 01:15:33 [TRACE] [walkPlan] Entering eval tree: xenorchestra_cloud_config.test_config (orphan)
+2019/03/16 01:15:33 [TRACE] root: eval: *terraform.EvalSequence
+2019/03/16 01:15:33 [TRACE] root: eval: *terraform.EvalReadState
+2019/03/16 01:15:33 [TRACE] root: eval: *terraform.EvalDiffDestroy
+2019/03/16 01:15:33 [TRACE] root: eval: *terraform.EvalCheckPreventDestroy
+2019/03/16 01:15:33 [TRACE] root: eval: *terraform.EvalWriteDiff
+2019/03/16 01:15:33 [TRACE] root: eval: *terraform.EvalInterpolate
+2019/03/16 01:15:33 [TRACE] [walkPlan] Exiting eval tree: xenorchestra_cloud_config.test_config (orphan)
+2019/03/16 01:15:33 [TRACE] root: eval: *terraform.EvalCountCheckComputed
+2019/03/16 01:15:33 [TRACE] root: eval: *terraform.EvalIf
+2019/03/16 01:15:33 [TRACE] root: eval: *terraform.EvalCountFixZeroOneBoundary
+2019/03/16 01:15:33 [TRACE] [walkPlan] Exiting eval tree: xenorchestra_vm.testing
+2019/03/16 01:15:33 [TRACE] vertex 'root.xenorchestra_vm.testing': expanding/walking dynamic subgraph
+2019/03/16 01:15:33 [TRACE] Graph after step *terraform.ResourceCountTransformer:
+
+xenorchestra_vm.testing - *terraform.NodePlannableResourceInstance
+2019/03/16 01:15:33 [TRACE] OrphanResourceCount: Starting...
+2019/03/16 01:15:33 [TRACE] OrphanResourceCount: Checking: xenorchestra_vm.testing
+2019/03/16 01:15:33 [TRACE] Graph after step *terraform.OrphanResourceCountTransformer:
+
+xenorchestra_vm.testing - *terraform.NodePlannableResourceInstance
+2019/03/16 01:15:33 [DEBUG] Attaching resource state to "xenorchestra_vm.testing": &terraform.ResourceState{Type:"xenorchestra_vm", Dependencies:[]string{}, Primary:(*terraform.InstanceState)(0xc0001ba500), Deposed:[]*terraform.InstanceState{}, Provider:"provider.xenorchestra", mu:sync.Mutex{state:0, sema:0x0}}
+2019/03/16 01:15:33 [TRACE] Graph after step *terraform.AttachStateTransformer:
+
+xenorchestra_vm.testing - *terraform.NodePlannableResourceInstance
+2019/03/16 01:15:33 [TRACE] Graph after step *terraform.TargetsTransformer:
+
+xenorchestra_vm.testing - *terraform.NodePlannableResourceInstance
+2019/03/16 01:15:33 [DEBUG] ReferenceTransformer: "xenorchestra_vm.testing" references: []
+2019/03/16 01:15:33 [TRACE] Graph after step *terraform.ReferenceTransformer:
+
+xenorchestra_vm.testing - *terraform.NodePlannableResourceInstance
+2019/03/16 01:15:33 [TRACE] Graph after step *terraform.RootTransformer:
+
+xenorchestra_vm.testing - *terraform.NodePlannableResourceInstance
+2019/03/16 01:15:33 [TRACE] dag/walk: added new vertex: "xenorchestra_vm.testing"
+2019/03/16 01:15:33 [TRACE] dag/walk: walking "xenorchestra_vm.testing"
+2019/03/16 01:15:33 [TRACE] vertex 'root.xenorchestra_vm.testing': walking
+2019/03/16 01:15:33 [TRACE] vertex 'root.xenorchestra_vm.testing': evaluating
+2019/03/16 01:15:33 [TRACE] [walkPlan] Entering eval tree: xenorchestra_vm.testing
+2019/03/16 01:15:33 [TRACE] root: eval: *terraform.EvalSequence
+2019/03/16 01:15:33 [TRACE] root: eval: *terraform.EvalInterpolate
+2019/03/16 01:15:33 [TRACE] root: eval: *terraform.EvalGetProvider
+2019/03/16 01:15:33 [TRACE] root: eval: *terraform.EvalValidateResource
+2019/03/16 01:15:33 [TRACE] root: eval: *terraform.EvalReadState
+2019/03/16 01:15:33 [TRACE] root: eval: *terraform.EvalDiff
+2019-03-16T01:15:33.045-0400 [DEBUG] plugin.terraform-provider-xenorchestra: 2019/03/16 01:15:33 [DEBUG] Instance Diff is nil in Diff()
+2019/03/16 01:15:33 [TRACE] root: eval: *terraform.EvalCheckPreventDestroy
+2019/03/16 01:15:33 [TRACE] root: eval: *terraform.EvalWriteState
+2019/03/16 01:15:33 [TRACE] root: eval: *terraform.EvalWriteDiff
+2019/03/16 01:15:33 [TRACE] [walkPlan] Exiting eval tree: xenorchestra_vm.testing
+2019/03/16 01:15:33 [TRACE] dag/walk: walking "meta.count-boundary (count boundary fixup)"
+2019/03/16 01:15:33 [TRACE] vertex 'root.meta.count-boundary (count boundary fixup)': walking
+2019/03/16 01:15:33 [TRACE] dag/walk: walking "provider.xenorchestra (close)"
+2019/03/16 01:15:33 [TRACE] vertex 'root.meta.count-boundary (count boundary fixup)': evaluating
+2019/03/16 01:15:33 [TRACE] [walkPlan] Entering eval tree: meta.count-boundary (count boundary fixup)
+2019/03/16 01:15:33 [TRACE] root: eval: *terraform.EvalCountFixZeroOneBoundaryGlobal
+2019/03/16 01:15:33 [TRACE] vertex 'root.provider.xenorchestra (close)': walking
+2019/03/16 01:15:33 [TRACE] vertex 'root.provider.xenorchestra (close)': evaluating
+2019/03/16 01:15:33 [TRACE] [walkPlan] Entering eval tree: provider.xenorchestra (close)
+2019/03/16 01:15:33 [TRACE] EvalCountFixZeroOneBoundaryGlobal: count 1, search "xenorchestra_cloud_config.test_config.0", replace "xenorchestra_cloud_config.test_config"
+2019/03/16 01:15:33 [TRACE] root: eval: *terraform.EvalCloseProvider
+2019/03/16 01:15:33 [TRACE] EvalCountFixZeroOneBoundaryGlobal: count 1, search "xenorchestra_vm.testing.0", replace "xenorchestra_vm.testing"
+2019/03/16 01:15:33 [TRACE] [walkPlan] Exiting eval tree: meta.count-boundary (count boundary fixup)
+2019/03/16 01:15:33 [TRACE] [walkPlan] Exiting eval tree: provider.xenorchestra (close)
+2019/03/16 01:15:33 [TRACE] dag/walk: walking "root"
+2019/03/16 01:15:33 [TRACE] vertex 'root.root': walking
+2019/03/16 01:15:33 [DEBUG] command: asking for input: "Do you want to perform these actions?"
+2019/03/16 01:15:34 [INFO] terraform: building graph: GraphTypeApply
+2019/03/16 01:15:34 [TRACE] DiffTransformer: starting
+2019/03/16 01:15:34 [TRACE] DiffTransformer: Module: DESTROY: xenorchestra_cloud_config.test_config
+2019/03/16 01:15:34 [TRACE] DiffTransformer: Resource "xenorchestra_cloud_config.test_config": *terraform.InstanceDiff{mu:sync.Mutex{state:0, sema:0x0}, Attributes:map[string]*terraform.ResourceAttrDiff(nil), Destroy:true, DestroyDeposed:false, DestroyTainted:false, Meta:map[string]interface {}(nil)}
+2019/03/16 01:15:34 [TRACE] Graph after step *terraform.DiffTransformer:
+
+xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+2019/03/16 01:15:34 [TRACE] Graph after step *terraform.OrphanOutputTransformer:
+
+xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+2019/03/16 01:15:34 [TRACE] AttachResourceConfigTransformer: Beginning...
+2019/03/16 01:15:34 [TRACE] AttachResourceConfigTransformer: Attach resource config request: xenorchestra_cloud_config.test_config
+2019/03/16 01:15:34 [TRACE] Graph after step *terraform.AttachResourceConfigTransformer:
+
+xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+2019/03/16 01:15:34 [DEBUG] Attaching resource state to "xenorchestra_cloud_config.test_config (destroy)": &terraform.ResourceState{Type:"xenorchestra_cloud_config", Dependencies:[]string{}, Primary:(*terraform.InstanceState)(0xc000304a00), Deposed:[]*terraform.InstanceState{}, Provider:"provider.xenorchestra", mu:sync.Mutex{state:0, sema:0x0}}
+2019/03/16 01:15:34 [TRACE] Graph after step *terraform.AttachStateTransformer:
+
+xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+2019/03/16 01:15:34 [TRACE] ProviderConfigTransformer: Starting for path: []
+2019/03/16 01:15:34 [TRACE] Attach provider request: []string{} xenorchestra
+2019/03/16 01:15:34 [TRACE] Attaching provider config: *config.ProviderConfig{Name:"xenorchestra", Alias:"", Version:"", RawConfig:(*config.RawConfig)(0xc000288850)}
+2019/03/16 01:15:34 [TRACE] Graph after step *terraform.ProviderConfigTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+2019/03/16 01:15:34 [TRACE] Graph after step *terraform.MissingProviderTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+2019/03/16 01:15:34 [DEBUG] resource xenorchestra_cloud_config.test_config (destroy) using provider provider.xenorchestra
+2019/03/16 01:15:34 [TRACE] Graph after step *terraform.ProviderTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:34 [TRACE] Graph after step *terraform.PruneProviderTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:34 [TRACE] Graph after step *terraform.ParentProviderTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:34 [TRACE] Graph after step *terraform.graphTransformerMulti:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:34 [TRACE] DestroyEdgeTransformer: Beginning destroy edge transformation...
+2019/03/16 01:15:34 [TRACE] DestroyEdgeTransformer: xenorchestra_cloud_config.test_config (destroy) destroying "xenorchestra_cloud_config.test_config"
+2019/03/16 01:15:34 [TRACE] AttachResourceConfigTransformer: Beginning...
+2019/03/16 01:15:34 [TRACE] AttachResourceConfigTransformer: Attach resource config request: xenorchestra_cloud_config.test_config
+2019/03/16 01:15:34 [TRACE] AttachResourceConfigTransformer: Attach resource config request: xenorchestra_cloud_config.test_config
+2019/03/16 01:15:34 [DEBUG] Attaching resource state to "xenorchestra_cloud_config.test_config (destroy)": &terraform.ResourceState{Type:"xenorchestra_cloud_config", Dependencies:[]string{}, Primary:(*terraform.InstanceState)(0xc000304a00), Deposed:[]*terraform.InstanceState{}, Provider:"provider.xenorchestra", mu:sync.Mutex{state:0, sema:0x0}}
+2019/03/16 01:15:34 [DEBUG] Attaching resource state to "xenorchestra_cloud_config.test_config": &terraform.ResourceState{Type:"xenorchestra_cloud_config", Dependencies:[]string{}, Primary:(*terraform.InstanceState)(0xc000304a00), Deposed:[]*terraform.InstanceState{}, Provider:"provider.xenorchestra", mu:sync.Mutex{state:0, sema:0x0}}
+2019/03/16 01:15:34 [TRACE] ProviderConfigTransformer: Starting for path: []
+2019/03/16 01:15:34 [TRACE] Attach provider request: []string{} xenorchestra
+2019/03/16 01:15:34 [TRACE] Attaching provider config: *config.ProviderConfig{Name:"xenorchestra", Alias:"", Version:"", RawConfig:(*config.RawConfig)(0xc000288850)}
+2019/03/16 01:15:34 [TRACE] Graph after step *terraform.ProviderConfigTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+2019/03/16 01:15:34 [TRACE] Graph after step *terraform.MissingProviderTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+2019/03/16 01:15:34 [DEBUG] resource xenorchestra_cloud_config.test_config (destroy) using provider provider.xenorchestra
+2019/03/16 01:15:34 [DEBUG] resource xenorchestra_cloud_config.test_config using provider provider.xenorchestra
+2019/03/16 01:15:34 [TRACE] Graph after step *terraform.ProviderTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:34 [TRACE] Graph after step *terraform.PruneProviderTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:34 [TRACE] Graph after step *terraform.ParentProviderTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config - *terraform.NodeAbstractResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:34 [DEBUG] ReferenceTransformer: "provider.xenorchestra" references: []
+2019/03/16 01:15:34 [DEBUG] ReferenceTransformer: "xenorchestra_cloud_config.test_config" references: []
+2019/03/16 01:15:34 [DEBUG] ReferenceTransformer: "xenorchestra_cloud_config.test_config (destroy)" references: []
+2019/03/16 01:15:34 [TRACE] DestroyEdgeTransformer: reference graph: provider.xenorchestra
+xenorchestra_cloud_config.test_config
+  provider.xenorchestra
+xenorchestra_cloud_config.test_config (destroy)
+  provider.xenorchestra
+2019/03/16 01:15:34 [TRACE] DestroyEdgeTransformer: creation node "xenorchestra_cloud_config.test_config" references [provider.xenorchestra]
+2019/03/16 01:15:34 [TRACE] DestroyEdgeTransformer: creation node "xenorchestra_cloud_config.test_config (destroy)" references [provider.xenorchestra]
+2019/03/16 01:15:34 [TRACE] Graph after step *terraform.DestroyEdgeTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:34 [TRACE] CBDEdgeTransformer: Beginning CBD transformation...
+2019/03/16 01:15:34 [TRACE] Graph after step *terraform.CBDEdgeTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:34 [TRACE] Graph after step *terraform.MissingProvisionerTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:34 [TRACE] Graph after step *terraform.ProvisionerTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:34 [TRACE] Graph after step *terraform.RootVariableTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:34 [TRACE] Graph after step *terraform.LocalTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:34 [TRACE] Graph after step *terraform.OutputTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:34 [TRACE] Graph after step *terraform.ModuleVariableTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:34 [TRACE] Graph after step *terraform.RemovedModuleTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:34 [DEBUG] ReferenceTransformer: "xenorchestra_cloud_config.test_config (destroy)" references: []
+2019/03/16 01:15:34 [DEBUG] ReferenceTransformer: "provider.xenorchestra" references: []
+2019/03/16 01:15:34 [TRACE] Graph after step *terraform.ReferenceTransformer:
+
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:34 [TRACE] Graph after step *terraform.CountBoundaryTransformer:
+
+meta.count-boundary (count boundary fixup) - *terraform.NodeCountBoundary
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+  xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:34 [TRACE] Graph after step *terraform.TargetsTransformer:
+
+meta.count-boundary (count boundary fixup) - *terraform.NodeCountBoundary
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+  xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+provider.xenorchestra - *terraform.NodeApplyableProvider
+xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:34 [TRACE] Graph after step *terraform.CloseProviderTransformer:
+
+meta.count-boundary (count boundary fixup) - *terraform.NodeCountBoundary
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+  xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+provider.xenorchestra - *terraform.NodeApplyableProvider
+provider.xenorchestra (close) - *terraform.graphNodeCloseProvider
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+  xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:34 [TRACE] Graph after step *terraform.CloseProvisionerTransformer:
+
+meta.count-boundary (count boundary fixup) - *terraform.NodeCountBoundary
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+  xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+provider.xenorchestra - *terraform.NodeApplyableProvider
+provider.xenorchestra (close) - *terraform.graphNodeCloseProvider
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+  xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:34 [TRACE] Graph after step *terraform.RootTransformer:
+
+meta.count-boundary (count boundary fixup) - *terraform.NodeCountBoundary
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+  xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+provider.xenorchestra - *terraform.NodeApplyableProvider
+provider.xenorchestra (close) - *terraform.graphNodeCloseProvider
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+  xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+root - terraform.graphNodeRoot
+  meta.count-boundary (count boundary fixup) - *terraform.NodeCountBoundary
+  provider.xenorchestra (close) - *terraform.graphNodeCloseProvider
+xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:34 [TRACE] Graph after step *terraform.TransitiveReductionTransformer:
+
+meta.count-boundary (count boundary fixup) - *terraform.NodeCountBoundary
+  xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+provider.xenorchestra - *terraform.NodeApplyableProvider
+provider.xenorchestra (close) - *terraform.graphNodeCloseProvider
+  xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+root - terraform.graphNodeRoot
+  meta.count-boundary (count boundary fixup) - *terraform.NodeCountBoundary
+  provider.xenorchestra (close) - *terraform.graphNodeCloseProvider
+xenorchestra_cloud_config.test_config (destroy) - *terraform.NodeDestroyResource
+  provider.xenorchestra - *terraform.NodeApplyableProvider
+2019/03/16 01:15:34 [DEBUG] Starting graph walk: walkApply
+2019/03/16 01:15:34 [TRACE] dag/walk: added new vertex: "provider.xenorchestra (close)"
+2019/03/16 01:15:34 [TRACE] dag/walk: added new vertex: "root"
+2019/03/16 01:15:34 [TRACE] dag/walk: added new vertex: "xenorchestra_cloud_config.test_config (destroy)"
+2019/03/16 01:15:34 [TRACE] dag/walk: added new vertex: "provider.xenorchestra"
+2019/03/16 01:15:34 [TRACE] dag/walk: added new vertex: "meta.count-boundary (count boundary fixup)"
+2019/03/16 01:15:34 [TRACE] dag/walk: added edge: "provider.xenorchestra (close)" waiting on "xenorchestra_cloud_config.test_config (destroy)"
+2019/03/16 01:15:34 [TRACE] dag/walk: added edge: "root" waiting on "meta.count-boundary (count boundary fixup)"
+2019/03/16 01:15:34 [TRACE] dag/walk: added edge: "root" waiting on "provider.xenorchestra (close)"
+2019/03/16 01:15:34 [TRACE] dag/walk: added edge: "xenorchestra_cloud_config.test_config (destroy)" waiting on "provider.xenorchestra"
+2019/03/16 01:15:34 [TRACE] dag/walk: added edge: "meta.count-boundary (count boundary fixup)" waiting on "xenorchestra_cloud_config.test_config (destroy)"
+2019/03/16 01:15:34 [TRACE] dag/walk: dependencies changed for "root", sending new deps
+2019/03/16 01:15:34 [TRACE] dag/walk: dependencies changed for "xenorchestra_cloud_config.test_config (destroy)", sending new deps
+2019/03/16 01:15:34 [TRACE] dag/walk: dependencies changed for "meta.count-boundary (count boundary fixup)", sending new deps
+2019/03/16 01:15:34 [TRACE] dag/walk: dependencies changed for "provider.xenorchestra (close)", sending new deps
+2019/03/16 01:15:34 [TRACE] dag/walk: walking "provider.xenorchestra"
+2019/03/16 01:15:34 [TRACE] vertex 'root.provider.xenorchestra': walking
+2019/03/16 01:15:34 [TRACE] vertex 'root.provider.xenorchestra': evaluating
+2019/03/16 01:15:34 [TRACE] [walkApply] Entering eval tree: provider.xenorchestra
+2019/03/16 01:15:34 [TRACE] root: eval: *terraform.EvalSequence
+2019/03/16 01:15:34 [TRACE] root: eval: *terraform.EvalInitProvider
+2019/03/16 01:15:34 [TRACE] root: eval: terraform.EvalNoop
+2019/03/16 01:15:34 [TRACE] root: eval: terraform.EvalNoop
+2019/03/16 01:15:34 [TRACE] root: eval: *terraform.EvalOpFilter
+2019/03/16 01:15:34 [TRACE] root: eval: *terraform.EvalSequence
+2019/03/16 01:15:34 [TRACE] root: eval: *terraform.EvalGetProvider
+2019/03/16 01:15:34 [TRACE] root: eval: *terraform.EvalInterpolateProvider
+2019/03/16 01:15:34 [TRACE] root: eval: *terraform.EvalBuildProviderConfig
+2019/03/16 01:15:34 [TRACE] root: eval: *terraform.EvalOpFilter
+2019/03/16 01:15:34 [TRACE] root: eval: *terraform.EvalSequence
+2019/03/16 01:15:34 [TRACE] root: eval: *terraform.EvalConfigProvider
+2019/03/16 01:15:34 [TRACE] [walkApply] Exiting eval tree: provider.xenorchestra
+2019/03/16 01:15:34 [TRACE] dag/walk: walking "xenorchestra_cloud_config.test_config (destroy)"
+2019/03/16 01:15:34 [TRACE] vertex 'root.xenorchestra_cloud_config.test_config (destroy)': walking
+2019/03/16 01:15:34 [TRACE] vertex 'root.xenorchestra_cloud_config.test_config (destroy)': evaluating
+2019/03/16 01:15:34 [TRACE] [walkApply] Entering eval tree: xenorchestra_cloud_config.test_config (destroy)
+2019/03/16 01:15:34 [TRACE] root: eval: *terraform.EvalOpFilter
+2019/03/16 01:15:34 [TRACE] root: eval: *terraform.EvalSequence
+2019/03/16 01:15:34 [TRACE] root: eval: *terraform.EvalReadDiff
+2019/03/16 01:15:34 [TRACE] root: eval: *terraform.EvalFilterDiff
+2019/03/16 01:15:34 [TRACE] root: eval: *terraform.EvalIf
+2019/03/16 01:15:34 [TRACE] root: eval: terraform.EvalNoop
+2019/03/16 01:15:34 [TRACE] root: eval: *terraform.EvalInstanceInfo
+2019/03/16 01:15:34 [TRACE] root: eval: *terraform.EvalGetProvider
+2019/03/16 01:15:34 [TRACE] root: eval: *terraform.EvalReadState
+2019/03/16 01:15:34 [TRACE] root: eval: *terraform.EvalRequireState
+2019/03/16 01:15:34 [TRACE] root: eval: *terraform.EvalApplyPre
+2019/03/16 01:15:34 [TRACE] root: eval: *terraform.EvalIf
+2019/03/16 01:15:34 [TRACE] root: eval: *terraform.EvalApplyProvisioners
+2019/03/16 01:15:34 [TRACE] root: eval: *terraform.EvalIf
+2019/03/16 01:15:34 [TRACE] root: eval: *terraform.EvalIf
+2019/03/16 01:15:34 [TRACE] root: eval: *terraform.EvalApply
+2019/03/16 01:15:34 [DEBUG] apply: xenorchestra_cloud_config.test_config: executing Apply
+2019-03-16T01:15:35.742-0400 [DEBUG] plugin.terraform-provider-xenorchestra: 2019/03/16 01:15:35 raw bytes: {"id":"3b480e98-af4e-4dbf-9f1e-29ac59d6364f","email":"admin@admin.net","groups":[],"permission":"admin","preferences":{}}
+2019-03-16T01:15:35.745-0400 [DEBUG] plugin.terraform-provider-xenorchestra: panic: interface conversion: interface {} is nil, not string
+2019-03-16T01:15:35.745-0400 [DEBUG] plugin.terraform-provider-xenorchestra: 
+2019-03-16T01:15:35.745-0400 [DEBUG] plugin.terraform-provider-xenorchestra: goroutine 64 [running]:
+2019-03-16T01:15:35.745-0400 [DEBUG] plugin.terraform-provider-xenorchestra: github.com/ddelnano/terraform-provider-xenorchestra/xoa.resourceCloudConfigDelete(0xc000194a10, 0x19e3660, 0xc000383080, 0x24, 0x2373fa0)
+2019-03-16T01:15:35.745-0400 [DEBUG] plugin.terraform-provider-xenorchestra: 	/Users/ciserver/Code/terraform-provider-xenorchestra/xoa/resource_xenorchestra_cloud_config.go:89 +0x3da
+2019-03-16T01:15:35.746-0400 [DEBUG] plugin.terraform-provider-xenorchestra: github.com/hashicorp/terraform/helper/schema.(*Resource).Apply(0xc00012c0e0, 0xc0003142d0, 0xc000318900, 0x19e3660, 0xc000383080, 0x1, 0x0, 0x0)
+2019-03-16T01:15:35.746-0400 [DEBUG] plugin.terraform-provider-xenorchestra: 	/Users/ciserver/Code/go/pkg/mod/github.com/hashicorp/terraform@v0.11.13/helper/schema/resource.go:198 +0x446
+2019-03-16T01:15:35.746-0400 [DEBUG] plugin.terraform-provider-xenorchestra: github.com/hashicorp/terraform/helper/schema.(*Provider).Apply(0xc00012c150, 0xc000314280, 0xc0003142d0, 0xc000318900, 0xc0003d49f0, 0x0, 0x0)
+2019-03-16T01:15:35.746-0400 [DEBUG] plugin.terraform-provider-xenorchestra: 	/Users/ciserver/Code/go/pkg/mod/github.com/hashicorp/terraform@v0.11.13/helper/schema/provider.go:283 +0x18f
+2019-03-16T01:15:35.746-0400 [DEBUG] plugin.terraform-provider-xenorchestra: github.com/hashicorp/terraform/plugin.(*ResourceProviderServer).Apply(0xc000352060, 0xc0003180a0, 0xc000152a00, 0x0, 0x0)
+2019-03-16T01:15:35.746-0400 [DEBUG] plugin.terraform-provider-xenorchestra: 	/Users/ciserver/Code/go/pkg/mod/github.com/hashicorp/terraform@v0.11.13/plugin/resource_provider.go:527 +0x57
+2019-03-16T01:15:35.746-0400 [DEBUG] plugin.terraform-provider-xenorchestra: reflect.Value.call(0xc0000c3140, 0xc000010040, 0x13, 0x1a875d5, 0x4, 0xc0003e9f18, 0x3, 0x3, 0xc00037f280, 0xc0003b2028, ...)
+2019-03-16T01:15:35.746-0400 [DEBUG] plugin.terraform-provider-xenorchestra: 	/usr/local/go/src/reflect/value.go:447 +0x461
+2019-03-16T01:15:35.746-0400 [DEBUG] plugin.terraform-provider-xenorchestra: reflect.Value.Call(0xc0000c3140, 0xc000010040, 0x13, 0xc0001b4718, 0x3, 0x3, 0xc0003b2000, 0xc0001b4710, 0xc0001b47b8)
+2019-03-16T01:15:35.746-0400 [DEBUG] plugin.terraform-provider-xenorchestra: 	/usr/local/go/src/reflect/value.go:308 +0xa4
+2019-03-16T01:15:35.746-0400 [DEBUG] plugin.terraform-provider-xenorchestra: net/rpc.(*service).call(0xc00020c000, 0xc000314230, 0xc0000c8110, 0xc0000c8140, 0xc00034e000, 0xc0000d31a0, 0x18f7180, 0xc0003180a0, 0x16, 0x18f71c0, ...)
+2019-03-16T01:15:35.746-0400 [DEBUG] plugin.terraform-provider-xenorchestra: 	/usr/local/go/src/net/rpc/server.go:384 +0x14e
+2019-03-16T01:15:35.746-0400 [DEBUG] plugin.terraform-provider-xenorchestra: created by net/rpc.(*Server).ServeCodec
+2019-03-16T01:15:35.746-0400 [DEBUG] plugin.terraform-provider-xenorchestra: 	/usr/local/go/src/net/rpc/server.go:481 +0x440
+2019/03/16 01:15:35 [TRACE] root: eval: *terraform.EvalWriteState
+2019/03/16 01:15:35 [TRACE] root: eval: *terraform.EvalApplyPost
+2019/03/16 01:15:35 [ERROR] root: eval: *terraform.EvalApplyPost, err: 1 error(s) occurred:
+
+* xenorchestra_cloud_config.test_config: unexpected EOF
+2019/03/16 01:15:35 [ERROR] root: eval: *terraform.EvalSequence, err: 1 error(s) occurred:
+
+* xenorchestra_cloud_config.test_config: unexpected EOF
+2019/03/16 01:15:35 [ERROR] root: eval: *terraform.EvalOpFilter, err: 1 error(s) occurred:
+
+* xenorchestra_cloud_config.test_config: unexpected EOF
+2019/03/16 01:15:35 [TRACE] [walkApply] Exiting eval tree: xenorchestra_cloud_config.test_config (destroy)
+2019/03/16 01:15:35 [TRACE] dag/walk: upstream errored, not walking "meta.count-boundary (count boundary fixup)"
+2019/03/16 01:15:35 [TRACE] dag/walk: upstream errored, not walking "provider.xenorchestra (close)"
+2019/03/16 01:15:35 [TRACE] dag/walk: upstream errored, not walking "root"
+2019-03-16T01:15:35.749-0400 [DEBUG] plugin: plugin process exited: path=/Users/ciserver/Code/terraform-provider-xenorchestra/terraform-provider-xenorchestra
+2019/03/16 01:15:35 [TRACE] Preserving existing state lineage "6824299b-2f5f-51f3-1371-920ad7327f77"
+2019/03/16 01:15:35 [TRACE] Preserving existing state lineage "6824299b-2f5f-51f3-1371-920ad7327f77"
+2019/03/16 01:15:35 [TRACE] Preserving existing state lineage "6824299b-2f5f-51f3-1371-920ad7327f77"
+2019/03/16 01:15:35 [TRACE] Preserving existing state lineage "6824299b-2f5f-51f3-1371-920ad7327f77"
+2019/03/16 01:15:35 [DEBUG] plugin: waiting for all plugin processes to complete...
+2019-03-16T01:15:35.752-0400 [WARN ] plugin: error closing client during Kill: err="connection is shut down"
