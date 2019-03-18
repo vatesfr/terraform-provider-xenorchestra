@@ -1,14 +1,11 @@
 package xoa
 
 import (
-	"fmt"
 	"io"
 	"log"
-	"net/http"
-	"net/rpc"
 
+	"github.com/ddelnano/terraform-provider-xenorchestra/client"
 	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/powerman/rpc-codec/jsonrpc2"
 )
 
 var logFile = "/tmp/terraform-provider-xenorchestra"
@@ -82,6 +79,26 @@ func resourceRecord() *schema.Resource {
 }
 
 func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
+	c, err := client.NewClient()
+
+	if err != nil {
+		return err
+	}
+
+	vm, err := c.CreateVm(
+		d.Get("name_label").(string),
+		d.Get("name_description").(string),
+		d.Get("template").(string),
+		d.Get("cloud_config").(string),
+		d.Get("cpus").(int),
+		d.Get("memory_max").(int),
+	)
+
+	if err != nil {
+		return err
+	}
+
+	recordToData(*vm, d)
 	return nil
 }
 
@@ -93,24 +110,17 @@ type xoaConfig struct {
 
 func resourceVmRead(d *schema.ResourceData, m interface{}) error {
 	xoaId := d.Id()
-	c, err := newXoaClient(m)
+	c, err := client.NewClient()
 
 	if err != nil {
 		return err
 	}
-
-	params := map[string]interface{}{
-		"limit": 1000,
-		"type":  "VM",
-	}
-	var objsRes allObjectResponse
-	err = c.Call("xo.getAllObjects", params, &objsRes.Objects)
+	vmObj, err := c.GetVm(xoaId)
 	if err != nil {
 		return err
 	}
-	vmObj := objsRes.Objects[xoaId]
 	log.Printf("vmobj: %v", vmObj)
-	recordToData(vmObj, d)
+	recordToData(*vmObj, d)
 	return nil
 }
 
@@ -119,58 +129,38 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceVmDelete(d *schema.ResourceData, m interface{}) error {
+	c, err := client.NewClient()
+
+	if err != nil {
+		return err
+	}
+
+	err = c.DeleteVm(d.Id())
+
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 func RecordImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
 	xoaId := d.Id()
 
-	var c *rpc.Client
-	c, err = newXoaClient(m)
+	c, err := client.NewClient()
 
 	if err != nil {
 		return nil, err
 	}
 
-	params := map[string]interface{}{
-		"limit": 1000,
-		"type":  "VM",
-	}
-	var objsRes allObjectResponse
-	err = c.Call("xo.getAllObjects", params, &objsRes.Objects)
+	vmObj, err := c.GetVm(xoaId)
 	if err != nil {
 		return nil, err
 	}
-	vmObj := objsRes.Objects[xoaId]
-	recordToData(vmObj, d)
+	recordToData(*vmObj, d)
 	return []*schema.ResourceData{d}, nil
 }
 
-func newXoaClient(m interface{}) (*rpc.Client, error) {
-	creds := m.(xoaConfig)
-	ws, _, err := dialer.Dial(fmt.Sprintf("ws://%s/api/", creds.host), http.Header{})
-
-	if err != nil {
-		return nil, err
-	}
-
-	codec := jsonrpc2.NewClientCodec(&rwc{c: ws})
-	c := rpc.NewClientWithCodec(codec)
-
-	params := map[string]interface{}{
-		"email":    creds.username,
-		"password": creds.password,
-	}
-	var reply clientResponse
-	err = c.Call("session.signInWithPassword", params, &reply)
-	if err != nil {
-		return nil, err
-	}
-
-	return c, nil
-}
-
-func recordToData(resource VmObject, d *schema.ResourceData) error {
+func recordToData(resource client.Vm, d *schema.ResourceData) error {
 	d.SetId(resource.Id)
 	d.Set("cloud_config", resource.CloudConfig)
 	d.Set("memory_max", resource.Memory.Size)
@@ -178,34 +168,4 @@ func recordToData(resource VmObject, d *schema.ResourceData) error {
 	d.Set("name_label", resource.NameLabel)
 	d.Set("name_description", resource.NameDescription)
 	return nil
-}
-
-type CPUs struct {
-	Number int
-}
-
-type MemoryObject struct {
-	Dynamic []int `json:"dynamic"`
-	Static  []int `json:"static"`
-	Size    int   `json:"size"`
-}
-
-type VmObject struct {
-	Type               string       `json:"type,omitempty"`
-	Id                 string       `json:"id,omitempty"`
-	Name               string       `json:"name,omitempty"`
-	NameDescription    string       `json:"name_description"`
-	NameLabel          string       `json:"name_label"`
-	CPUs               CPUs         `json:"CPUs"`
-	Memory             MemoryObject `json:"memory"`
-	PowerState         string       `json:"power_state"`
-	VIFs               []string     `json:"VIFs"`
-	VirtualizationMode string       `json:"virtualizationMode"`
-	PoolId             string       `json:"$poolId"`
-	Template           string       `json:"template"`
-	CloudConfig        string       `json:"cloudConfig"`
-}
-
-type allObjectResponse struct {
-	Objects map[string]VmObject `json:"-"`
 }

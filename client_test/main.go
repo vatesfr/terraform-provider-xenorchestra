@@ -7,17 +7,24 @@ import (
 )
 
 func main() {
-	c, err := client.NewClient("192.168.88.86", "admin@admin.net", "admin")
+	c, err := client.NewClient()
 
 	if err != nil {
 		fmt.Errorf("Failed to create a client: %v", err)
 	}
 
-	_, err = c.CreateCloudConfig("testing2", "cloud-init")
+	vm, err := c.CreateVm(
+		"testing",
+		"description",
+		"2dd0373e-0ed5-7413-a57f-1958d03b698c",
+		"06e49231-34bc-40d8-ba8a-d2bef5161177",
+		1,
+		10737336,
+	)
 
 	if err != nil {
-		fmt.Errorf("failed to create cloud config: %v", err)
+		fmt.Errorf("Failed to create a vm: %v", err)
 	}
 
-	// fmt.Println(fmt.Sprintf("name: %s template: %s", config.Name, config.Template))
+	fmt.Printf("vm %v", vm)
 }

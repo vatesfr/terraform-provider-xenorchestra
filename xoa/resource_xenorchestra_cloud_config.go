@@ -1,9 +1,7 @@
 package xoa
 
 import (
-	"log"
-	"os"
-
+	"github.com/ddelnano/terraform-provider-xenorchestra/client"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -11,7 +9,6 @@ func resourceCloudConfigRecord() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceCloudConfigCreate,
 		Read:   resourceCloudConfigRead,
-		Update: resourceCloudConfigUpdate,
 		Delete: resourceCloudConfigDelete,
 		Importer: &schema.ResourceImporter{
 			State: CloudConfigImport,
@@ -21,85 +18,80 @@ func resourceCloudConfigRecord() *schema.Resource {
 			"template": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 			"name": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 		},
 	}
 }
 
 func resourceCloudConfigCreate(d *schema.ResourceData, m interface{}) error {
-
-	c, err := newXoaClient(m)
-
+	c, err := client.NewClient()
 	if err != nil {
 		return err
 	}
 
-	XenLog, err = os.OpenFile(logFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	if err != nil {
-		log.Fatalf("error opening file: %v", err)
-	}
-
-	log.SetOutput(XenLog)
-
-	var resp interface{}
-	params := map[string]interface{}{
-		"name":     d.Get("name"),
-		"template": d.Get("template"),
-	}
-	err = c.Call("cloudConfig.create", params, resp)
-
-	log.Printf("cloudConfig.create %v", resp)
-
+	config, err := c.CreateCloudConfig(d.Get("name").(string), d.Get("template").(string))
 	if err != nil {
 		return err
 	}
-
-	d.SetId("testing")
+	d.SetId(config.Id)
 	return nil
 }
 
 func resourceCloudConfigRead(d *schema.ResourceData, m interface{}) error {
-	return nil
-}
+	c, err := client.NewClient()
+	if err != nil {
+		return err
+	}
 
-func resourceCloudConfigUpdate(d *schema.ResourceData, m interface{}) error {
+	config, err := c.GetCloudConfig(d.Id())
+	if err != nil {
+		return err
+	}
+
+	if config == nil {
+		d.SetId("")
+		return nil
+	}
+
+	d.Set("name", config.Name)
+	d.Set("template", config.Template)
 	return nil
 }
 
 func resourceCloudConfigDelete(d *schema.ResourceData, m interface{}) error {
-	c, err := newXoaClient(m)
-
+	c, err := client.NewClient()
 	if err != nil {
 		return err
 	}
 
-	XenLog, err = os.OpenFile(logFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	if err != nil {
-		log.Fatalf("error opening file: %v", err)
-	}
-
-	log.SetOutput(XenLog)
-
-	var resp interface{}
-	params := map[string]interface{}{
-		"id": d.Id(),
-	}
-	err = c.Call("cloudConfig.delete", params, resp)
-
-	log.Printf("cloudConfig.delete %v", resp)
+	err = c.DeleteCloudConfig(d.Id())
 
 	if err != nil {
 		return err
 	}
-
 	d.SetId("")
 	return nil
 }
 
 func CloudConfigImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
-	return nil, nil
+
+	c, err := client.NewClient()
+	if err != nil {
+		return nil, err
+	}
+
+	config, err := c.GetCloudConfig(d.Id())
+
+	if err != nil {
+		return nil, err
+	}
+	d.Set("name", config.Name)
+	d.Set("template", config.Template)
+	return []*schema.ResourceData{d}, nil
 }

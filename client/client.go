@@ -5,10 +5,17 @@ import (
 	"io"
 	"net/http"
 	"net/rpc"
+	"os"
 	"time"
 
+	"github.com/ddelnano/rpc-codec/jsonrpc2"
 	"github.com/gorilla/websocket"
-	"github.com/powerman/rpc-codec/jsonrpc2"
+)
+
+const (
+	// Maximum message size allowed from peer.
+	MaxMessageSize = 4096
+	PongWait       = 60 * time.Second
 )
 
 type Client struct {
@@ -20,7 +27,24 @@ var dialer = websocket.Dialer{
 	WriteBufferSize: MaxMessageSize,
 }
 
-func NewClient(hostname, username, password string) (*Client, error) {
+func NewClient(params ...string) (*Client, error) {
+	var hostname string
+	var username string
+	var password string
+	if v := os.Getenv("XOA_HOST"); v != "" {
+		hostname = v
+	}
+	if v := os.Getenv("XOA_USER"); v != "" {
+		username = v
+	}
+	if v := os.Getenv("XOA_PASSWORD"); v != "" {
+		password = v
+	}
+	if len(params) == 3 {
+		hostname = params[0]
+		username = params[1]
+		password = params[2]
+	}
 	ws, _, err := dialer.Dial(fmt.Sprintf("ws://%s/api/", hostname), http.Header{})
 
 	if err != nil {
@@ -30,12 +54,12 @@ func NewClient(hostname, username, password string) (*Client, error) {
 	codec := jsonrpc2.NewClientCodec(&rwc{c: ws})
 	c := rpc.NewClientWithCodec(codec)
 
-	params := map[string]interface{}{
+	reqParams := map[string]interface{}{
 		"email":    username,
 		"password": password,
 	}
 	var reply clientResponse
-	err = c.Call("session.signInWithPassword", params, &reply)
+	err = c.Call("session.signInWithPassword", reqParams, &reply)
 	if err != nil {
 		return nil, err
 	}
@@ -60,8 +84,6 @@ type rwc struct {
 }
 
 func (c *rwc) Write(p []byte) (int, error) {
-	fmt.Println("Writing!")
-	fmt.Println(string(p))
 	err := c.c.WriteMessage(websocket.TextMessage, p)
 	if err != nil {
 		return 0, err
@@ -70,7 +92,6 @@ func (c *rwc) Write(p []byte) (int, error) {
 }
 
 func (c *rwc) Read(p []byte) (int, error) {
-	fmt.Printf(string(p))
 	for {
 		if c.r == nil {
 			// Advance to next message.
@@ -98,21 +119,3 @@ func (c *rwc) Read(p []byte) (int, error) {
 func (c *rwc) Close() error {
 	return c.c.Close()
 }
-
-type ErrorResponse struct {
-	Error struct {
-		Message string `json:"message,omitempty"`
-		Code    int    `json:"code,omitempty"`
-	} `json:"error,omitempty"`
-}
-
-type CloudConfigResponse struct {
-	ErrorResponse
-	Result map[string]interface{} `json:"-"`
-}
-
-const (
-	// Maximum message size allowed from peer.
-	MaxMessageSize = 4096
-	PongWait       = 60 * time.Second
-)

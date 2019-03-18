@@ -15,4 +15,4 @@ apply:
 	terraform apply
 
 testacc:
-	TF_ACC=1 go test $(TEST) -v --parallel 20
+	TF_ACC=1 go test $(TEST) -v
