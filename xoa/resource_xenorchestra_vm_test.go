@@ -27,7 +27,7 @@ func TestAccXenorchestraVm_create(t *testing.T) {
 }
 
 func testAccVm_import(t *testing.T) {
-	resourceName := "xenorchestra_cloud_config.bar"
+	resourceName := "xenorchestra_vm.bar"
 	// TODO: Need to figure out how to get this to make sure all the attrs
 	// are set. Right now it doesn't actually provide much protection
 	checkFn := func(s []*terraform.InstanceState) error {
@@ -64,6 +64,7 @@ func testAccVm_import(t *testing.T) {
 	})
 }
 
+// TODO: Add unit tests
 func testAccCheckXenorchestraVmDestroy(s *terraform.State) error {
 	c, err := client.NewClient()
 	if err != nil {
@@ -74,19 +75,20 @@ func testAccCheckXenorchestraVmDestroy(s *terraform.State) error {
 			continue
 		}
 
-		vm, err := c.GetCloudConfig(rs.Primary.ID)
+		_, err := c.GetVm(rs.Primary.ID)
+
+		if _, ok := err.(client.NotFound); ok {
+			return nil
+		}
 
 		if err != nil {
 			return err
-		}
-
-		if vm != nil {
-			return fmt.Errorf("vm (%s) still exists", vm.Id)
 		}
 	}
 	return nil
 }
 
+// TODO: Add unit tests
 func testAccVmExists(resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]
@@ -104,6 +106,10 @@ func testAccVmExists(resourceName string) resource.TestCheckFunc {
 		}
 
 		vm, err := c.GetVm(rs.Primary.ID)
+
+		if err != nil {
+			return err
+		}
 
 		if vm.Id == rs.Primary.ID {
 			return nil

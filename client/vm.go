@@ -1,6 +1,11 @@
 package client
 
-import "fmt"
+import (
+	"context"
+	"time"
+
+	"github.com/hashicorp/terraform/helper/resource"
+)
 
 type allObjectResponse struct {
 	Objects map[string]Vm `json:"-"`
@@ -70,25 +75,34 @@ func (c *Client) CreateVm(name_label, name_description, template, cloudConfig st
 			},
 		},
 	}
-	var reply struct {
-		Params map[string]interface{} `json:"-"`
-	}
-	err := c.rpc.Call("vm.create", params, &reply.Params)
-	fmt.Printf("vm.create reply: %v", reply.Params)
+	var vmId string
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Minute)
+	err := c.rpc.Call(ctx, "vm.create", params, &vmId)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return nil, nil
+	err = c.waitForModifyVm(vmId, 5*time.Minute)
+
+	if err != nil {
+		return nil, err
+	}
+
+	vm := Vm{
+		Id: vmId,
+	}
+
+	return &vm, nil
 }
 
 func (c *Client) DeleteVm(id string) error {
 	params := map[string]interface{}{
 		"id": id,
 	}
-	var reply bool
-	err := c.rpc.Call("vm.delete", params, &reply)
+	var reply []interface{}
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Minute)
+	err := c.rpc.Call(ctx, "vm.delete", params, &reply)
 
 	if err != nil {
 		return err
@@ -102,7 +116,8 @@ func (c *Client) GetVm(id string) (*Vm, error) {
 		"type": "VM",
 	}
 	var objsRes allObjectResponse
-	err := c.rpc.Call("xo.getAllObjects", params, &objsRes.Objects)
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	err := c.rpc.Call(ctx, "xo.getAllObjects", params, &objsRes.Objects)
 
 	if err != nil {
 		return nil, err
@@ -110,7 +125,30 @@ func (c *Client) GetVm(id string) (*Vm, error) {
 
 	vm, ok := objsRes.Objects[id]
 	if !ok {
-		return nil, fmt.Errorf("Could not find Vm with id: %s", id)
+		return nil, NotFound{
+			Id:   id,
+			Type: "Vm",
+		}
 	}
 	return &vm, nil
+}
+
+func (c *Client) waitForModifyVm(id string, timeout time.Duration) error {
+	refreshFn := func() (result interface{}, state string, err error) {
+		vm, err := c.GetVm(id)
+
+		if err != nil {
+			return vm, "", err
+		}
+
+		return vm, vm.PowerState, nil
+	}
+	stateConf := &resource.StateChangeConf{
+		Pending: []string{"Halted", "Stopped"},
+		Refresh: refreshFn,
+		Target:  []string{"Running"},
+		Timeout: timeout,
+	}
+	_, err := stateConf.WaitForState()
+	return err
 }

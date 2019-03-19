@@ -2,7 +2,7 @@ package xoa
 
 import (
 	"io"
-	"log"
+	"time"
 
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -16,6 +16,7 @@ func init() {
 }
 
 func resourceRecord() *schema.Resource {
+	duration := 5 * time.Minute
 	return &schema.Resource{
 		Create: resourceVmCreate,
 		Read:   resourceVmRead,
@@ -24,7 +25,10 @@ func resourceRecord() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: RecordImport,
 		},
-
+		Timeouts: &schema.ResourceTimeout{
+			Create: &duration,
+			Update: &duration,
+		},
 		Schema: map[string]*schema.Schema{
 			"name_label": &schema.Schema{
 				Type:     schema.TypeString,
@@ -98,7 +102,9 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	recordToData(*vm, d)
+	d.SetId(vm.Id)
+	d.Set("cloud_config", d.Get("cloud_config").(string))
+	d.Set("memory_max", d.Get("memory_max").(int))
 	return nil
 }
 
@@ -119,7 +125,6 @@ func resourceVmRead(d *schema.ResourceData, m interface{}) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("vmobj: %v", vmObj)
 	recordToData(*vmObj, d)
 	return nil
 }
@@ -140,6 +145,7 @@ func resourceVmDelete(d *schema.ResourceData, m interface{}) error {
 	if err != nil {
 		return err
 	}
+	d.SetId("")
 	return nil
 }
 
@@ -162,8 +168,8 @@ func RecordImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData
 
 func recordToData(resource client.Vm, d *schema.ResourceData) error {
 	d.SetId(resource.Id)
-	d.Set("cloud_config", resource.CloudConfig)
-	d.Set("memory_max", resource.Memory.Size)
+	// d.Set("cloud_config", resource.CloudConfig)
+	// d.Set("memory_max", resource.Memory.Size)
 	d.Set("cpus", resource.CPUs.Number)
 	d.Set("name_label", resource.NameLabel)
 	d.Set("name_description", resource.NameDescription)

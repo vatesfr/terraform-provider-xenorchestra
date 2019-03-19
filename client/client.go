@@ -1,15 +1,16 @@
 package client
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
-	"net/rpc"
 	"os"
 	"time"
 
-	"github.com/ddelnano/rpc-codec/jsonrpc2"
-	"github.com/gorilla/websocket"
+	gorillawebsocket "github.com/gorilla/websocket"
+	"github.com/sourcegraph/jsonrpc2"
+	"github.com/sourcegraph/jsonrpc2/websocket"
 )
 
 const (
@@ -19,10 +20,10 @@ const (
 )
 
 type Client struct {
-	rpc *rpc.Client
+	rpc jsonrpc2.JSONRPC2
 }
 
-var dialer = websocket.Dialer{
+var dialer = gorillawebsocket.Dialer{
 	ReadBufferSize:  MaxMessageSize,
 	WriteBufferSize: MaxMessageSize,
 }
@@ -51,21 +52,32 @@ func NewClient(params ...string) (*Client, error) {
 		return nil, err
 	}
 
-	codec := jsonrpc2.NewClientCodec(&rwc{c: ws})
-	c := rpc.NewClientWithCodec(codec)
+	objStream := websocket.NewObjectStream(ws)
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	var h jsonrpc2.Handler
+	h = &handler{}
+	c := jsonrpc2.NewConn(ctx, objStream, h)
+	// codec := jsonrpc2.NewClientCodec(&rwc{c: ws})
+	// c := rpc.NewClientWithCodec(codec)
 
 	reqParams := map[string]interface{}{
 		"email":    username,
 		"password": password,
 	}
 	var reply clientResponse
-	err = c.Call("session.signInWithPassword", reqParams, &reply)
+	err = c.Call(ctx, "session.signInWithPassword", reqParams, &reply)
 	if err != nil {
 		return nil, err
 	}
 	return &Client{
 		rpc: c,
 	}, nil
+}
+
+type handler struct{}
+
+func (h *handler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.Request) {
+	// fmt.Printf("Handler called req: %#v\n", req)
 }
 
 type clientResponse struct {
@@ -80,11 +92,11 @@ type clientResponse struct {
 
 type rwc struct {
 	r io.Reader
-	c *websocket.Conn
+	c *gorillawebsocket.Conn
 }
 
 func (c *rwc) Write(p []byte) (int, error) {
-	err := c.c.WriteMessage(websocket.TextMessage, p)
+	err := c.c.WriteMessage(gorillawebsocket.TextMessage, p)
 	if err != nil {
 		return 0, err
 	}
