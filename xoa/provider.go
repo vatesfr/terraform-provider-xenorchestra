@@ -33,6 +33,7 @@ func Provider() terraform.ResourceProvider {
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"xenorchestra_template": dataSourceXoaTemplate(),
+			"xenorchestra_pif":      dataSourceXoaPIF(),
 		},
 		// TODO: do i need a configure func?
 		ConfigureFunc: xoaConfigure,
