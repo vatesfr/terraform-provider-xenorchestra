@@ -31,6 +31,9 @@ func Provider() terraform.ResourceProvider {
 			"xenorchestra_vm":           resourceRecord(),
 			"xenorchestra_cloud_config": resourceCloudConfigRecord(),
 		},
+		DataSourcesMap: map[string]*schema.Resource{
+			"xenorchestra_template": dataSourceXoaTemplate(),
+		},
 		// TODO: do i need a configure func?
 		ConfigureFunc: xoaConfigure,
 	}

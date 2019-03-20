@@ -22,7 +22,7 @@ func (c *Client) GetTemplate(name string) (Template, error) {
 	var objsRes struct {
 		Templates map[string]interface{} `json:"-"`
 	}
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, _ := context.WithTimeout(context.Background(), 100*time.Second)
 	err := c.rpc.Call(ctx, "xo.getAllObjects", params, &objsRes.Templates)
 
 	if err != nil {

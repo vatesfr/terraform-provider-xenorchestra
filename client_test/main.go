@@ -13,6 +13,14 @@ func main() {
 		fmt.Errorf("Failed to create a client: %v", err)
 	}
 
+	tmpl, err := c.GetTemplate("Ubuntu Bionic Beaver 18.04")
+
+	if err != nil {
+		fmt.Printf("error when getting template: %v\n", err)
+	}
+
+	fmt.Printf("Template %#v", tmpl)
+
 	// 	vm, err := c.GetVm("77c6637c-fa3d-0a46-717e-296208c40169")
 
 	// 	if err != nil {
