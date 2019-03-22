@@ -38,12 +38,27 @@ type Vm struct {
 	CloudConfig        string       `json:"cloudConfig"`
 }
 
-func (c *Client) CreateVm(name_label, name_description, template, cloudConfig string, cpus, memoryMax int, network_ids []string) (*Vm, error) {
+type VDI struct {
+	SrId      string
+	NameLabel string
+	Size      int
+}
+
+func (c *Client) CreateVm(name_label, name_description, template, cloudConfig string, cpus, memoryMax int, network_ids []string, disks []VDI) (*Vm, error) {
 	vifs := []map[string]string{}
 	for _, network_id := range network_ids {
 		vifs = append(vifs, map[string]string{
 			"network": network_id,
 		})
+	}
+	existingDisks := map[string]interface{}{}
+
+	for idx, disk := range disks {
+		existingDisks[fmt.Sprintf("%d", idx)] = map[string]interface{}{
+			"$SR":        disk.SrId,
+			"name_label": disk.NameLabel,
+			"size":       disk.Size,
+		}
 	}
 	params := map[string]interface{}{
 		"bootAfterCreate":  true,
@@ -56,27 +71,8 @@ func (c *Client) CreateVm(name_label, name_description, template, cloudConfig st
 		"cpuWeight":        nil,
 		"CPUs":             cpus,
 		"memoryMax":        memoryMax,
-		"existingDisks": map[string]interface{}{
-			"0": map[string]interface{}{
-				"$SR":              "7f469400-4a2b-5624-cf62-61e522e50ea1",
-				"name_description": "Created by XO",
-				"name_label":       "Ubuntu Bionic Beaver 18.04_imavo",
-				"size":             32212254720,
-			},
-			"1": map[string]interface{}{
-				"$SR":              "7f469400-4a2b-5624-cf62-61e522e50ea1",
-				"name_description": "",
-				"name_label":       "XO CloudConfigDrive",
-				"size":             10485760,
-			},
-			"2": map[string]interface{}{
-				"$SR":              "7f469400-4a2b-5624-cf62-61e522e50ea1",
-				"name_description": "",
-				"name_label":       "XO CloudConfigDrive",
-				"size":             10485760,
-			},
-		},
-		"VIFs": vifs,
+		"existingDisks":    existingDisks,
+		"VIFs":             vifs,
 	}
 	fmt.Printf("VM params %#v", params)
 	var vmId string

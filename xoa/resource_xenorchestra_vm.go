@@ -1,6 +1,8 @@
 package xoa
 
 import (
+	"bytes"
+	"fmt"
 	"io"
 	"time"
 
@@ -88,14 +90,35 @@ func resourceRecord() *schema.Resource {
 					return hashcode.String(network["network_id"].(string))
 				},
 			},
-			// "existingDisks": &schema.Schema{
-			// 	Type:     schema.TypeBool,
-			// 	Optional: true,
-			// },
-			// "VIFs": &schema.Schema{
-			// 	Type:     schema.TypeBool,
-			// 	Optional: true,
-			// },
+			"disk": &schema.Schema{
+				Type:     schema.TypeSet,
+				Required: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"sr_id": &schema.Schema{
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"name_label": &schema.Schema{
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"size": &schema.Schema{
+							Type:     schema.TypeInt,
+							Required: true,
+						},
+					},
+				},
+				Set: func(value interface{}) int {
+					var buf bytes.Buffer
+					disk := value.(map[string]interface{})
+
+					buf.WriteString(fmt.Sprintf("%s-", disk["sr_id"].(string)))
+					buf.WriteString(fmt.Sprintf("%s-", disk["name_label"].(string)))
+					buf.WriteString(fmt.Sprintf("%d-", disk["size"]))
+					return hashcode.String(buf.String())
+				},
+			},
 		},
 	}
 }
@@ -116,6 +139,20 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		network_ids = append(network_ids, net["network_id"].(string))
 	}
 
+	vdis := []client.VDI{}
+
+	disks := d.Get("disk").(*schema.Set)
+
+	for _, disk := range disks.List() {
+		vdi, _ := disk.(map[string]interface{})
+
+		vdis = append(vdis, client.VDI{
+			SrId:      vdi["sr_id"].(string),
+			NameLabel: vdi["name_label"].(string),
+			Size:      vdi["size"].(int),
+		})
+	}
+
 	vm, err := c.CreateVm(
 		d.Get("name_label").(string),
 		d.Get("name_description").(string),
@@ -124,6 +161,7 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		d.Get("cpus").(int),
 		d.Get("memory_max").(int),
 		network_ids,
+		vdis,
 	)
 
 	if err != nil {
