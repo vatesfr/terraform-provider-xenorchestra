@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/hashicorp/terraform/helper/resource"
@@ -37,7 +38,13 @@ type Vm struct {
 	CloudConfig        string       `json:"cloudConfig"`
 }
 
-func (c *Client) CreateVm(name_label, name_description, template, cloudConfig string, cpus, memoryMax int) (*Vm, error) {
+func (c *Client) CreateVm(name_label, name_description, template, cloudConfig string, cpus, memoryMax int, network_ids []string) (*Vm, error) {
+	vifs := []map[string]string{}
+	for _, network_id := range network_ids {
+		vifs = append(vifs, map[string]string{
+			"network": network_id,
+		})
+	}
 	params := map[string]interface{}{
 		"bootAfterCreate":  true,
 		"name_label":       name_label,
@@ -69,12 +76,9 @@ func (c *Client) CreateVm(name_label, name_description, template, cloudConfig st
 				"size":             10485760,
 			},
 		},
-		"VIFs": []interface{}{
-			map[string]string{
-				"network": "d225cf00-36f8-e6d6-6a29-02636d4de56b",
-			},
-		},
+		"VIFs": vifs,
 	}
+	fmt.Printf("VM params %#v", params)
 	var vmId string
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Minute)
 	err := c.rpc.Call(ctx, "vm.create", params, &vmId)

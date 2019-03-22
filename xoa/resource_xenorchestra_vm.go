@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
+	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -70,6 +71,23 @@ func resourceRecord() *schema.Resource {
 				Type:     schema.TypeInt,
 				Required: true,
 			},
+			"network": &schema.Schema{
+				Type:     schema.TypeSet,
+				Required: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"network_id": &schema.Schema{
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
+				Set: func(value interface{}) int {
+					network := value.(map[string]interface{})
+
+					return hashcode.String(network["network_id"].(string))
+				},
+			},
 			// "existingDisks": &schema.Schema{
 			// 	Type:     schema.TypeBool,
 			// 	Optional: true,
@@ -89,6 +107,15 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
+	network_ids := []string{}
+	networks := d.Get("network").(*schema.Set)
+
+	for _, network := range networks.List() {
+		net, _ := network.(map[string]interface{})
+
+		network_ids = append(network_ids, net["network_id"].(string))
+	}
+
 	vm, err := c.CreateVm(
 		d.Get("name_label").(string),
 		d.Get("name_description").(string),
@@ -96,6 +123,7 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		d.Get("cloud_config").(string),
 		d.Get("cpus").(int),
 		d.Get("memory_max").(int),
+		network_ids,
 	)
 
 	if err != nil {

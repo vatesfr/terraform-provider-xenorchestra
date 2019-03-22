@@ -120,14 +120,24 @@ func testAccVmExists(resourceName string) resource.TestCheckFunc {
 
 func testAccVmConfig() string {
 	return testAccCloudConfigConfig() + `
+data "xenorchestra_template" "template" {
+    name_label = "Puppet agent - Bionic 18.04 - 1"
+}
+
+data "xenorchestra_pif" "pif" {
+    device = "eth1"
+}
+
 resource "xenorchestra_vm" "bar" {
     memory_max = 1073733632
     cpus  = 1
     cloud_config = "${xenorchestra_cloud_config.bar.id}"
     name_label = "Name"
     name_description = "description"
-    # Bionic Beaver 18.04 template that comes with XOA
-    template = "2dd0373e-0ed5-7413-a57f-1958d03b698c"
+    template = "${data.xenorchestra_template.template.id}"
+    network {
+	network_id = "${data.xenorchestra_pif.pif.network}"
+    }
 }
 `
 }
