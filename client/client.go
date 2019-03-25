@@ -61,7 +61,7 @@ func NewClient(params ...string) (*Client, error) {
 		"email":    username,
 		"password": password,
 	}
-	var reply clientResponse
+	var reply signInResponse
 	err = c.Call(ctx, "session.signInWithPassword", reqParams, &reply)
 	if err != nil {
 		return nil, err
@@ -78,7 +78,7 @@ func (h *handler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
 	// So there is no need to handle these callbacks.
 }
 
-type clientResponse struct {
+type signInResponse struct {
 	Email string `json:"email,omitempty"`
 	Id    string `json:"id,omitempty"`
 }
