@@ -7,6 +7,5 @@ go:
   - "1.12.x"
 
 script:
-  - pwd
   - make build
 # tests require XOA server so hold off on that for now  - make test
