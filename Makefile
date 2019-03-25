@@ -3,10 +3,9 @@
 TEST ?= ./...
 
 build:
-	go build -o terraform-provider-xenorchestra
-
-plan:
 	GO111MODULE=on go build -o terraform-provider-xenorchestra
+
+plan: build
 	terraform init
 	terraform plan
 
