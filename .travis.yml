@@ -5,7 +5,6 @@ services:
 language: go
 go:
   - "1.12.x"
-env: GOFLAGS=-mod=vendor
 
 script:
   - make build
