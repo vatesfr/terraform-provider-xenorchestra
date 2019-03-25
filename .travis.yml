@@ -1,0 +1,12 @@
+dist: xenial
+sudo: required
+services:
+  - docker
+language: go
+go:
+  - "1.12.x"
+env: GOFLAGS=-mod=vendor
+
+script:
+  - make build
+# tests require XOA server so hold off on that for now  - make test
