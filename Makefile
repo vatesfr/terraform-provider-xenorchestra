@@ -6,7 +6,7 @@ build:
 	go build -o terraform-provider-xenorchestra
 
 plan:
-	go build -o terraform-provider-xenorchestra
+	GO111MODULE=on go build -o terraform-provider-xenorchestra
 	terraform init
 	terraform plan
 
