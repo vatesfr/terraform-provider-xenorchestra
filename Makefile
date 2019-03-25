@@ -1,6 +1,14 @@
-.PHONY: import
+.PHONY: import testacc
 
-import:
+TEST ?= ./...
+
+plan:
 	go build -o terraform-provider-xenorchestra
 	terraform init
-	terraform import xenorchestra_vm.testing 77c6637c-fa3d-0a46-717e-296208c40169
+	terraform plan
+
+apply:
+	terraform apply
+
+testacc:
+	TF_ACC=1 go test $(TEST) -v
