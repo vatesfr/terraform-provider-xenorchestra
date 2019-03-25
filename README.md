@@ -2,7 +2,7 @@
 
 ## Status
 
-This is an experimental terraform provider for [Xenorchestra](https://github.com/vatesfr/xen-orchestra).
+This is an experimental terraform provider for [Xen Orchestra](https://github.com/vatesfr/xen-orchestra).
 
 ## Example Use
 
@@ -44,4 +44,18 @@ resource "xenorchestra_vm" "bar" {
       size = 32212254720 
     }
 }
+```
+
+## Developing the provider
+
+### Testing
+
+The provider is tested with a combination of unit tests and terraform acceptance tests. The terraform acceptance tests create real infrastructure and so a working Xen Orchestra cluster is needed.
+
+The tests are run with the testacc target.
+```bash
+# set the XOA_HOST, XOA_USER and XOA_PASSWORD environment variables
+
+# Run the tests
+make testacc
 ```
