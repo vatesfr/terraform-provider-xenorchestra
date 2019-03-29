@@ -1,0 +1,7 @@
+* Reference
+** Data Sources
+*** xref:data_source_pif.adoc[pif]
+*** xref:data_source_template.adoc[template]
+** Resources
+*** xref:resource_cloud_config.adoc[cloud_config]
+*** xref:resource_vm.adoc[vm]

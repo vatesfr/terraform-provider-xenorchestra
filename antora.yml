@@ -1,0 +1,6 @@
+name: provider-xenorchestra
+title: Xen Orchestra Provider
+version: 'master' 
+start_page: ROOT:index.adoc 
+nav:
+- modules/reference/nav.adoc
