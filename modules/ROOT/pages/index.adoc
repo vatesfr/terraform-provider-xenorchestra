@@ -1,6 +1,6 @@
 = Xen Orchestra Provider
 
-The Xen Orchestra provider is used to interact with the resources supported by link::https://github.com/vatesfr/xen-orchestra[Xen Orchestra].
+The Xen Orchestra provider is used to interact with the resources supported by https://github.com/vatesfr/xen-orchestra[Xen Orchestra].
 The provider needs to be configured with the proper credentials before it can be used.
 
 == Requirements
@@ -11,7 +11,7 @@ The provider needs to be configured with the proper credentials before it can be
 
 == Using the provider
 
-If you're building the provider, follow the instructions to install it as a link::https://www.terraform.io/docs/plugins/basics.html#installing-plugins[plugin]. After placing it into your plugins directory, run `terraform init` to initialize it.
+If you're building the provider, follow the instructions to install it as a https://www.terraform.io/docs/plugins/basics.html#installing-plugins[plugin]. After placing it into your plugins directory, run `terraform init` to initialize it.
 
 == Example Usage
 
