@@ -19,8 +19,8 @@ func init() {
 }
 
 func testAccPreCheck(t *testing.T) {
-	if v := os.Getenv("XOA_HOST"); v == "" {
-		t.Fatal("The XOA_HOST environment variable must be set")
+	if v := os.Getenv("XOA_URL"); v == "" {
+		t.Fatal("The XOA_URL environment variable must be set")
 	}
 	if v := os.Getenv("XOA_USER"); v == "" {
 		t.Fatal("The XOA_USER environment variable must be set")

@@ -174,12 +174,6 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
-type xoaConfig struct {
-	host     string
-	username string
-	password string
-}
-
 func resourceVmRead(d *schema.ResourceData, m interface{}) error {
 	xoaId := d.Id()
 	c, err := client.NewClient()

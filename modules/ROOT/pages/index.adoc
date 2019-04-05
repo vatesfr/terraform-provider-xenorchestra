@@ -18,8 +18,9 @@ If you're building the provider, follow the instructions to install it as a http
 ```hcl
 # Configure the XenServer Provider
 provider "xenorchestra" {
-  host     = "<xoa-hostname>" # Or set XOA_HOST environment variable
-  username = "<username>"     # Or set XOA_USER environment variable
-  password = "<password>"     # Or set XOA_PASSWORD environment variable
+  # Must be ws or wss
+  url      = "ws://hostname-of-server" # Or set XOA_URL environment variable
+  username = "<username>"              # Or set XOA_USER environment variable
+  password = "<password>"              # Or set XOA_PASSWORD environment variable
 }
 ```
