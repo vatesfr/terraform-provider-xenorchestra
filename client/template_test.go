@@ -26,7 +26,7 @@ func TestGetTemplate(t *testing.T) {
 		},
 	}
 
-	c, err := NewClient()
+	c, err := NewClient(GetConfigFromEnv())
 
 	if err != nil {
 		t.Errorf("failed to create client: %v", err)

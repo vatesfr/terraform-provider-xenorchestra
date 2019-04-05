@@ -22,7 +22,8 @@ func dataSourceXoaTemplate() *schema.Resource {
 }
 
 func dataSourceTemplateRead(d *schema.ResourceData, m interface{}) error {
-	c, err := client.NewClient()
+	config := m.(client.Config)
+	c, err := client.NewClient(config)
 
 	if err != nil {
 		return err

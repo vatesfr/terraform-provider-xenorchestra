@@ -167,7 +167,7 @@ func testAccCloudConfigExists(resourceName string) resource.TestCheckFunc {
 			return fmt.Errorf("No CloudConfig Id is set")
 		}
 
-		c, err := client.NewClient()
+		c, err := client.NewClient(client.GetConfigFromEnv())
 		if err != nil {
 			return err
 		}
@@ -192,7 +192,7 @@ func testAccCheckXenorchestraCloudConfigDestroyNow(resourceName string) resource
 			return fmt.Errorf("No CloudConfig Id is set")
 		}
 
-		c, err := client.NewClient()
+		c, err := client.NewClient(client.GetConfigFromEnv())
 		if err != nil {
 			return err
 		}
@@ -208,7 +208,7 @@ func testAccCheckXenorchestraCloudConfigDestroyNow(resourceName string) resource
 }
 
 func testAccCheckXenorchestraCloudConfigDestroy(s *terraform.State) error {
-	c, err := client.NewClient()
+	c, err := client.NewClient(client.GetConfigFromEnv())
 	if err != nil {
 		return err
 	}

@@ -66,7 +66,7 @@ func testAccVm_import(t *testing.T) {
 
 // TODO: Add unit tests
 func testAccCheckXenorchestraVmDestroy(s *terraform.State) error {
-	c, err := client.NewClient()
+	c, err := client.NewClient(client.GetConfigFromEnv())
 	if err != nil {
 		return err
 	}
@@ -103,7 +103,7 @@ func testAccVmExists(resourceName string) resource.TestCheckFunc {
 			return fmt.Errorf("No Vm Id is set")
 		}
 
-		c, err := client.NewClient()
+		c, err := client.NewClient(client.GetConfigFromEnv())
 		if err != nil {
 			return err
 		}
