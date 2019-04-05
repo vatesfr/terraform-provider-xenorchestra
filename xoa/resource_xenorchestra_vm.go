@@ -124,7 +124,8 @@ func resourceRecord() *schema.Resource {
 }
 
 func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
-	c, err := client.NewClient()
+	config := m.(client.Config)
+	c, err := client.NewClient(config)
 
 	if err != nil {
 		return err
@@ -176,7 +177,8 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 
 func resourceVmRead(d *schema.ResourceData, m interface{}) error {
 	xoaId := d.Id()
-	c, err := client.NewClient()
+	config := m.(client.Config)
+	c, err := client.NewClient(config)
 
 	if err != nil {
 		return err
@@ -194,7 +196,8 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceVmDelete(d *schema.ResourceData, m interface{}) error {
-	c, err := client.NewClient()
+	config := m.(client.Config)
+	c, err := client.NewClient(config)
 
 	if err != nil {
 		return err
@@ -212,7 +215,8 @@ func resourceVmDelete(d *schema.ResourceData, m interface{}) error {
 func RecordImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
 	xoaId := d.Id()
 
-	c, err := client.NewClient()
+	config := m.(client.Config)
+	c, err := client.NewClient(config)
 
 	if err != nil {
 		return nil, err

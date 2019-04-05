@@ -33,7 +33,7 @@ var dialer = gorillawebsocket.Dialer{
 	WriteBufferSize: MaxMessageSize,
 }
 
-func NewClient(params ...string) (*Client, error) {
+func GetConfigFromEnv() Config {
 	var url string
 	var username string
 	var password string
@@ -46,11 +46,17 @@ func NewClient(params ...string) (*Client, error) {
 	if v := os.Getenv("XOA_PASSWORD"); v != "" {
 		password = v
 	}
-	if len(params) == 3 {
-		url = params[0]
-		username = params[1]
-		password = params[2]
+	return Config{
+		Url:      url,
+		Username: username,
+		Password: password,
 	}
+}
+
+func NewClient(config Config) (*Client, error) {
+	url := config.Url
+	username := config.Username
+	password := config.Password
 
 	ws, _, err := dialer.Dial(fmt.Sprintf("%s/api/", url), http.Header{})
 

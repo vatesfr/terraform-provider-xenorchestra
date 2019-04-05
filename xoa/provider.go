@@ -36,17 +36,16 @@ func Provider() terraform.ResourceProvider {
 			"xenorchestra_template": dataSourceXoaTemplate(),
 			"xenorchestra_pif":      dataSourceXoaPIF(),
 		},
-		// TODO: do i need a configure func?
 		ConfigureFunc: xoaConfigure,
 	}
 }
 
 func xoaConfigure(d *schema.ResourceData) (c interface{}, err error) {
-	address := d.Get("url").(string)
+	url := d.Get("url").(string)
 	username := d.Get("username").(string)
 	password := d.Get("password").(string)
 	c = client.Config{
-		Url:      address,
+		Url:      url,
 		Username: username,
 		Password: password,
 	}

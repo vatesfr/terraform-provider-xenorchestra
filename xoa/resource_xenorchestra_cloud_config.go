@@ -30,42 +30,45 @@ func resourceCloudConfigRecord() *schema.Resource {
 }
 
 func resourceCloudConfigCreate(d *schema.ResourceData, m interface{}) error {
-	c, err := client.NewClient()
+	config := m.(client.Config)
+	c, err := client.NewClient(config)
 	if err != nil {
 		return err
 	}
 
-	config, err := c.CreateCloudConfig(d.Get("name").(string), d.Get("template").(string))
+	cloud_config, err := c.CreateCloudConfig(d.Get("name").(string), d.Get("template").(string))
 	if err != nil {
 		return err
 	}
-	d.SetId(config.Id)
+	d.SetId(cloud_config.Id)
 	return nil
 }
 
 func resourceCloudConfigRead(d *schema.ResourceData, m interface{}) error {
-	c, err := client.NewClient()
+	config := m.(client.Config)
+	c, err := client.NewClient(config)
 	if err != nil {
 		return err
 	}
 
-	config, err := c.GetCloudConfig(d.Id())
+	cloud_config, err := c.GetCloudConfig(d.Id())
 	if err != nil {
 		return err
 	}
 
-	if config == nil {
+	if cloud_config == nil {
 		d.SetId("")
 		return nil
 	}
 
-	d.Set("name", config.Name)
-	d.Set("template", config.Template)
+	d.Set("name", cloud_config.Name)
+	d.Set("template", cloud_config.Template)
 	return nil
 }
 
 func resourceCloudConfigDelete(d *schema.ResourceData, m interface{}) error {
-	c, err := client.NewClient()
+	config := m.(client.Config)
+	c, err := client.NewClient(config)
 	if err != nil {
 		return err
 	}
@@ -81,17 +84,18 @@ func resourceCloudConfigDelete(d *schema.ResourceData, m interface{}) error {
 
 func CloudConfigImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
 
-	c, err := client.NewClient()
+	config := m.(client.Config)
+	c, err := client.NewClient(config)
 	if err != nil {
 		return nil, err
 	}
 
-	config, err := c.GetCloudConfig(d.Id())
+	cloud_config, err := c.GetCloudConfig(d.Id())
 
 	if err != nil {
 		return nil, err
 	}
-	d.Set("name", config.Name)
-	d.Set("template", config.Template)
+	d.Set("name", cloud_config.Name)
+	d.Set("template", cloud_config.Template)
 	return []*schema.ResourceData{d}, nil
 }
