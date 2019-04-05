@@ -22,17 +22,23 @@ type Client struct {
 	rpc jsonrpc2.JSONRPC2
 }
 
+type Config struct {
+	Url      string
+	Username string
+	Password string
+}
+
 var dialer = gorillawebsocket.Dialer{
 	ReadBufferSize:  MaxMessageSize,
 	WriteBufferSize: MaxMessageSize,
 }
 
 func NewClient(params ...string) (*Client, error) {
-	var hostname string
+	var url string
 	var username string
 	var password string
-	if v := os.Getenv("XOA_HOST"); v != "" {
-		hostname = v
+	if v := os.Getenv("XOA_URL"); v != "" {
+		url = v
 	}
 	if v := os.Getenv("XOA_USER"); v != "" {
 		username = v
@@ -41,11 +47,12 @@ func NewClient(params ...string) (*Client, error) {
 		password = v
 	}
 	if len(params) == 3 {
-		hostname = params[0]
+		url = params[0]
 		username = params[1]
 		password = params[2]
 	}
-	ws, _, err := dialer.Dial(fmt.Sprintf("ws://%s/api/", hostname), http.Header{})
+
+	ws, _, err := dialer.Dial(fmt.Sprintf("%s/api/", url), http.Header{})
 
 	if err != nil {
 		return nil, err

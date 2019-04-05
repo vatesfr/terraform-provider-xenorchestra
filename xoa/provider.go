@@ -1,6 +1,7 @@
 package xoa
 
 import (
+	"github.com/ddelnano/terraform-provider-xenorchestra/client"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
 )
@@ -8,10 +9,10 @@ import (
 func Provider() terraform.ResourceProvider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
-			"host": &schema.Schema{
+			"url": &schema.Schema{
 				Type:        schema.TypeString,
 				Required:    true,
-				DefaultFunc: schema.EnvDefaultFunc("XOA_HOST", nil),
+				DefaultFunc: schema.EnvDefaultFunc("XOA_URL", nil),
 				Description: "Hostname of the xoa router",
 			},
 			"username": &schema.Schema{
@@ -41,13 +42,13 @@ func Provider() terraform.ResourceProvider {
 }
 
 func xoaConfigure(d *schema.ResourceData) (c interface{}, err error) {
-	address := d.Get("host").(string)
+	address := d.Get("url").(string)
 	username := d.Get("username").(string)
 	password := d.Get("password").(string)
-	c = xoaConfig{
-		host:     address,
-		username: username,
-		password: password,
+	c = client.Config{
+		Url:      address,
+		Username: username,
+		Password: password,
 	}
-	return
+	return c, nil
 }
