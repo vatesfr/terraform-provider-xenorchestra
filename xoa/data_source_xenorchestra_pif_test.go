@@ -24,7 +24,8 @@ func TestAccXenorchestraDataSource_pif(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "host"),
 					resource.TestCheckResourceAttrSet(resourceName, "network"),
 					resource.TestCheckResourceAttrSet(resourceName, "pool_id"),
-					resource.TestCheckResourceAttrSet(resourceName, "uuid")),
+					resource.TestCheckResourceAttrSet(resourceName, "uuid"),
+					resource.TestCheckResourceAttrSet(resourceName, "vlan")),
 			},
 		},
 	},
@@ -48,5 +49,6 @@ func testAccCheckXenorchestraDataSourcePIF(n string) resource.TestCheckFunc {
 const testAccXenorchestraDataSourcePIFConfig = `
 data "xenorchestra_pif" "pif" {
     device = "eth0"
+    vlan = -1
 }
 `
