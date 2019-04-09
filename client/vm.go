@@ -74,7 +74,7 @@ func (c *Client) CreateVm(name_label, name_description, template, cloudConfig st
 		"existingDisks":    existingDisks,
 		"VIFs":             vifs,
 	}
-	fmt.Printf("VM params %#v", params)
+	fmt.Printf("[DEBUG] VM params %#v", params)
 	var vmId string
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Minute)
 	err := c.rpc.Call(ctx, "vm.create", params, &vmId)

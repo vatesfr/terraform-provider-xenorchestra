@@ -15,9 +15,10 @@ type PIF struct {
 	Uuid     string
 	PoolId   string
 	Attached bool
+	Vlan     int
 }
 
-func (c *Client) GetPIFByDevice(dev string) (PIF, error) {
+func (c *Client) GetPIFByDevice(dev string, vlan int) (PIF, error) {
 	var pif PIF
 	params := map[string]interface{}{
 		"type": "PIF",
@@ -45,19 +46,20 @@ func (c *Client) GetPIFByDevice(dev string) (PIF, error) {
 		}
 
 		pifDev, ok := v["device"].(string)
+		pifVlan := int(v["vlan"].(float64))
 
 		if !ok {
 			return pif, errors.New(fmt.Sprintf("type assertion for device failed on PIF: %v", v))
 		}
 
-		if pifDev == dev {
+		if pifDev == dev && pifVlan == vlan {
 			found = true
 			id := v["id"].(string)
 			attached := v["attached"].(bool)
+			network := v["$network"].(string)
 			uuid := v["uuid"].(string)
 			poolId := v["$poolId"].(string)
 			host := v["$host"].(string)
-			network := v["$network"].(string)
 			pif = PIF{
 				Device:   pifDev,
 				Host:     host,
@@ -66,6 +68,7 @@ func (c *Client) GetPIFByDevice(dev string) (PIF, error) {
 				Uuid:     uuid,
 				PoolId:   poolId,
 				Attached: attached,
+				Vlan:     pifVlan,
 			}
 		}
 	}

@@ -33,6 +33,10 @@ func dataSourceXoaPIF() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"vlan": &schema.Schema{
+				Type:     schema.TypeInt,
+				Required: true,
+			},
 		},
 	}
 }
@@ -46,8 +50,9 @@ func dataSourcePIFRead(d *schema.ResourceData, m interface{}) error {
 	}
 
 	device := d.Get("device").(string)
+	vlan := d.Get("vlan").(int)
 
-	pif, err := c.GetPIFByDevice(device)
+	pif, err := c.GetPIFByDevice(device, vlan)
 
 	if err != nil {
 		return err
@@ -65,5 +70,6 @@ func dataSourcePIFRead(d *schema.ResourceData, m interface{}) error {
 	d.Set("attached", pif.Attached)
 	d.Set("pool_id", pif.PoolId)
 	d.Set("network", pif.Network)
+	d.Set("vlan", pif.Vlan)
 	return nil
 }

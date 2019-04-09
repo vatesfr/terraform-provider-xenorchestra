@@ -129,6 +129,7 @@ data "xenorchestra_template" "template" {
 
 data "xenorchestra_pif" "pif" {
     device = "eth1"
+    vlan = -1
 }
 
 resource "xenorchestra_vm" "bar" {
