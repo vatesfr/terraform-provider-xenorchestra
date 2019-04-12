@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -82,6 +83,58 @@ func NewClient(config Config) (*Client, error) {
 	return &Client{
 		rpc: c,
 	}, nil
+}
+
+type XoObject interface {
+	Compare(obj map[string]interface{}) bool
+	New(obj map[string]interface{}) XoObject
+}
+
+func (c *Client) FindFromGetAllObjects(obj XoObject) (interface{}, error) {
+
+	xoApiType := ""
+	switch t := obj.(type) {
+	case PIF:
+		xoApiType = "PIF"
+	case Template:
+		xoApiType = "VM-template"
+	default:
+		panic(fmt.Sprintf("XO client does not support type: %v", t))
+	}
+	params := map[string]interface{}{
+		"type": xoApiType,
+	}
+	var objsRes struct {
+		Objects map[string]interface{} `json:"-"`
+	}
+	ctx, _ := context.WithTimeout(context.Background(), 100*time.Second)
+	err := c.rpc.Call(ctx, "xo.getAllObjects", params, &objsRes.Objects)
+
+	if err != nil {
+		return obj, err
+	}
+
+	found := false
+	for _, resObj := range objsRes.Objects {
+		v, ok := resObj.(map[string]interface{})
+		if !ok {
+			return obj, errors.New("Could not coerce interface{} into map")
+		}
+
+		if v["type"].(string) != xoApiType {
+			continue
+		}
+
+		if obj.Compare(v) {
+			found = true
+			obj = obj.New(v)
+		}
+	}
+	if !found {
+		return obj, NotFound{Type: xoApiType}
+	}
+
+	return obj, nil
 }
 
 type handler struct{}
