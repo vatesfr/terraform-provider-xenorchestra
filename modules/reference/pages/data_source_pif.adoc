@@ -10,7 +10,7 @@ data "xenorchestra_pif" "eth0" {
   vlan   = -1
 }
 
-resource "xenserver_vm" "demo-vm" {
+resource "xenorchestra_vm" "demo-vm" {
   // ...
   network {
     network_id = "${data.xenorchestra_pif.eth0.network}"
