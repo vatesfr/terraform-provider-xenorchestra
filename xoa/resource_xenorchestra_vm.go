@@ -90,6 +90,10 @@ func resourceRecord() *schema.Resource {
 					return hashcode.String(network["network_id"].(string))
 				},
 			},
+			"pool": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"disk": &schema.Schema{
 				Type:     schema.TypeSet,
 				Required: true,
@@ -131,6 +135,7 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
+	poolId := d.Get("pool").(string)
 	network_ids := []string{}
 	networks := d.Get("network").(*schema.Set)
 
@@ -163,6 +168,7 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		d.Get("memory_max").(int),
 		network_ids,
 		vdis,
+		poolId,
 	)
 
 	if err != nil {

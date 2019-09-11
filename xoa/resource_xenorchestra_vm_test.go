@@ -148,6 +148,7 @@ resource "xenorchestra_vm" "bar" {
       name_label = "Ubuntu Bionic Beaver 18.04_imavo"
       size = 32212254720 
     }
+    pool = "a5c7d15c-2724-47ce-8e30-"
 }
 `
 }
