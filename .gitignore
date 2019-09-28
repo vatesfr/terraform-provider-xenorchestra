@@ -4,3 +4,4 @@ crash.log
 # Occasionally test terraform files in this repo
 main.tf
 terraform.tfstate*
+dist/
