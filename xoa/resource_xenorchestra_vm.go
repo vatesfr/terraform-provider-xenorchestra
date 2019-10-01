@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
-	"github.com/hashicorp/terraform/helper/hashcode"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 var logFile = "/tmp/terraform-provider-xenorchestra"
