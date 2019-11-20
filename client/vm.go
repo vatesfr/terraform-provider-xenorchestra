@@ -113,7 +113,9 @@ func (c *Client) DeleteVm(id string) error {
 
 func (c *Client) GetVm(id string) (*Vm, error) {
 	params := map[string]interface{}{
-		"type": "VM",
+		"filter": map[string]string{
+			"type": "VM",
+		},
 	}
 	var objsRes allObjectResponse
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
