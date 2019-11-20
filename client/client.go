@@ -102,7 +102,9 @@ func (c *Client) FindFromGetAllObjects(obj XoObject) (interface{}, error) {
 		panic(fmt.Sprintf("XO client does not support type: %v", t))
 	}
 	params := map[string]interface{}{
-		"type": xoApiType,
+		"filter": map[string]string{
+			"type": xoApiType,
+		},
 	}
 	var objsRes struct {
 		Objects map[string]interface{} `json:"-"`
