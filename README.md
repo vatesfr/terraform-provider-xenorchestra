@@ -2,7 +2,7 @@
 
 ## Status
 
-This is an experimental terraform provider for [Xen Orchestra](https://github.com/vatesfr/xen-orchestra).
+This is a terraform provider for [Xen Orchestra](https://github.com/vatesfr/xen-orchestra).
 
 ## Docs
 
