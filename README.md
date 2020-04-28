@@ -17,3 +17,7 @@ Compiled: Download a suitable binary from the [releases](https://github.com/terr
 ## Support
 
 You can discuss any issues you have or feature requests in [Discord](https://discord.gg/ZpNq8ez).
+
+## Donations
+
+If you get value out this project and want to show your support you can find me on [patreon](https://www.patreon.com/ddelnano).
