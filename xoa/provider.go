@@ -35,6 +35,7 @@ func Provider() terraform.ResourceProvider {
 		DataSourcesMap: map[string]*schema.Resource{
 			"xenorchestra_template": dataSourceXoaTemplate(),
 			"xenorchestra_pif":      dataSourceXoaPIF(),
+			"xenorchestra_sr":       dataSourceXoaStorageRepository(),
 		},
 		ConfigureFunc: xoaConfigure,
 	}

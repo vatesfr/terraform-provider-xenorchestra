@@ -133,7 +133,7 @@ data "xenorchestra_pif" "pif" {
 }
 
 resource "xenorchestra_vm" "bar" {
-    memory_max = 1073733632
+    memory_max = 256000000
     cpus  = 1
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
     name_label = "Name"
@@ -146,7 +146,7 @@ resource "xenorchestra_vm" "bar" {
     disk {
       sr_id = "7f469400-4a2b-5624-cf62-61e522e50ea1"
       name_label = "Ubuntu Bionic Beaver 18.04_imavo"
-      size = 32212254720 
+      size = 10000000000
     }
 }
 `
