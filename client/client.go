@@ -96,6 +96,8 @@ func (c *Client) FindFromGetAllObjects(obj XoObject) (interface{}, error) {
 	switch t := obj.(type) {
 	case PIF:
 		xoApiType = "PIF"
+	case StorageRepository:
+		xoApiType = "SR"
 	case Template:
 		xoApiType = "VM-template"
 	default:
