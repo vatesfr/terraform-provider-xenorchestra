@@ -2,7 +2,7 @@
 
 ## Status
 
-This is an experimental terraform provider for [Xen Orchestra](https://github.com/vatesfr/xen-orchestra).
+This is a terraform provider for [Xen Orchestra](https://github.com/vatesfr/xen-orchestra).
 
 ## Docs
 
@@ -14,4 +14,10 @@ General documentaion about providers in terraform can be found at [the terraform
 
 Compiled: Download a suitable binary from the [releases](https://github.com/terra-farm/terraform-provider-xenorchestra/releases) and copy it to `~/.terraform.d/plugins/terraform-provider-xenorchestra_vX.Y.Z` where `X.Y.Z` is the version.
 
-From source: TODO
+## Support
+
+You can discuss any issues you have or feature requests in [Discord](https://discord.gg/ZpNq8ez).
+
+## Donations
+
+If you get value out this project and want to show your support you can find me on [patreon](https://www.patreon.com/ddelnano).
