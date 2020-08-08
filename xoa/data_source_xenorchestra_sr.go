@@ -19,7 +19,7 @@ func dataSourceXoaStorageRepository() *schema.Resource {
 			},
 			"pool_id": &schema.Schema{
 				Type:     schema.TypeString,
-				Computed: true,
+				Optional: true,
 			},
 			"uuid": &schema.Schema{
 				Type:     schema.TypeString,
@@ -38,8 +38,17 @@ func dataSourceStorageRepositoryRead(d *schema.ResourceData, m interface{}) erro
 	}
 
 	nameLabel := d.Get("name_label").(string)
+	poolId, found := d.GetOk("pool_id")
 
-	sr, err := c.GetStorageRepositoryByName(nameLabel)
+	sr := client.StorageRepository{
+		NameLabel: nameLabel,
+	}
+
+	if found {
+		sr.PoolId = poolId.(string)
+	}
+
+	sr, err = c.GetStorageRepository(sr)
 
 	if _, ok := err.(client.NotFound); ok {
 		d.SetId("")

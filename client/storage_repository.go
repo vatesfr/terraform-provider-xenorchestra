@@ -10,9 +10,19 @@ type StorageRepository struct {
 
 func (s StorageRepository) Compare(obj map[string]interface{}) bool {
 	nameLabel := obj["name_label"].(string)
-	if s.NameLabel == nameLabel {
+	poolId := obj["$poolId"].(string)
+	if s.NameLabel != nameLabel {
+		return false
+	}
+
+	if s.PoolId == "" {
 		return true
 	}
+
+	if s.PoolId == poolId {
+		return true
+	}
+
 	return false
 }
 
@@ -31,9 +41,9 @@ func (s StorageRepository) New(obj map[string]interface{}) XoObject {
 	}
 }
 
-func (c *Client) GetStorageRepositoryByName(nameLabel string) (StorageRepository, error) {
-	obj, err := c.FindFromGetAllObjects(StorageRepository{NameLabel: nameLabel})
-	sr := obj.(StorageRepository)
+func (c *Client) GetStorageRepository(sr StorageRepository) (StorageRepository, error) {
+	obj, err := c.FindFromGetAllObjects(sr)
+	sr = obj.(StorageRepository)
 
 	if err != nil {
 		return sr, err
