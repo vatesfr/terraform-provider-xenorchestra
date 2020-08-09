@@ -1,6 +1,7 @@
 .Data Sources
-* xref:data_source_sr.adoc[sr]
 * xref:data_source_pif.adoc[pif]
+* xref:data_source_pool.adoc[pool]
+* xref:data_source_sr.adoc[sr]
 * xref:data_source_template.adoc[template]
 
 .Resources
