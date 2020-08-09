@@ -96,12 +96,14 @@ func (c *Client) FindFromGetAllObjects(obj XoObject) (interface{}, error) {
 	switch t := obj.(type) {
 	case PIF:
 		xoApiType = "PIF"
+	case Pool:
+		xoApiType = "pool"
 	case StorageRepository:
 		xoApiType = "SR"
 	case Template:
 		xoApiType = "VM-template"
 	default:
-		panic(fmt.Sprintf("XO client does not support type: %v", t))
+		panic(fmt.Sprintf("XO client does not support type: %T", t))
 	}
 	params := map[string]interface{}{
 		"filter": map[string]string{
