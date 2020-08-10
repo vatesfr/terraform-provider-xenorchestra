@@ -1,4 +1,4 @@
-= xenorchestrasra_pool
+= xenorchestra_pool
 
 Provides information about a pool.
 
