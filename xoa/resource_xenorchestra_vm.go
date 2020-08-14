@@ -3,12 +3,12 @@ package xoa
 import (
 	"bytes"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform/helper/validation"
 )
 
 func init() {
@@ -18,6 +18,25 @@ var validHaOptions = []string{
 	"",
 	"best-effort",
 	"restart",
+}
+
+func StringInSlice(valid []string, ignoreCase bool) schema.SchemaValidateFunc {
+	return func(i interface{}, k string) (s []string, es []error) {
+		v, ok := i.(string)
+		if !ok {
+			es = append(es, fmt.Errorf("expected type of %s to be string", k))
+			return
+		}
+
+		for _, str := range valid {
+			if v == str || (ignoreCase && strings.ToLower(v) == strings.ToLower(str)) {
+				return
+			}
+		}
+
+		es = append(es, fmt.Errorf("expected %s to be one of %v, got %s", k, valid, v))
+		return
+	}
 }
 
 func resourceRecord() *schema.Resource {
@@ -49,10 +68,12 @@ func resourceRecord() *schema.Resource {
 				Optional: true,
 			},
 			"high_availability": &schema.Schema{
-				Type:         schema.TypeString,
-				Default:      "",
-				Optional:     true,
-				ValidateFunc: validation.StringInSlice(validHaOptions, false),
+				Type:     schema.TypeString,
+				Default:  "",
+				Optional: true,
+				// TODO: Replace with validation.StringInSlice when terraform
+				// and the SDK are upgraded.
+				ValidateFunc: StringInSlice(validHaOptions, false),
 			},
 			"template": &schema.Schema{
 				Type:     schema.TypeString,
