@@ -123,7 +123,7 @@ func (c *Client) UpdateVm(id string, cpus int, nameLabel, nameDescription, ha st
 
 	// TODO: This is a poor way to ensure that terraform will see the updated
 	// attributes after calling vm.set. Need to investigate a better way to detect this.
-	time.Sleep(time.Minute)
+	time.Sleep(15 * time.Second)
 
 	return c.GetVm(id)
 }
