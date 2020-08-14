@@ -8,9 +8,16 @@ import (
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform/helper/validation"
 )
 
 func init() {
+}
+
+var validHaOptions = []string{
+	"",
+	"best-effort",
+	"restart",
 }
 
 func resourceRecord() *schema.Resource {
@@ -42,9 +49,10 @@ func resourceRecord() *schema.Resource {
 				Optional: true,
 			},
 			"high_availability": &schema.Schema{
-				Type:     schema.TypeString,
-				Default:  "",
-				Optional: true,
+				Type:         schema.TypeString,
+				Default:      "",
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice(validHaOptions, false),
 			},
 			"template": &schema.Schema{
 				Type:     schema.TypeString,

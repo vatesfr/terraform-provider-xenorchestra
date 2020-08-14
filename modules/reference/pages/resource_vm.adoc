@@ -52,6 +52,8 @@ resource "xenorchestra_vm" "bar" {
 ** cloud_config - (Required) The ID of the cloud config to use
 ** cpus - (Required) The number of CPUs the VM will have.
 ** memory_max - (Required) The amount of memory in bytes the VM will have.
+** high_availabililty - (Optional) The restart priority for the VM. Possible values are `best-effort`, `restart` and empty string (no restarts on failure. Defaults to empty string.
+** auto_poweron - (Optional) If the VM will automatically turn on. Defaults to `false`.
 ** network - (Required) The network the VM will use
 *** network_id - (Required) The ID of the network the VM will be on.
 ** disk - (Required) The disk the VM will have access to.

@@ -106,7 +106,7 @@ func TestAccXenorchestraVm_updatesWithoutReboot(t *testing.T) {
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccVmConfigUpdateAttrsNoReboot(origNameLabel, origNameDesc, origHa, origPowerOn),
+				Config: testAccVmConfigUpdateAttrsHaltIrrelevant(origNameLabel, origNameDesc, origHa, origPowerOn),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -115,7 +115,7 @@ func TestAccXenorchestraVm_updatesWithoutReboot(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "high_availability", origHa)),
 			},
 			{
-				Config: testAccVmConfigUpdateAttrsNoReboot(updatedNameLabel, updatedNameDesc, updatedHa, updatedPowerOn),
+				Config: testAccVmConfigUpdateAttrsHaltIrrelevant(updatedNameLabel, updatedNameDesc, updatedHa, updatedPowerOn),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -189,7 +189,9 @@ resource "xenorchestra_vm" "bar" {
 `
 }
 
-func testAccVmConfigUpdateAttrsNoReboot(nameLabel, nameDescription, ha string, powerOn bool) string {
+// Terraform config that tests changes to a VM that do not require halting
+// the VM prior to applying
+func testAccVmConfigUpdateAttrsHaltIrrelevant(nameLabel, nameDescription, ha string, powerOn bool) string {
 	return testAccCloudConfigConfig() + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "Puppet agent - Bionic 18.04 - 1"
