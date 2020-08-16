@@ -77,7 +77,7 @@ func (c *Client) CreateVm(name_label, name_description, template, cloudConfig st
 	fmt.Printf("[DEBUG] VM params %#v", params)
 	var vmId string
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Minute)
-	err := c.rpc.Call(ctx, "vm.create", params, &vmId)
+	err := c.Call(ctx, "vm.create", params, &vmId)
 
 	if err != nil {
 		return nil, err
@@ -102,7 +102,7 @@ func (c *Client) DeleteVm(id string) error {
 	}
 	var reply []interface{}
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Minute)
-	err := c.rpc.Call(ctx, "vm.delete", params, &reply)
+	err := c.Call(ctx, "vm.delete", params, &reply)
 
 	if err != nil {
 		return err
@@ -119,7 +119,7 @@ func (c *Client) GetVm(id string) (*Vm, error) {
 	}
 	var objsRes allObjectResponse
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	err := c.rpc.Call(ctx, "xo.getAllObjects", params, &objsRes.Objects)
+	err := c.Call(ctx, "xo.getAllObjects", params, &objsRes.Objects)
 
 	if err != nil {
 		return nil, err

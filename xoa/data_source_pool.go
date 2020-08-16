@@ -1,6 +1,7 @@
 package xoa
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
@@ -52,8 +53,8 @@ func dataSourcePoolRead(d *schema.ResourceData, m interface{}) error {
 	log.Printf("[DEBUG] Found pool with %+v", pool)
 	d.SetId(pool.Id)
 	cpus := map[string]string{
-		"sockets": string(pool.Cpus.Sockets),
-		"cores":   string(pool.Cpus.Cores),
+		"sockets": fmt.Sprintf("%d", pool.Cpus.Sockets),
+		"cores":   fmt.Sprintf("%d", pool.Cpus.Cores),
 	}
 	d.Set("description", pool.Description)
 	err = d.Set("cpus", cpus)
