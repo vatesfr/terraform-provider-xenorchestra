@@ -85,6 +85,17 @@ func NewClient(config Config) (*Client, error) {
 	}, nil
 }
 
+func (c *Client) Call(ctx context.Context, method string, params, result interface{}, opt ...jsonrpc2.CallOption) error {
+	err := c.rpc.Call(ctx, method, params, &result, opt...)
+
+	if err != nil {
+		rpcErr, _ := err.(*jsonrpc2.Error)
+
+		return errors.New(fmt.Sprintf("%s: %s", err, *rpcErr.Data))
+	}
+	return nil
+}
+
 type XoObject interface {
 	Compare(obj map[string]interface{}) bool
 	New(obj map[string]interface{}) XoObject
@@ -114,7 +125,7 @@ func (c *Client) FindFromGetAllObjects(obj XoObject) (interface{}, error) {
 		Objects map[string]interface{} `json:"-"`
 	}
 	ctx, _ := context.WithTimeout(context.Background(), 100*time.Second)
-	err := c.rpc.Call(ctx, "xo.getAllObjects", params, &objsRes.Objects)
+	err := c.Call(ctx, "xo.getAllObjects", params, &objsRes.Objects)
 
 	if err != nil {
 		return obj, err

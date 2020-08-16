@@ -21,7 +21,7 @@ func (c *Client) GetCloudConfig(id string) (*CloudConfig, error) {
 	}
 	var getAllResp CloudConfigResponse
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	err := c.rpc.Call(ctx, "cloudConfig.getAll", params, &getAllResp.Result)
+	err := c.Call(ctx, "cloudConfig.getAll", params, &getAllResp.Result)
 
 	if err != nil {
 		return nil, err
@@ -49,7 +49,7 @@ func (c *Client) CreateCloudConfig(name, template string) (*CloudConfig, error) 
 	}
 	var resp bool
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	err := c.rpc.Call(ctx, "cloudConfig.create", params, &resp)
+	err := c.Call(ctx, "cloudConfig.create", params, &resp)
 
 	if err != nil {
 		return nil, err
@@ -58,7 +58,7 @@ func (c *Client) CreateCloudConfig(name, template string) (*CloudConfig, error) 
 	// Since the Id isn't returned in the reponse loop over all cloud configs
 	// and find the one we just created
 	var getAllResp CloudConfigResponse
-	err = c.rpc.Call(ctx, "cloudConfig.getAll", params, &getAllResp.Result)
+	err = c.Call(ctx, "cloudConfig.getAll", params, &getAllResp.Result)
 
 	if err != nil {
 		return nil, err
@@ -79,7 +79,7 @@ func (c *Client) DeleteCloudConfig(id string) error {
 	}
 	var resp bool
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	err := c.rpc.Call(ctx, "cloudConfig.delete", params, &resp)
+	err := c.Call(ctx, "cloudConfig.delete", params, &resp)
 
 	if err != nil {
 		return err
