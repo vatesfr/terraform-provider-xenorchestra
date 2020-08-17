@@ -3,7 +3,7 @@
 TEST ?= ./...
 
 build:
-	GO111MODULE=on go build -o terraform-provider-xenorchestra
+	go build -o terraform-provider-xenorchestra
 
 clean:
 	rm dist/*
