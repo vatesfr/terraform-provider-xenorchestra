@@ -56,6 +56,34 @@ func TestCall_withJsonRPC2Error(t *testing.T) {
 	}
 }
 
+func TestCall_withJsonRPC2ErrorWithNilData(t *testing.T) {
+	rpcCode := 10
+	msg := "invalid parameters"
+	var expectedErrMsg string = fmt.Sprintf(`jsonrpc2: code %d message: %s`, rpcCode, msg)
+	c := Client{
+		rpc: jsonRPCFail{
+			err: &jsonrpc2.Error{
+				Data:    nil,
+				Code:    int64(rpcCode),
+				Message: msg,
+			},
+		},
+	}
+
+	params := map[string]interface{}{
+		"test": "test",
+	}
+	err := c.Call(context.TODO(), "dummy method", params, nil)
+
+	if err == nil {
+		t.Errorf("Call method should have returned non-nil error")
+	}
+
+	if err.Error() != expectedErrMsg {
+		t.Errorf("Call method should surface property with invalid parameter. Received `%s` but expected `%s`", err, expectedErrMsg)
+	}
+}
+
 func TestCall_withNonJsonRPC2Error(t *testing.T) {
 	expectedErr := errors.New("This is not a jsonrpc2 error")
 	c := Client{
