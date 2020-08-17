@@ -2,6 +2,7 @@ package xoa
 
 import (
 	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
@@ -88,8 +89,44 @@ func testAccCheckXenorchestraVmDestroy(s *terraform.State) error {
 	return nil
 }
 
-// TODO: Add vm update tests
-// test case updating cloud config recreates vm
+func TestAccXenorchestraVm_updatesWithoutReboot(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+
+	origNameLabel := "name label"
+	origNameDesc := "name label"
+	origHa := ""
+	origPowerOn := false
+	updatedNameLabel := "Updated name label"
+	updatedNameDesc := "Updated description"
+	updatedHa := "restart"
+	updatedPowerOn := true
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigUpdateAttrsHaltIrrelevant(origNameLabel, origNameDesc, origHa, origPowerOn),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "name_label", origNameLabel),
+					resource.TestCheckResourceAttr(resourceName, "auto_poweron", strconv.FormatBool(origPowerOn)),
+					resource.TestCheckResourceAttr(resourceName, "high_availability", origHa)),
+			},
+			{
+				Config: testAccVmConfigUpdateAttrsHaltIrrelevant(updatedNameLabel, updatedNameDesc, updatedHa, updatedPowerOn),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "name_label", updatedNameLabel),
+					resource.TestCheckResourceAttr(resourceName, "name_description", updatedNameDesc),
+					resource.TestCheckResourceAttr(resourceName, "auto_poweron", strconv.FormatBool(updatedPowerOn)),
+					resource.TestCheckResourceAttr(resourceName, "high_availability", updatedHa)),
+			},
+		},
+	})
+}
 
 // TODO: Add unit tests
 func testAccVmExists(resourceName string) resource.TestCheckFunc {
@@ -150,4 +187,39 @@ resource "xenorchestra_vm" "bar" {
     }
 }
 `
+}
+
+// Terraform config that tests changes to a VM that do not require halting
+// the VM prior to applying
+func testAccVmConfigUpdateAttrsHaltIrrelevant(nameLabel, nameDescription, ha string, powerOn bool) string {
+	return testAccCloudConfigConfig() + fmt.Sprintf(`
+data "xenorchestra_template" "template" {
+    name_label = "Puppet agent - Bionic 18.04 - 1"
+}
+
+data "xenorchestra_pif" "pif" {
+    device = "eth1"
+    vlan = -1
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 256000000
+    cpus  = 1
+    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    name_label = "%s"
+    name_description = "%s"
+    template = "${data.xenorchestra_template.template.id}"
+    high_availability = "%s"
+    auto_poweron = "%t"
+    network {
+	network_id = "${data.xenorchestra_pif.pif.network}"
+    }
+
+    disk {
+      sr_id = "7f469400-4a2b-5624-cf62-61e522e50ea1"
+      name_label = "Ubuntu Bionic Beaver 18.04_imavo"
+      size = 10000000000
+    }
+}
+`, nameLabel, nameDescription, ha, powerOn)
 }

@@ -95,7 +95,13 @@ func (c *Client) Call(ctx context.Context, method string, params, result interfa
 			return err
 		}
 
-		return errors.New(fmt.Sprintf("%s: %s", err, *rpcErr.Data))
+		data := rpcErr.Data
+
+		if data == nil {
+			return err
+		}
+
+		return errors.New(fmt.Sprintf("%s: %s", err, *data))
 	}
 	return nil
 }
