@@ -89,7 +89,11 @@ func (c *Client) Call(ctx context.Context, method string, params, result interfa
 	err := c.rpc.Call(ctx, method, params, &result, opt...)
 
 	if err != nil {
-		rpcErr, _ := err.(*jsonrpc2.Error)
+		rpcErr, ok := err.(*jsonrpc2.Error)
+
+		if !ok {
+			return err
+		}
 
 		return errors.New(fmt.Sprintf("%s: %s", err, *rpcErr.Data))
 	}

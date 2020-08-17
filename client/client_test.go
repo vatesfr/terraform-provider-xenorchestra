@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -25,7 +26,7 @@ func (rpc jsonRPCFail) Close() error {
 	return nil
 }
 
-func TestCall(t *testing.T) {
+func TestCall_withJsonRPC2Error(t *testing.T) {
 	var jsonRpcErr string = `{"errors":[{"code":null,"reason":"type","message":"must be string, but is object","property":"@.template"}]}`
 	rpcCode := 10
 	msg := "invalid parameters"
@@ -52,5 +53,27 @@ func TestCall(t *testing.T) {
 
 	if err.Error() != expectedErrMsg {
 		t.Errorf("Call method should surface property with invalid parameter. Received `%s` but expected `%s`", err, expectedErrMsg)
+	}
+}
+
+func TestCall_withNonJsonRPC2Error(t *testing.T) {
+	expectedErr := errors.New("This is not a jsonrpc2 error")
+	c := Client{
+		rpc: jsonRPCFail{
+			err: expectedErr,
+		},
+	}
+
+	params := map[string]interface{}{
+		"test": "test",
+	}
+	err := c.Call(context.TODO(), "dummy method", params, nil)
+
+	if err == nil {
+		t.Errorf("Call method should have returned non-nil error")
+	}
+
+	if err != expectedErr {
+		t.Errorf("Call method should return an error as is if not of type `jsonrpc2.Error`. Expected: %v received: %v", expectedErr, err)
 	}
 }
