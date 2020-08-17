@@ -3,7 +3,7 @@ package xoa
 import (
 	"bytes"
 	"fmt"
-	"strings"
+	"io"
 	"time"
 
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
@@ -11,32 +11,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
+var logFile = "/tmp/terraform-provider-xenorchestra"
+var XenLog io.Writer
+var err error
+
 func init() {
-}
-
-var validHaOptions = []string{
-	"",
-	"best-effort",
-	"restart",
-}
-
-func StringInSlice(valid []string, ignoreCase bool) schema.SchemaValidateFunc {
-	return func(i interface{}, k string) (s []string, es []error) {
-		v, ok := i.(string)
-		if !ok {
-			es = append(es, fmt.Errorf("expected type of %s to be string", k))
-			return
-		}
-
-		for _, str := range valid {
-			if v == str || (ignoreCase && strings.ToLower(v) == strings.ToLower(str)) {
-				return
-			}
-		}
-
-		es = append(es, fmt.Errorf("expected %s to be one of %v, got %s", k, valid, v))
-		return
-	}
 }
 
 func resourceRecord() *schema.Resource {
@@ -61,19 +40,6 @@ func resourceRecord() *schema.Resource {
 			"name_description": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
-			},
-			"auto_poweron": &schema.Schema{
-				Type:     schema.TypeBool,
-				Default:  false,
-				Optional: true,
-			},
-			"high_availability": &schema.Schema{
-				Type:     schema.TypeString,
-				Default:  "",
-				Optional: true,
-				// TODO: Replace with validation.StringInSlice when terraform
-				// and the SDK are upgraded.
-				ValidateFunc: StringInSlice(validHaOptions, false),
 			},
 			"template": &schema.Schema{
 				Type:     schema.TypeString,
@@ -226,24 +192,7 @@ func resourceVmRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
-	config := m.(client.Config)
-	c, err := client.NewClient(config)
-
-	if err != nil {
-		return err
-	}
-
-	nameLabel := d.Get("name_label").(string)
-	nameDescription := d.Get("name_description").(string)
-	cpus := d.Get("cpus").(int)
-	autoPowerOn := d.Get("auto_poweron").(bool)
-	ha := d.Get("high_availability").(string)
-	vm, err := c.UpdateVm(d.Id(), cpus, nameLabel, nameDescription, ha, autoPowerOn)
-
-	if err != nil {
-		return err
-	}
-	return recordToData(*vm, d)
+	return nil
 }
 
 func resourceVmDelete(d *schema.ResourceData, m interface{}) error {
@@ -284,16 +233,9 @@ func RecordImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData
 func recordToData(resource client.Vm, d *schema.ResourceData) error {
 	d.SetId(resource.Id)
 	// d.Set("cloud_config", resource.CloudConfig)
-	// err := d.Set("memory_max", resource.Memory.Size)
-	// log.Printf("[DEBUG] Found error when setting memory_max %+v", err)
-
-	// if err != nil {
-	// 	return err
-	// }
+	// d.Set("memory_max", resource.Memory.Size)
 	d.Set("cpus", resource.CPUs.Number)
 	d.Set("name_label", resource.NameLabel)
 	d.Set("name_description", resource.NameDescription)
-	d.Set("high_availability", resource.HA)
-	d.Set("auto_poweron", resource.AutoPoweron)
 	return nil
 }
