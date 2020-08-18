@@ -1,6 +1,6 @@
 # Xen Orchestra Provider
 
-The Xen Orchestra provider is used to interact with the resources supported by https://github.com/vatesfr/xen-orchestra[Xen Orchestra].
+The Xen Orchestra provider is used to interact with the resources supported by [Xen Orchestra](https://github.com/vatesfr/xen-orchestra).
 The provider needs to be configured with the proper credentials before it can be used.
 
 ## Requirements
