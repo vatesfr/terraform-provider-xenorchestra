@@ -5,8 +5,8 @@ The provider needs to be configured with the proper credentials before it can be
 
 ## Requirements
 
-** Terraform 0.12+
-** Xen Orchestra 5.50.1
+* Terraform 0.12+
+* Xen Orchestra 5.50.1
 
 ## Using the provider
 
