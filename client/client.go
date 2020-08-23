@@ -121,6 +121,8 @@ func (c *Client) FindFromGetAllObjects(obj XoObject) (interface{}, error) {
 		xoApiType = "pool"
 	case StorageRepository:
 		xoApiType = "SR"
+	case Vm:
+		xoApiType = "VM"
 	case Template:
 		xoApiType = "VM-template"
 	case VIF:

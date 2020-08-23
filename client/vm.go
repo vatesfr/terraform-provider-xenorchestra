@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
@@ -26,7 +27,6 @@ type MemoryObject struct {
 type Vm struct {
 	Type               string       `json:"type,omitempty"`
 	Id                 string       `json:"id,omitempty"`
-	Name               string       `json:"name,omitempty"`
 	NameDescription    string       `json:"name_description"`
 	NameLabel          string       `json:"name_label"`
 	CPUs               CPUs         `json:"CPUs"`
@@ -39,6 +39,37 @@ type Vm struct {
 	AutoPoweron        bool         `json:"auto_poweron"`
 	HA                 string       `json:"high_availability"`
 	CloudConfig        string       `json:"cloudConfig"`
+}
+
+func (v Vm) Compare(obj map[string]interface{}) bool {
+	other := v.New(obj).(Vm)
+	if v.Id != "" && v.Id == other.Id {
+		return true
+	}
+
+	if v.NameLabel != "" && v.NameLabel == other.NameLabel {
+		return true
+	}
+
+	return false
+}
+
+// TODO: Decide if a refactored version of this would work better
+// than the existing XoObject pattern.
+func (v Vm) New(obj map[string]interface{}) XoObject {
+	var vm Vm
+
+	m, err := json.Marshal(obj)
+
+	if err != nil {
+		panic(err)
+	}
+
+	err = json.Unmarshal(m, &vm)
+	if err != nil {
+		panic(err)
+	}
+	return vm
 }
 
 type VDI struct {
@@ -125,7 +156,7 @@ func (c *Client) UpdateVm(id string, cpus int, nameLabel, nameDescription, ha st
 	// attributes after calling vm.set. Need to investigate a better way to detect this.
 	time.Sleep(15 * time.Second)
 
-	return c.GetVm(id)
+	return c.GetVm(Vm{Id: id})
 }
 
 func (c *Client) DeleteVm(id string) error {
@@ -143,34 +174,21 @@ func (c *Client) DeleteVm(id string) error {
 	return nil
 }
 
-func (c *Client) GetVm(id string) (*Vm, error) {
-	params := map[string]interface{}{
-		"filter": map[string]string{
-			"type": "VM",
-		},
-	}
-	var objsRes allObjectResponse
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	err := c.Call(ctx, "xo.getAllObjects", params, &objsRes.Objects)
+func (c *Client) GetVm(vmReq Vm) (*Vm, error) {
+	obj, err := c.FindFromGetAllObjects(vmReq)
+	vm := obj.(Vm)
 
 	if err != nil {
-		return nil, err
+		return &vm, err
 	}
 
-	vm, ok := objsRes.Objects[id]
-	if !ok {
-		return nil, NotFound{
-			Id:   id,
-			Type: "Vm",
-		}
-	}
 	log.Printf("[DEBUG] Found vm: %+v", vm)
 	return &vm, nil
 }
 
 func (c *Client) waitForModifyVm(id string, timeout time.Duration) error {
 	refreshFn := func() (result interface{}, state string, err error) {
-		vm, err := c.GetVm(id)
+		vm, err := c.GetVm(Vm{Id: id})
 
 		if err != nil {
 			return vm, "", err

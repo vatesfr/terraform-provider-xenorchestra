@@ -13,7 +13,8 @@ func TestGetVIFs(t *testing.T) {
 		t.Errorf("failed to create client with error: %v", err)
 	}
 
-	vm, err := c.GetVm("d2efe162-35b3-f84f-8a59-6064b6875b61")
+	vmName := "XOA"
+	vm, err := c.GetVm(Vm{NameLabel: vmName})
 
 	if err != nil {
 		t.Errorf("failed to get VM with error: %v", err)

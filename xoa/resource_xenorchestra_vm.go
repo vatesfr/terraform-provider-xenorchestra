@@ -255,7 +255,7 @@ func resourceVmRead(d *schema.ResourceData, m interface{}) error {
 	if err != nil {
 		return err
 	}
-	vmObj, err := c.GetVm(xoaId)
+	vmObj, err := c.GetVm(client.Vm{Id: xoaId})
 	if err != nil {
 		return err
 	}
@@ -311,7 +311,7 @@ func RecordImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData
 		return nil, err
 	}
 
-	vmObj, err := c.GetVm(xoaId)
+	vmObj, err := c.GetVm(client.Vm{Id: xoaId})
 	if err != nil {
 		return nil, err
 	}

@@ -78,7 +78,7 @@ func testAccCheckXenorchestraVmDestroy(s *terraform.State) error {
 			continue
 		}
 
-		_, err := c.GetVm(rs.Primary.ID)
+		_, err := c.GetVm(client.Vm{Id: rs.Primary.ID})
 
 		if _, ok := err.(client.NotFound); ok {
 			return nil
@@ -147,7 +147,7 @@ func testAccVmExists(resourceName string) resource.TestCheckFunc {
 			return err
 		}
 
-		vm, err := c.GetVm(rs.Primary.ID)
+		vm, err := c.GetVm(client.Vm{Id: rs.Primary.ID})
 
 		if err != nil {
 			return err
