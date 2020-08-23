@@ -123,6 +123,8 @@ func (c *Client) FindFromGetAllObjects(obj XoObject) (interface{}, error) {
 		xoApiType = "SR"
 	case Template:
 		xoApiType = "VM-template"
+	case VIF:
+		xoApiType = "VIF"
 	default:
 		panic(fmt.Sprintf("XO client does not support type: %T", t))
 	}
@@ -142,6 +144,7 @@ func (c *Client) FindFromGetAllObjects(obj XoObject) (interface{}, error) {
 	}
 
 	found := false
+	objs := make([]interface{}, 0)
 	for _, resObj := range objsRes.Objects {
 		v, ok := resObj.(map[string]interface{})
 		if !ok {
@@ -154,14 +157,19 @@ func (c *Client) FindFromGetAllObjects(obj XoObject) (interface{}, error) {
 
 		if obj.Compare(v) {
 			found = true
-			obj = obj.New(v)
+			objs = append(objs, obj.New(v))
 		}
 	}
 	if !found {
 		return obj, NotFound{Type: xoApiType}
 	}
 
-	return obj, nil
+	if len(objs) == 1 {
+
+		return objs[0], nil
+	}
+
+	return objs, nil
 }
 
 type handler struct{}

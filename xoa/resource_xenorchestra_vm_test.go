@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
+	"github.com/ddelnano/terraform-provider-xenorchestra/xoa/internal"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
@@ -21,7 +22,8 @@ func TestAccXenorchestraVm_create(t *testing.T) {
 				Config: testAccVmConfig(),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
-					resource.TestCheckResourceAttrSet(resourceName, "id")),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_pif.pif", "network")),
 			},
 		},
 	})

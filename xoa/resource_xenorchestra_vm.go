@@ -116,12 +116,25 @@ func resourceRecord() *schema.Resource {
 							Type:     schema.TypeString,
 							Required: true,
 						},
+						"mac_address": &schema.Schema{
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						// TODO: This always seems to be 0 rather than
+						// the device number (i.e. eth0, eth1, etc)
+						// "device": &schema.Schema{
+						// 	Type:     schema.TypeString,
+						// 	Computed: true,
+						// },
 					},
 				},
 				Set: func(value interface{}) int {
 					network := value.(map[string]interface{})
 
-					return hashcode.String(network["network_id"].(string))
+					macAddress := network["mac_address"].(string)
+					networkId := network["network_id"].(string)
+
+					return hashcode.String(fmt.Sprintf("%s-%s", macAddress, networkId))
 				},
 			},
 			"disk": &schema.Schema{
@@ -206,7 +219,32 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 	d.SetId(vm.Id)
 	d.Set("cloud_config", d.Get("cloud_config").(string))
 	d.Set("memory_max", d.Get("memory_max").(int))
+
+	vifs, err := c.GetVIFs(vm)
+
+	if err != nil {
+		return err
+	}
+
+	err = d.Set("network", vifsToMapList(vifs))
+
+	if err != nil {
+		return err
+	}
 	return nil
+}
+
+func vifsToMapList(vifs []client.VIF) []map[string]interface{} {
+	result := make([]map[string]interface{}, 0, len(vifs))
+	for _, vif := range vifs {
+		vifMap := map[string]interface{}{
+			"mac_address": vif.MacAddress,
+			"network_id":  vif.Network,
+		}
+		result = append(result, vifMap)
+	}
+
+	return result
 }
 
 func resourceVmRead(d *schema.ResourceData, m interface{}) error {
