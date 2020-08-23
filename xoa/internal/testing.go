@@ -9,7 +9,7 @@ import (
 )
 
 /*
- * This file contains code that was borrowed from the terraform-provider-aws repo (https://github.com/terraform-providers/terraform-provider-aws).
+ * This file contains code that was borrowed from the terraform-provider-aws repo (https://github.com/terraform-providers/terraform-provider-aws). It is provided as is (no modifications) less the code that I did not use.
  *
  * It is covered by the Mozilla Public License Version 2.0.
  *
