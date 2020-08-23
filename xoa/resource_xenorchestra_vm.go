@@ -255,11 +255,17 @@ func resourceVmRead(d *schema.ResourceData, m interface{}) error {
 	if err != nil {
 		return err
 	}
-	vmObj, err := c.GetVm(client.Vm{Id: xoaId})
+	vm, err := c.GetVm(client.Vm{Id: xoaId})
 	if err != nil {
 		return err
 	}
-	recordToData(*vmObj, d)
+
+	vifs, err := c.GetVIFs(vm)
+
+	if err != nil {
+		return err
+	}
+	recordToData(*vm, vifs, d)
 	return nil
 }
 
@@ -281,7 +287,14 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 	if err != nil {
 		return err
 	}
-	return recordToData(*vm, d)
+
+	vifs, err := c.GetVIFs(vm)
+
+	if err != nil {
+		return err
+	}
+
+	return recordToData(*vm, vifs, d)
 }
 
 func resourceVmDelete(d *schema.ResourceData, m interface{}) error {
@@ -311,15 +324,23 @@ func RecordImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData
 		return nil, err
 	}
 
-	vmObj, err := c.GetVm(client.Vm{Id: xoaId})
+	vm, err := c.GetVm(client.Vm{Id: xoaId})
 	if err != nil {
 		return nil, err
 	}
-	recordToData(*vmObj, d)
-	return []*schema.ResourceData{d}, nil
+
+	rd := []*schema.ResourceData{d}
+	vifs, err := c.GetVIFs(vm)
+
+	if err != nil {
+		return rd, err
+	}
+	recordToData(*vm, vifs, d)
+
+	return rd, nil
 }
 
-func recordToData(resource client.Vm, d *schema.ResourceData) error {
+func recordToData(resource client.Vm, vifs []client.VIF, d *schema.ResourceData) error {
 	d.SetId(resource.Id)
 	// d.Set("cloud_config", resource.CloudConfig)
 	// err := d.Set("memory_max", resource.Memory.Size)
@@ -333,5 +354,11 @@ func recordToData(resource client.Vm, d *schema.ResourceData) error {
 	d.Set("name_description", resource.NameDescription)
 	d.Set("high_availability", resource.HA)
 	d.Set("auto_poweron", resource.AutoPoweron)
+
+	err := d.Set("network", vifsToMapList(vifs))
+
+	if err != nil {
+		return err
+	}
 	return nil
 }
