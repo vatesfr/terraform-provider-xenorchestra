@@ -116,12 +116,25 @@ func resourceRecord() *schema.Resource {
 							Type:     schema.TypeString,
 							Required: true,
 						},
+						"mac_address": &schema.Schema{
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						// TODO: This always seems to be 0 rather than
+						// the device number (i.e. eth0, eth1, etc)
+						// "device": &schema.Schema{
+						// 	Type:     schema.TypeString,
+						// 	Computed: true,
+						// },
 					},
 				},
 				Set: func(value interface{}) int {
 					network := value.(map[string]interface{})
 
-					return hashcode.String(network["network_id"].(string))
+					macAddress := network["mac_address"].(string)
+					networkId := network["network_id"].(string)
+
+					return hashcode.String(fmt.Sprintf("%s-%s", macAddress, networkId))
 				},
 			},
 			"disk": &schema.Schema{
@@ -206,7 +219,32 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 	d.SetId(vm.Id)
 	d.Set("cloud_config", d.Get("cloud_config").(string))
 	d.Set("memory_max", d.Get("memory_max").(int))
+
+	vifs, err := c.GetVIFs(vm)
+
+	if err != nil {
+		return err
+	}
+
+	err = d.Set("network", vifsToMapList(vifs))
+
+	if err != nil {
+		return err
+	}
 	return nil
+}
+
+func vifsToMapList(vifs []client.VIF) []map[string]interface{} {
+	result := make([]map[string]interface{}, 0, len(vifs))
+	for _, vif := range vifs {
+		vifMap := map[string]interface{}{
+			"mac_address": vif.MacAddress,
+			"network_id":  vif.Network,
+		}
+		result = append(result, vifMap)
+	}
+
+	return result
 }
 
 func resourceVmRead(d *schema.ResourceData, m interface{}) error {
@@ -217,11 +255,17 @@ func resourceVmRead(d *schema.ResourceData, m interface{}) error {
 	if err != nil {
 		return err
 	}
-	vmObj, err := c.GetVm(xoaId)
+	vm, err := c.GetVm(client.Vm{Id: xoaId})
 	if err != nil {
 		return err
 	}
-	recordToData(*vmObj, d)
+
+	vifs, err := c.GetVIFs(vm)
+
+	if err != nil {
+		return err
+	}
+	recordToData(*vm, vifs, d)
 	return nil
 }
 
@@ -243,7 +287,14 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 	if err != nil {
 		return err
 	}
-	return recordToData(*vm, d)
+
+	vifs, err := c.GetVIFs(vm)
+
+	if err != nil {
+		return err
+	}
+
+	return recordToData(*vm, vifs, d)
 }
 
 func resourceVmDelete(d *schema.ResourceData, m interface{}) error {
@@ -273,15 +324,23 @@ func RecordImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData
 		return nil, err
 	}
 
-	vmObj, err := c.GetVm(xoaId)
+	vm, err := c.GetVm(client.Vm{Id: xoaId})
 	if err != nil {
 		return nil, err
 	}
-	recordToData(*vmObj, d)
-	return []*schema.ResourceData{d}, nil
+
+	rd := []*schema.ResourceData{d}
+	vifs, err := c.GetVIFs(vm)
+
+	if err != nil {
+		return rd, err
+	}
+	recordToData(*vm, vifs, d)
+
+	return rd, nil
 }
 
-func recordToData(resource client.Vm, d *schema.ResourceData) error {
+func recordToData(resource client.Vm, vifs []client.VIF, d *schema.ResourceData) error {
 	d.SetId(resource.Id)
 	// d.Set("cloud_config", resource.CloudConfig)
 	// err := d.Set("memory_max", resource.Memory.Size)
@@ -295,5 +354,11 @@ func recordToData(resource client.Vm, d *schema.ResourceData) error {
 	d.Set("name_description", resource.NameDescription)
 	d.Set("high_availability", resource.HA)
 	d.Set("auto_poweron", resource.AutoPoweron)
+
+	err := d.Set("network", vifsToMapList(vifs))
+
+	if err != nil {
+		return err
+	}
 	return nil
 }
