@@ -2,10 +2,12 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"os"
+	"reflect"
 	"time"
 
 	gorillawebsocket "github.com/gorilla/websocket"
@@ -136,8 +138,9 @@ func (c *Client) FindFromGetAllObjects(obj XoObject) (interface{}, error) {
 		},
 	}
 	var objsRes struct {
-		Objects map[string]interface{} `json:"-"`
+		Objects []json.RawMessage `json:"-"`
 	}
+	object := reflect.New(reflect.TypeOf(obj))
 	ctx, _ := context.WithTimeout(context.Background(), 100*time.Second)
 	err := c.Call(ctx, "xo.getAllObjects", params, &objsRes.Objects)
 
@@ -145,33 +148,36 @@ func (c *Client) FindFromGetAllObjects(obj XoObject) (interface{}, error) {
 		return obj, err
 	}
 
-	found := false
+	// found := false
 	objs := make([]interface{}, 0)
 	for _, resObj := range objsRes.Objects {
-		v, ok := resObj.(map[string]interface{})
-		if !ok {
-			return obj, errors.New("Could not coerce interface{} into map")
-		}
+		err := json.Unmarshal([]byte(resObj), &object)
+		fmt.Printf("Tring to unmarshal this err: %v and object: %+v", err, object)
+		// if err != nil {
+		// 	return errors.New("could not unmarshal the object response")
+		// }
 
-		if v["type"].(string) != xoApiType {
-			continue
-		}
+		// if v["type"].(string) != xoApiType {
+		// 	continue
+		// }
 
-		if obj.Compare(v) {
-			found = true
-			objs = append(objs, obj.New(v))
-		}
+		// if obj.Compare(v) {
+		// 	found = true
+		// 	objs = append(objs, obj.New(v))
+		// }
+		// }
+		// if !found {
+		// return obj, NotFound{Type: xoApiType}
+		// }
+
+		// if len(objs) == 1 {
+
+		// return objs[0], nil
+		// }
+
 	}
-	if !found {
-		return obj, NotFound{Type: xoApiType}
-	}
-
-	if len(objs) == 1 {
-
-		return objs[0], nil
-	}
-
 	return objs, nil
+
 }
 
 type handler struct{}
