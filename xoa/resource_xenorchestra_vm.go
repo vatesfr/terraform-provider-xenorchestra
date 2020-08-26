@@ -3,6 +3,7 @@ package xoa
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -132,9 +133,13 @@ func resourceRecord() *schema.Resource {
 					network := value.(map[string]interface{})
 
 					macAddress := network["mac_address"].(string)
-					networkId := network["network_id"].(string)
 
-					return hashcode.String(fmt.Sprintf("%s-%s", macAddress, networkId))
+					networkId := network["network_id"].(string)
+					// debug.PrintStack()
+					v := fmt.Sprintf("%s-%s", macAddress, networkId)
+					fmt.Printf("[DEBUG] Setting network via %s\n", v)
+
+					return hashcode.String(v)
 				},
 			},
 			"disk": &schema.Schema{
@@ -284,6 +289,22 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 	ha := d.Get("high_availability").(string)
 	vm, err := c.UpdateVm(d.Id(), cpus, nameLabel, nameDescription, ha, autoPowerOn)
 
+	if d.HasChange("network") {
+		origNet, newNet := d.GetChange("network")
+		log.Printf("[DEBUG] VM networks will be updated\n")
+
+		os := origNet.(*schema.Set)
+		ns := newNet.(*schema.Set)
+
+		// remova := expandNetworks(os.Difference().List())
+		additions, _ := expandNetworks(ns.Difference(os).List())
+
+		for _, addition := range additions {
+			c.CreateVIF(vm, addition)
+			fmt.Printf("[DEBUG] Creating the following VIF: %v\n", addition)
+		}
+	}
+
 	if err != nil {
 		return err
 	}
@@ -312,6 +333,17 @@ func resourceVmDelete(d *schema.ResourceData, m interface{}) error {
 	}
 	d.SetId("")
 	return nil
+}
+
+func expandNetworks(networks []interface{}) ([]*client.VIF, error) {
+	vifs := make([]*client.VIF, 0, len(networks))
+	for _, net := range networks {
+		data := net.(map[string]interface{})
+
+		networkId := data["network_id"].(string)
+		vifs = append(vifs, &client.VIF{Network: networkId})
+	}
+	return vifs, nil
 }
 
 func RecordImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
@@ -355,7 +387,9 @@ func recordToData(resource client.Vm, vifs []client.VIF, d *schema.ResourceData)
 	d.Set("high_availability", resource.HA)
 	d.Set("auto_poweron", resource.AutoPoweron)
 
-	err := d.Set("network", vifsToMapList(vifs))
+	nets := vifsToMapList(vifs)
+	fmt.Printf("Add 'network' to the statefile: %v\n", nets)
+	err := d.Set("network", nets)
 
 	if err != nil {
 		return err

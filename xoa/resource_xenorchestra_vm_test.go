@@ -93,6 +93,33 @@ func testAccCheckXenorchestraVmDestroy(s *terraform.State) error {
 	return nil
 }
 
+func TestAccXenorchestraVm_updateVmWithSecondVif(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfig(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "network.#", "1")),
+				// internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_pif.pif", "network")),
+			},
+			{
+				Config: testAccVmConfigWithSecondVIF(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id")),
+				// resource.TestCheckResourceAttr(resourceName, "network.#", "2")),
+				// internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_pif.pif", "network")),
+			},
+		},
+	})
+}
+
 func TestAccXenorchestraVm_updatesWithoutReboot(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 
@@ -182,6 +209,46 @@ resource "xenorchestra_vm" "bar" {
     template = "${data.xenorchestra_template.template.id}"
     network {
 	network_id = "${data.xenorchestra_pif.pif.network}"
+    }
+
+    disk {
+      sr_id = "7f469400-4a2b-5624-cf62-61e522e50ea1"
+      name_label = "Ubuntu Bionic Beaver 18.04_imavo"
+      size = 10000000000
+    }
+}
+`
+}
+
+func testAccVmConfigWithSecondVIF() string {
+	return testAccCloudConfigConfig() + `
+data "xenorchestra_template" "template" {
+    name_label = "Puppet agent - Bionic 18.04 - 1"
+}
+
+data "xenorchestra_pif" "pif" {
+    device = "eth1"
+    vlan = -1
+}
+
+data "xenorchestra_pif" "eth0" {
+    device = "eth0"
+    vlan = -1
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 256000000
+    cpus  = 1
+    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    name_label = "Name"
+    name_description = "description"
+    template = "${data.xenorchestra_template.template.id}"
+    network {
+	network_id = "${data.xenorchestra_pif.pif.network}"
+    }
+
+    network {
+	network_id = "${data.xenorchestra_pif.eth0.network}"
     }
 
     disk {
