@@ -22,6 +22,7 @@ func TestGetVIFs(t *testing.T) {
 
 	vifs, err := c.GetVIFs(vm)
 
+	fmt.Printf("VIFs: %+v\n", vifs)
 	for _, vif := range vifs {
 		if vif.Device == "" {
 			t.Errorf("expecting `Device` field to be set on VIF")
@@ -37,6 +38,10 @@ func TestGetVIFs(t *testing.T) {
 
 		if vif.VmId != vm.Id {
 			t.Errorf("VIF's VmId `%s` should have matched: %v", vif.VmId, vm)
+		}
+
+		if len(vif.Device) == 0 {
+			t.Errorf("expecting `Device` field to be set on VIF instead received: %s", vif.Device)
 		}
 	}
 }

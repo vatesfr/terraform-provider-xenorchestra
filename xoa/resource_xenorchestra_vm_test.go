@@ -11,6 +11,42 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
+func Test_vifsToList(t *testing.T) {
+	vifs := []client.VIF{
+		{
+			Device:     "2",
+			MacAddress: "00:00:00:00:00",
+			Network:    "id",
+		},
+		{
+			Device:     "1",
+			MacAddress: "00:00:00:00:00",
+			Network:    "id",
+		},
+		{
+			Device:     "0",
+			MacAddress: "00:00:00:00:00",
+			Network:    "id",
+		},
+	}
+
+	s := vifsToSlice(vifs)
+
+	for idx, el := range s {
+		m := el.(map[string]interface{})
+
+		device := m["device"].(string)
+		v, err := strconv.Atoi(device)
+
+		if err != nil {
+			t.Errorf("failed to convert device '%s' to int", device)
+		}
+		if v != idx {
+			t.Errorf("Expected index `%d` to match device #: %s", idx, device)
+		}
+	}
+}
+
 func TestAccXenorchestraVm_create(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	resource.Test(t, resource.TestCase{
@@ -112,8 +148,8 @@ func TestAccXenorchestraVm_updateVmWithSecondVif(t *testing.T) {
 				Config: testAccVmConfigWithSecondVIF(),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
-					resource.TestCheckResourceAttrSet(resourceName, "id")),
-				// resource.TestCheckResourceAttr(resourceName, "network.#", "2")),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "network.#", "2")),
 				// internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_pif.pif", "network")),
 			},
 		},

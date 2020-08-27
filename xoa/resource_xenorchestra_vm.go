@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"log"
+	"sort"
 	"strings"
 	"time"
 
@@ -109,7 +110,7 @@ func resourceRecord() *schema.Resource {
 				Required: true,
 			},
 			"network": &schema.Schema{
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Required: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -121,25 +122,11 @@ func resourceRecord() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						// TODO: This always seems to be 0 rather than
-						// the device number (i.e. eth0, eth1, etc)
-						// "device": &schema.Schema{
-						// 	Type:     schema.TypeString,
-						// 	Computed: true,
-						// },
+						"device": &schema.Schema{
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
-				},
-				Set: func(value interface{}) int {
-					network := value.(map[string]interface{})
-
-					macAddress := network["mac_address"].(string)
-
-					networkId := network["network_id"].(string)
-					// debug.PrintStack()
-					v := fmt.Sprintf("%s-%s", macAddress, networkId)
-					fmt.Printf("[DEBUG] Setting network via %s\n", v)
-
-					return hashcode.String(v)
 				},
 			},
 			"disk": &schema.Schema{
@@ -184,9 +171,9 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 	}
 
 	network_ids := []string{}
-	networks := d.Get("network").(*schema.Set)
+	networks := d.Get("network").([]interface{})
 
-	for _, network := range networks.List() {
+	for _, network := range networks {
 		net, _ := network.(map[string]interface{})
 
 		network_ids = append(network_ids, net["network_id"].(string))
@@ -231,7 +218,7 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	err = d.Set("network", vifsToMapList(vifs))
+	err = d.Set("network", vifsToSlice(vifs))
 
 	if err != nil {
 		return err
@@ -239,16 +226,26 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
-func vifsToMapList(vifs []client.VIF) []map[string]interface{} {
-	result := make([]map[string]interface{}, 0, len(vifs))
+func sortVifsByDevice(unsorted []interface{}) []interface{} {
+	return nil
+}
+
+func vifsToSlice(vifs []client.VIF) []interface{} {
+	result := make([]interface{}, 0, len(vifs))
 	for _, vif := range vifs {
 		vifMap := map[string]interface{}{
+			"device":      vif.Device,
 			"mac_address": vif.MacAddress,
 			"network_id":  vif.Network,
 		}
 		result = append(result, vifMap)
 	}
 
+	sort.Slice(result, func(i, j int) bool {
+		first := result[i].(map[string]interface{})
+		second := result[j].(map[string]interface{})
+		return first["device"].(string) < second["device"].(string)
+	})
 	return result
 }
 
@@ -289,24 +286,35 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 	ha := d.Get("high_availability").(string)
 	vm, err := c.UpdateVm(d.Id(), cpus, nameLabel, nameDescription, ha, autoPowerOn)
 
+	if err != nil {
+		return err
+	}
+
 	if d.HasChange("network") {
 		origNet, newNet := d.GetChange("network")
 		log.Printf("[DEBUG] VM networks will be updated\n")
 
-		os := origNet.(*schema.Set)
-		ns := newNet.(*schema.Set)
+		os := origNet.([]interface{})
+		ns := newNet.([]interface{})
 
-		// remova := expandNetworks(os.Difference().List())
-		additions, _ := expandNetworks(ns.Difference(os).List())
+		// Need to create new interfaces
+		oSize := len(os)
+		nSize := len(ns)
 
-		for _, addition := range additions {
-			c.CreateVIF(vm, addition)
-			fmt.Printf("[DEBUG] Creating the following VIF: %v\n", addition)
+		if nSize > oSize {
+			adds := ns[oSize:]
+			additions, err := expandNetworks(adds)
+
+			if err != nil {
+				return err
+			}
+			log.Printf("[DEBUG] orig networks: %+v new networks: %+v oSize: %d nSize: %d additions before expand: %+v after expand: %+v \n", os, ns, oSize, nSize, adds, additions)
+			for _, addition := range additions {
+				c.CreateVIF(vm, addition)
+				fmt.Printf("[DEBUG] Creating the following VIF: %v\n", addition)
+			}
 		}
-	}
 
-	if err != nil {
-		return err
 	}
 
 	vifs, err := c.GetVIFs(vm)
@@ -387,7 +395,7 @@ func recordToData(resource client.Vm, vifs []client.VIF, d *schema.ResourceData)
 	d.Set("high_availability", resource.HA)
 	d.Set("auto_poweron", resource.AutoPoweron)
 
-	nets := vifsToMapList(vifs)
+	nets := vifsToSlice(vifs)
 	fmt.Printf("Add 'network' to the statefile: %v\n", nets)
 	err := d.Set("network", nets)
 

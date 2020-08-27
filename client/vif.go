@@ -53,7 +53,7 @@ func (c *Client) GetVIFs(vm *Vm) ([]VIF, error) {
 	}
 
 	objs := obj.([]interface{})
-	vifs := make([]VIF, len(objs))
+	var vifs []VIF
 	for _, vif := range objs {
 		vifs = append(vifs, vif.(VIF))
 	}

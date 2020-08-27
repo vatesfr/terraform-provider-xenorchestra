@@ -166,6 +166,7 @@ func (c *Client) FindFromGetAllObjects(obj XoObject) (interface{}, error) {
 		return obj, NotFound{Type: xoApiType}
 	}
 
+	fmt.Printf("[DEBUG] Found the following objects from xo.getAllObjects: %+v\n", objs)
 	if len(objs) == 1 {
 
 		return objs[0], nil
