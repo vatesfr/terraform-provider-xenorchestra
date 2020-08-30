@@ -240,13 +240,13 @@ resource "xenorchestra_vm" "bar" {
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
     name_label = "Terraform testing"
     name_description = "description"
-    template = "data.xenorchestra_template.template"
+    template = "${data.xenorchestra_template.template.id}"
     network {
 	network_id = "${data.xenorchestra_pif.pif.network}"
     }
 
     disk {
-      sr_id = "data.xenorchestra_sr.local_storage.id"
+      sr_id = "${data.xenorchestra_sr.local_storage.id}"
       name_label = "xo provider root"
       size = 10000000000
     }
@@ -280,7 +280,7 @@ resource "xenorchestra_vm" "bar" {
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
     name_label = "Terraform testing"
     name_description = "description"
-    template = "data.xenorchestra_template.template"
+    template = "${data.xenorchestra_template.template.id}"
     network {
 	network_id = "${data.xenorchestra_pif.pif.network}"
     }
@@ -290,7 +290,7 @@ resource "xenorchestra_vm" "bar" {
     }
 
     disk {
-      sr_id = "data.xenorchestra_sr.local_storage.id"
+      sr_id = "${data.xenorchestra_sr.local_storage.id}"
       name_label = "xo provider root"
       size = 10000000000
     }
@@ -302,6 +302,10 @@ resource "xenorchestra_vm" "bar" {
 // the VM prior to applying
 func testAccVmConfigUpdateAttrsHaltIrrelevant(nameLabel, nameDescription, ha string, powerOn bool) string {
 	return testAccCloudConfigConfig() + fmt.Sprintf(`
+data "xenorchestra_sr" "local_storage" {
+    name_label = "Local storage"
+}
+
 data "xenorchestra_template" "template" {
     name_label = "Focal Template"
 }
@@ -325,7 +329,7 @@ resource "xenorchestra_vm" "bar" {
     }
 
     disk {
-      sr_id = "7f469400-4a2b-5624-cf62-61e522e50ea1"
+      sr_id = "${data.xenorchestra_sr.local_storage.id}"
       name_label = "xo provider root"
       size = 10000000000
     }
