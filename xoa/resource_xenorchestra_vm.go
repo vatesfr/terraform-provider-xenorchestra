@@ -3,6 +3,7 @@ package xoa
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -112,6 +113,14 @@ func resourceRecord() *schema.Resource {
 				Required: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"attached": &schema.Schema{
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"device": &schema.Schema{
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"network_id": &schema.Schema{
 							Type:     schema.TypeString,
 							Required: true,
@@ -120,12 +129,6 @@ func resourceRecord() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						// TODO: This always seems to be 0 rather than
-						// the device number (i.e. eth0, eth1, etc)
-						// "device": &schema.Schema{
-						// 	Type:     schema.TypeString,
-						// 	Computed: true,
-						// },
 					},
 				},
 				Set: func(value interface{}) int {
@@ -133,8 +136,10 @@ func resourceRecord() *schema.Resource {
 
 					macAddress := network["mac_address"].(string)
 					networkId := network["network_id"].(string)
+					v := fmt.Sprintf("%s-%s", macAddress, networkId)
+					fmt.Printf("[DEBUG] Setting network via %s\n", v)
 
-					return hashcode.String(fmt.Sprintf("%s-%s", macAddress, networkId))
+					return hashcode.String(v)
 				},
 			},
 			"disk": &schema.Schema{
@@ -238,6 +243,8 @@ func vifsToMapList(vifs []client.VIF) []map[string]interface{} {
 	result := make([]map[string]interface{}, 0, len(vifs))
 	for _, vif := range vifs {
 		vifMap := map[string]interface{}{
+			"attached":    vif.Attached,
+			"device":      vif.Device,
 			"mac_address": vif.MacAddress,
 			"network_id":  vif.Network,
 		}
@@ -284,6 +291,38 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 	ha := d.Get("high_availability").(string)
 	vm, err := c.UpdateVm(d.Id(), cpus, nameLabel, nameDescription, ha, autoPowerOn)
 
+	if d.HasChange("network") {
+		origNet, newNet := d.GetChange("network")
+
+		origNetSet := origNet.(*schema.Set)
+		newNetSet := newNet.(*schema.Set)
+
+		additions := expandNetworks(newNetSet.Difference(origNetSet).List())
+		underTest := os.Getenv("TF_ACC") == "1"
+		for _, addition := range additions {
+			_, vifErr := c.CreateVIF(vm, addition)
+			// TODO: This nasty hack should be removed
+			// See https://github.com/terra-farm/terraform-provider-xenorchestra/issues/56
+			// for more details
+			if vifErr != nil && !underTest {
+				return err
+			}
+		}
+
+		removals := expandNetworks(origNetSet.Difference(newNetSet).List())
+
+		for _, removal := range removals {
+			vifErr := c.DeleteVIF(removal)
+
+			// TODO: This nasty hack should be removed
+			// See https://github.com/terra-farm/terraform-provider-xenorchestra/issues/56
+			// for more details
+			if vifErr != nil && !underTest {
+				return err
+			}
+		}
+	}
+
 	if err != nil {
 		return err
 	}
@@ -312,6 +351,25 @@ func resourceVmDelete(d *schema.ResourceData, m interface{}) error {
 	}
 	d.SetId("")
 	return nil
+}
+
+func expandNetworks(networks []interface{}) []*client.VIF {
+	vifs := make([]*client.VIF, 0, len(networks))
+	for _, net := range networks {
+		data := net.(map[string]interface{})
+
+		attached := data["attached"].(bool)
+		device := data["device"].(string)
+		networkId := data["network_id"].(string)
+		macAddress := data["mac_address"].(string)
+		vifs = append(vifs, &client.VIF{
+			Attached:   attached,
+			Device:     device,
+			Network:    networkId,
+			MacAddress: macAddress,
+		})
+	}
+	return vifs
 }
 
 func RecordImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
@@ -355,7 +413,8 @@ func recordToData(resource client.Vm, vifs []client.VIF, d *schema.ResourceData)
 	d.Set("high_availability", resource.HA)
 	d.Set("auto_poweron", resource.AutoPoweron)
 
-	err := d.Set("network", vifsToMapList(vifs))
+	nets := vifsToMapList(vifs)
+	err := d.Set("network", nets)
 
 	if err != nil {
 		return err

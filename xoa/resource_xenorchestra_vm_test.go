@@ -62,7 +62,7 @@ func TestAccVm_import(t *testing.T) {
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttr(resourceName, "name_description", "description"),
-					resource.TestCheckResourceAttr(resourceName, "name_label", "Name"),
+					resource.TestCheckResourceAttr(resourceName, "name_label", "Terraform testing"),
 					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_pif.pif", "network")),
 			},
 		},
@@ -92,6 +92,64 @@ func testAccCheckXenorchestraVmDestroy(s *terraform.State) error {
 	}
 	return nil
 }
+
+func TestAccXenorchestraVm_updateVmWithSecondVif(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfig(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "network.#", "1"),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_pif.pif", "network")),
+			},
+			{
+				Config: testAccVmConfigWithSecondVIF(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "network.#", "2"),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_pif.pif", "network"),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_pif.eth0", "network")),
+			},
+		},
+	})
+}
+
+// TODO: This test fails due to the missing PV drivers issue I've been trying to track down
+// Until then this test will fail.
+// func TestAccXenorchestraVm_removeVifFromVm(t *testing.T) {
+// 	resourceName := "xenorchestra_vm.bar"
+// 	resource.Test(t, resource.TestCase{
+// 		PreCheck:     func() { testAccPreCheck(t) },
+// 		Providers:    testAccProviders,
+// 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+// 		Steps: []resource.TestStep{
+// 			{
+// 				Config: testAccVmConfigWithSecondVIF(),
+// 				Check: resource.ComposeAggregateTestCheckFunc(
+// 					testAccVmExists(resourceName),
+// 					resource.TestCheckResourceAttrSet(resourceName, "id"),
+// 					resource.TestCheckResourceAttr(resourceName, "network.#", "2"),
+// 					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_pif.pif", "network"),
+// 					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_pif.eth0", "network")),
+// 			},
+// 			{
+// 				Config: testAccVmConfig(),
+// 				Check: resource.ComposeAggregateTestCheckFunc(
+// 					testAccVmExists(resourceName),
+// 					resource.TestCheckResourceAttrSet(resourceName, "id"),
+// 					resource.TestCheckResourceAttr(resourceName, "network.#", "1"),
+// 					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_pif.pif", "network")),
+// 			},
+// 		},
+// 	})
+// }
 
 func TestAccXenorchestraVm_updatesWithoutReboot(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
@@ -132,7 +190,6 @@ func TestAccXenorchestraVm_updatesWithoutReboot(t *testing.T) {
 	})
 }
 
-// TODO: Add unit tests
 func testAccVmExists(resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]
@@ -164,8 +221,12 @@ func testAccVmExists(resourceName string) resource.TestCheckFunc {
 
 func testAccVmConfig() string {
 	return testAccCloudConfigConfig() + `
+data "xenorchestra_sr" "local_storage" {
+    name_label = "Local storage"
+}
+
 data "xenorchestra_template" "template" {
-    name_label = "Puppet agent - Bionic 18.04 - 1"
+    name_label = "Focal Template"
 }
 
 data "xenorchestra_pif" "pif" {
@@ -177,7 +238,7 @@ resource "xenorchestra_vm" "bar" {
     memory_max = 256000000
     cpus  = 1
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
-    name_label = "Name"
+    name_label = "Terraform testing"
     name_description = "description"
     template = "${data.xenorchestra_template.template.id}"
     network {
@@ -185,8 +246,52 @@ resource "xenorchestra_vm" "bar" {
     }
 
     disk {
-      sr_id = "7f469400-4a2b-5624-cf62-61e522e50ea1"
-      name_label = "Ubuntu Bionic Beaver 18.04_imavo"
+      sr_id = "${data.xenorchestra_sr.local_storage.id}"
+      name_label = "xo provider root"
+      size = 10000000000
+    }
+}
+`
+}
+
+func testAccVmConfigWithSecondVIF() string {
+	return testAccCloudConfigConfig() + `
+data "xenorchestra_sr" "local_storage" {
+    name_label = "Local storage"
+}
+
+data "xenorchestra_template" "template" {
+    name_label = "Focal Template"
+}
+
+data "xenorchestra_pif" "pif" {
+    device = "eth1"
+    vlan = -1
+}
+
+data "xenorchestra_pif" "eth0" {
+    device = "eth0"
+    vlan = -1
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 256000000
+    cpus  = 1
+    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    name_label = "Terraform testing"
+    name_description = "description"
+    template = "${data.xenorchestra_template.template.id}"
+    network {
+	network_id = "${data.xenorchestra_pif.pif.network}"
+    }
+
+    network {
+	network_id = "${data.xenorchestra_pif.eth0.network}"
+    }
+
+    disk {
+      sr_id = "${data.xenorchestra_sr.local_storage.id}"
+      name_label = "xo provider root"
       size = 10000000000
     }
 }
@@ -197,8 +302,12 @@ resource "xenorchestra_vm" "bar" {
 // the VM prior to applying
 func testAccVmConfigUpdateAttrsHaltIrrelevant(nameLabel, nameDescription, ha string, powerOn bool) string {
 	return testAccCloudConfigConfig() + fmt.Sprintf(`
+data "xenorchestra_sr" "local_storage" {
+    name_label = "Local storage"
+}
+
 data "xenorchestra_template" "template" {
-    name_label = "Puppet agent - Bionic 18.04 - 1"
+    name_label = "Focal Template"
 }
 
 data "xenorchestra_pif" "pif" {
@@ -220,8 +329,8 @@ resource "xenorchestra_vm" "bar" {
     }
 
     disk {
-      sr_id = "7f469400-4a2b-5624-cf62-61e522e50ea1"
-      name_label = "Ubuntu Bionic Beaver 18.04_imavo"
+      sr_id = "${data.xenorchestra_sr.local_storage.id}"
+      name_label = "xo provider root"
       size = 10000000000
     }
 }
