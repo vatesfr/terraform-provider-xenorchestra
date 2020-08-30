@@ -8,5 +8,6 @@ type NotFound struct {
 }
 
 func (e NotFound) Error() string {
+	// TODO: This does not help when we query for a non ID value like name_label
 	return fmt.Sprintf("Could not find %s with id: %s", e.Type, e.Id)
 }

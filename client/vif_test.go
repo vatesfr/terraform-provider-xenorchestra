@@ -1,7 +1,6 @@
 package client
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -22,7 +21,6 @@ func TestGetVIFs(t *testing.T) {
 
 	vifs, err := c.GetVIFs(vm)
 
-	fmt.Printf("VIFs: %+v\n", vifs)
 	for _, vif := range vifs {
 		if vif.Device == "" {
 			t.Errorf("expecting `Device` field to be set on VIF")
@@ -43,10 +41,15 @@ func TestGetVIFs(t *testing.T) {
 		if len(vif.Device) == 0 {
 			t.Errorf("expecting `Device` field to be set on VIF instead received: %s", vif.Device)
 		}
+
+		if !vif.Attached {
+			t.Errorf("expecting `Attached` field to be true on VIF instead received: %t", vif.Attached)
+		}
 	}
 }
 
-func TestCreateVIF_DeleteVIF(t *testing.T) {
+func TestGetVIF(t *testing.T) {
+
 	c, err := NewClient(GetConfigFromEnv())
 
 	if err != nil {
@@ -60,19 +63,48 @@ func TestCreateVIF_DeleteVIF(t *testing.T) {
 		t.Errorf("failed to get VM with error: %v", err)
 	}
 
+	vifs, err := c.GetVIFs(vm)
+
+	expectedVIF := vifs[0]
+
+	vif, err := c.GetVIF(&VIF{
+		MacAddress: expectedVIF.MacAddress,
+	})
+
+	if err != nil {
+		t.Fatalf("failed to get VIF with error: %v", err)
+	}
+
+	if vif.MacAddress != expectedVIF.MacAddress {
+		t.Errorf("expected VIF: %v does not match the VIF we received %v", expectedVIF, vif)
+	}
+}
+
+func TestCreateVIF_DeleteVIF(t *testing.T) {
+	c, err := NewClient(GetConfigFromEnv())
+
+	if err != nil {
+		t.Fatalf("failed to create client with error: %v", err)
+	}
+
+	vmName := "XOA"
+	vm, err := c.GetVm(Vm{NameLabel: vmName})
+
+	if err != nil {
+		t.Fatalf("failed to get VM with error: %v", err)
+	}
+
 	pif, err := c.GetPIFByDevice("eth1", -1)
 
 	if err != nil {
-		t.Errorf("failed to get PIF with error: %v", err)
+		t.Fatalf("failed to get PIF with error: %v", err)
 	}
 
 	vif, err := c.CreateVIF(vm, &VIF{Network: pif.Network})
 
 	if err != nil {
-		t.Errorf("failed to create VIF with error: %v", err)
+		t.Fatalf("failed to create VIF with error: %v", err)
 	}
-
-	fmt.Printf("VIF is %+v", vif)
 
 	err = c.DeleteVIF(vif)
 

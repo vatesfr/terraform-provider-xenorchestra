@@ -11,42 +11,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-func Test_vifsToList(t *testing.T) {
-	vifs := []client.VIF{
-		{
-			Device:     "2",
-			MacAddress: "00:00:00:00:00",
-			Network:    "id",
-		},
-		{
-			Device:     "1",
-			MacAddress: "00:00:00:00:00",
-			Network:    "id",
-		},
-		{
-			Device:     "0",
-			MacAddress: "00:00:00:00:00",
-			Network:    "id",
-		},
-	}
-
-	s := vifsToSlice(vifs)
-
-	for idx, el := range s {
-		m := el.(map[string]interface{})
-
-		device := m["device"].(string)
-		v, err := strconv.Atoi(device)
-
-		if err != nil {
-			t.Errorf("failed to convert device '%s' to int", device)
-		}
-		if v != idx {
-			t.Errorf("Expected index `%d` to match device #: %s", idx, device)
-		}
-	}
-}
-
 func TestAccXenorchestraVm_create(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	resource.Test(t, resource.TestCase{
@@ -98,7 +62,7 @@ func TestAccVm_import(t *testing.T) {
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttr(resourceName, "name_description", "description"),
-					resource.TestCheckResourceAttr(resourceName, "name_label", "Name"),
+					resource.TestCheckResourceAttr(resourceName, "name_label", "Terraform testing"),
 					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_pif.pif", "network")),
 			},
 		},
@@ -141,20 +105,51 @@ func TestAccXenorchestraVm_updateVmWithSecondVif(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
-					resource.TestCheckResourceAttr(resourceName, "network.#", "1")),
-				// internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_pif.pif", "network")),
+					resource.TestCheckResourceAttr(resourceName, "network.#", "1"),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_pif.pif", "network")),
 			},
 			{
 				Config: testAccVmConfigWithSecondVIF(),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
-					resource.TestCheckResourceAttr(resourceName, "network.#", "2")),
-				// internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_pif.pif", "network")),
+					resource.TestCheckResourceAttr(resourceName, "network.#", "2"),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_pif.pif", "network"),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_pif.eth0", "network")),
 			},
 		},
 	})
 }
+
+// TODO: This test fails due to the missing PV drivers issue I've been trying to track down
+// Until then this test will fail.
+// func TestAccXenorchestraVm_removeVifFromVm(t *testing.T) {
+// 	resourceName := "xenorchestra_vm.bar"
+// 	resource.Test(t, resource.TestCase{
+// 		PreCheck:     func() { testAccPreCheck(t) },
+// 		Providers:    testAccProviders,
+// 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+// 		Steps: []resource.TestStep{
+// 			{
+// 				Config: testAccVmConfigWithSecondVIF(),
+// 				Check: resource.ComposeAggregateTestCheckFunc(
+// 					testAccVmExists(resourceName),
+// 					resource.TestCheckResourceAttrSet(resourceName, "id"),
+// 					resource.TestCheckResourceAttr(resourceName, "network.#", "2"),
+// 					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_pif.pif", "network"),
+// 					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_pif.eth0", "network")),
+// 			},
+// 			{
+// 				Config: testAccVmConfig(),
+// 				Check: resource.ComposeAggregateTestCheckFunc(
+// 					testAccVmExists(resourceName),
+// 					resource.TestCheckResourceAttrSet(resourceName, "id"),
+// 					resource.TestCheckResourceAttr(resourceName, "network.#", "1"),
+// 					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_pif.pif", "network")),
+// 			},
+// 		},
+// 	})
+// }
 
 func TestAccXenorchestraVm_updatesWithoutReboot(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
@@ -195,7 +190,6 @@ func TestAccXenorchestraVm_updatesWithoutReboot(t *testing.T) {
 	})
 }
 
-// TODO: Add unit tests
 func testAccVmExists(resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]
@@ -227,9 +221,9 @@ func testAccVmExists(resourceName string) resource.TestCheckFunc {
 
 func testAccVmConfig() string {
 	return testAccCloudConfigConfig() + `
-data "xenorchestra_template" "template" {
-    name_label = "Puppet agent - Bionic 18.04 - 1"
-}
+# data "xenorchestra_template" "template" {
+#    name_label = "terraform-provider-xenorchestra template"
+#}
 
 data "xenorchestra_pif" "pif" {
     device = "eth1"
@@ -240,16 +234,16 @@ resource "xenorchestra_vm" "bar" {
     memory_max = 256000000
     cpus  = 1
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
-    name_label = "Name"
+    name_label = "Terraform testing"
     name_description = "description"
-    template = "${data.xenorchestra_template.template.id}"
+    template = "8555ca0f-5ddf-8439-0d05-6c83f41b6c78"
     network {
 	network_id = "${data.xenorchestra_pif.pif.network}"
     }
 
     disk {
       sr_id = "7f469400-4a2b-5624-cf62-61e522e50ea1"
-      name_label = "Ubuntu Bionic Beaver 18.04_imavo"
+      name_label = "xo provider root"
       size = 10000000000
     }
 }
@@ -259,7 +253,7 @@ resource "xenorchestra_vm" "bar" {
 func testAccVmConfigWithSecondVIF() string {
 	return testAccCloudConfigConfig() + `
 data "xenorchestra_template" "template" {
-    name_label = "Puppet agent - Bionic 18.04 - 1"
+    name_label = "Focal Template"
 }
 
 data "xenorchestra_pif" "pif" {
@@ -276,9 +270,9 @@ resource "xenorchestra_vm" "bar" {
     memory_max = 256000000
     cpus  = 1
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
-    name_label = "Name"
+    name_label = "Terraform testing"
     name_description = "description"
-    template = "${data.xenorchestra_template.template.id}"
+    template = "8555ca0f-5ddf-8439-0d05-6c83f41b6c78"
     network {
 	network_id = "${data.xenorchestra_pif.pif.network}"
     }
@@ -289,7 +283,7 @@ resource "xenorchestra_vm" "bar" {
 
     disk {
       sr_id = "7f469400-4a2b-5624-cf62-61e522e50ea1"
-      name_label = "Ubuntu Bionic Beaver 18.04_imavo"
+      name_label = "xo provider root"
       size = 10000000000
     }
 }
@@ -301,7 +295,7 @@ resource "xenorchestra_vm" "bar" {
 func testAccVmConfigUpdateAttrsHaltIrrelevant(nameLabel, nameDescription, ha string, powerOn bool) string {
 	return testAccCloudConfigConfig() + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
-    name_label = "Puppet agent - Bionic 18.04 - 1"
+    name_label = "Focal Template"
 }
 
 data "xenorchestra_pif" "pif" {
@@ -324,7 +318,7 @@ resource "xenorchestra_vm" "bar" {
 
     disk {
       sr_id = "7f469400-4a2b-5624-cf62-61e522e50ea1"
-      name_label = "Ubuntu Bionic Beaver 18.04_imavo"
+      name_label = "xo provider root"
       size = 10000000000
     }
 }
