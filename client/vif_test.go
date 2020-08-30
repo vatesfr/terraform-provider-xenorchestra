@@ -9,14 +9,14 @@ func TestGetVIFs(t *testing.T) {
 	c, err := NewClient(GetConfigFromEnv())
 
 	if err != nil {
-		t.Errorf("failed to create client with error: %v", err)
+		t.Fatalf("failed to create client with error: %v", err)
 	}
 
 	vmName := "XOA"
 	vm, err := c.GetVm(Vm{NameLabel: vmName})
 
 	if err != nil {
-		t.Errorf("failed to get VM with error: %v", err)
+		t.Fatalf("failed to get VM with error: %v", err)
 	}
 
 	vifs, err := c.GetVIFs(vm)
@@ -53,14 +53,14 @@ func TestGetVIF(t *testing.T) {
 	c, err := NewClient(GetConfigFromEnv())
 
 	if err != nil {
-		t.Errorf("failed to create client with error: %v", err)
+		t.Fatalf("failed to create client with error: %v", err)
 	}
 
 	vmName := "XOA"
 	vm, err := c.GetVm(Vm{NameLabel: vmName})
 
 	if err != nil {
-		t.Errorf("failed to get VM with error: %v", err)
+		t.Fatalf("failed to get VM with error: %v", err)
 	}
 
 	vifs, err := c.GetVIFs(vm)
