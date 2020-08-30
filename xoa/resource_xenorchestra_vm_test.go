@@ -221,9 +221,13 @@ func testAccVmExists(resourceName string) resource.TestCheckFunc {
 
 func testAccVmConfig() string {
 	return testAccCloudConfigConfig() + `
-# data "xenorchestra_template" "template" {
-#    name_label = "terraform-provider-xenorchestra template"
-#}
+data "xenorchestra_sr" "local_storage" {
+    name_label = "Local storage"
+}
+
+data "xenorchestra_template" "template" {
+    name_label = "Focal Template"
+}
 
 data "xenorchestra_pif" "pif" {
     device = "eth1"
@@ -236,13 +240,13 @@ resource "xenorchestra_vm" "bar" {
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
     name_label = "Terraform testing"
     name_description = "description"
-    template = "8555ca0f-5ddf-8439-0d05-6c83f41b6c78"
+    template = "data.xenorchestra_template.template"
     network {
 	network_id = "${data.xenorchestra_pif.pif.network}"
     }
 
     disk {
-      sr_id = "7f469400-4a2b-5624-cf62-61e522e50ea1"
+      sr_id = "data.xenorchestra_sr.local_storage.id"
       name_label = "xo provider root"
       size = 10000000000
     }
@@ -252,6 +256,10 @@ resource "xenorchestra_vm" "bar" {
 
 func testAccVmConfigWithSecondVIF() string {
 	return testAccCloudConfigConfig() + `
+data "xenorchestra_sr" "local_storage" {
+    name_label = "Local storage"
+}
+
 data "xenorchestra_template" "template" {
     name_label = "Focal Template"
 }
@@ -272,7 +280,7 @@ resource "xenorchestra_vm" "bar" {
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
     name_label = "Terraform testing"
     name_description = "description"
-    template = "8555ca0f-5ddf-8439-0d05-6c83f41b6c78"
+    template = "data.xenorchestra_template.template"
     network {
 	network_id = "${data.xenorchestra_pif.pif.network}"
     }
@@ -282,7 +290,7 @@ resource "xenorchestra_vm" "bar" {
     }
 
     disk {
-      sr_id = "7f469400-4a2b-5624-cf62-61e522e50ea1"
+      sr_id = "data.xenorchestra_sr.local_storage.id"
       name_label = "xo provider root"
       size = 10000000000
     }
