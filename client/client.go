@@ -163,7 +163,7 @@ func (c *Client) FindFromGetAllObjects(obj XoObject) (interface{}, error) {
 		}
 	}
 	if !found {
-		return obj, NotFound{Type: xoApiType}
+		return obj, NotFound{Type: xoApiType, Query: obj}
 	}
 
 	fmt.Printf("[DEBUG] Found the following objects from xo.getAllObjects: %+v\n", objs)
