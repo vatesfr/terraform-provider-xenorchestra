@@ -20,9 +20,9 @@ func TestGetTemplate(t *testing.T) {
 			err: nil,
 		},
 		{
-			templateName: "No found",
+			templateName: "Not found",
 			template:     Template{},
-			err:          NotFound{Type: "VM-template"},
+			err:          NotFound{Type: "VM-template", Query: Template{NameLabel: "Not found"}},
 		},
 	}
 
