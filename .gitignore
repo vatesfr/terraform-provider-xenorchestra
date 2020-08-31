@@ -5,3 +5,4 @@ crash.log
 main.tf
 terraform.tfstate*
 dist/
+vendor
