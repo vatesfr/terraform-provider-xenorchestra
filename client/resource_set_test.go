@@ -4,30 +4,7 @@ import (
 	"testing"
 )
 
-var testResourceSetName string = "terraform-acc-resource-set"
-
-func createResourceSet() error {
-
-	c, err := NewClient(GetConfigFromEnv())
-
-	if err != nil {
-		return err
-	}
-
-	_, err = c.CreateResourceSet(testResourceSet)
-	return err
-}
-
-func tearDownResourceSet() error {
-
-	c, err := NewClient(GetConfigFromEnv())
-
-	if err != nil {
-		return err
-	}
-
-	return c.DeleteResourceSet(testResourceSet)
-}
+var testResourceSetName string = "terraform-acc-resource-set2"
 
 var testResourceSet = ResourceSet{
 	Name: testResourceSetName,
@@ -120,7 +97,7 @@ func TestGetResourceSet(t *testing.T) {
 		t.Errorf("resource set's name `%s` did not match expected `%s`", rs.Name, testResourceSetName)
 	}
 
-	if rs.Limits.Cpus.Available != 1 {
-		t.Errorf("resource set should have contained 1 CPUs")
+	if rs.Limits.Cpus.Available != 2 {
+		t.Errorf("resource set should have contained 2 CPUs")
 	}
 }
