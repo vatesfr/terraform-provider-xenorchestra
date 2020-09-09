@@ -1,13 +1,13 @@
 package xoa
 
 import (
-	"os"
 	"testing"
 
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-var testResourceSetName string = "terraform-acc-resource-set"
+var testResourceSetName string = "terraform-acc-resource-set-data-source"
 var testResourceSet = client.ResourceSet{
 	Name: testResourceSetName,
 	Limits: client.ResourceSetLimits{
@@ -52,9 +52,6 @@ func TearDownResourceSet(rs client.ResourceSet) error {
 }
 func TestMain(m *testing.M) {
 	CreateResourceSet(testResourceSet)
-	code := m.Run()
 
-	TearDownResourceSet(testResourceSet)
-
-	os.Exit(code)
+	resource.TestMain(m)
 }

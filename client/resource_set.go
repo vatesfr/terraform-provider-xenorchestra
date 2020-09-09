@@ -58,6 +58,25 @@ func (rs ResourceSet) Compare(obj map[string]interface{}) bool {
 	return false
 }
 
+func (c Client) GetResourceSets() ([]ResourceSet, error) {
+
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	var res struct {
+		ResourceSets []ResourceSet `json:"-"`
+	}
+	params := map[string]interface{}{
+		"id": "dummy",
+	}
+	err := c.Call(ctx, "resourceSet.getAll", params, &res.ResourceSets)
+	fmt.Printf("[DEBUG] Calling resourceSet.getAll received response: %+v with error: %v\n", res, err)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return res.ResourceSets, nil
+}
+
 func (c Client) GetResourceSet(rsReq ResourceSet) (*ResourceSet, error) {
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	var res struct {
@@ -76,6 +95,11 @@ func (c Client) GetResourceSet(rsReq ResourceSet) (*ResourceSet, error) {
 	found := false
 	var rsRv *ResourceSet
 	for _, rs := range res.ResourceSets {
+		if rsReq.Id == rs.Id {
+			found = true
+			rsRv = &rs
+		}
+
 		if rsReq.Name == rs.Name {
 			found = true
 			rsRv = &rs
@@ -99,7 +123,7 @@ func (c Client) CreateResourceSet(rsReq ResourceSet) (*ResourceSet, error) {
 		"limits":   rsReq.Limits,
 	}
 	err := c.Call(ctx, "resourceSet.create", params, &rs)
-	fmt.Printf("[DEBUG] Calling resourceSet.create returned: %+v with error: %v\n", rs, err)
+	fmt.Printf("[DEBUG] Calling resourceSet.create with params: %v returned: %+v with error: %v\n", params, rs, err)
 
 	if err != nil {
 		return nil, err
