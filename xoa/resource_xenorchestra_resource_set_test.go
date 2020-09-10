@@ -2,8 +2,6 @@ package xoa
 
 import (
 	"fmt"
-	"log"
-	"strings"
 	"testing"
 
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
@@ -17,28 +15,7 @@ var rsName string = "terraform-acc-resource-set-resource"
 func init() {
 	resource.AddTestSweepers("resource_set", &resource.Sweeper{
 		Name: "resource_set",
-		F: func(_ string) error {
-			fmt.Println("[DEBUG] Running sweeper")
-			c, err := client.NewClient(client.GetConfigFromEnv())
-			if err != nil {
-				return fmt.Errorf("error getting client: %s", err)
-			}
-
-			rss, err := c.GetResourceSets()
-			if err != nil {
-				return fmt.Errorf("error getting resource sets: %s", err)
-			}
-			for _, rs := range rss {
-				if strings.HasPrefix(rs.Name, "terraform-acc") {
-					err := c.DeleteResourceSet(client.ResourceSet{Id: rs.Id})
-
-					if err != nil {
-						log.Printf("Error destroying resource set `%s` during sweep: %s", rs.Name, err)
-					}
-				}
-			}
-			return nil
-		},
+		F:    client.RemoveResourceSetsWithNamePrefix("terraform-acc"),
 	})
 }
 

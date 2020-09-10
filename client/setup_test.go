@@ -16,22 +16,11 @@ func CreateResourceSet(rs ResourceSet) error {
 	_, err = c.CreateResourceSet(rs)
 	return err
 }
-
-func TearDownResourceSet(rs ResourceSet) error {
-
-	c, err := NewClient(GetConfigFromEnv())
-
-	if err != nil {
-		return err
-	}
-
-	return c.DeleteResourceSet(rs)
-}
 func TestMain(m *testing.M) {
 	CreateResourceSet(testResourceSet)
 	code := m.Run()
 
-	TearDownResourceSet(testResourceSet)
+	RemoveResourceSetsWithNamePrefix("terraform-acc")("")
 
 	os.Exit(code)
 }

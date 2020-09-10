@@ -3,6 +3,8 @@ package client
 import (
 	"context"
 	"fmt"
+	"log"
+	"strings"
 	"time"
 )
 
@@ -120,4 +122,29 @@ func (c Client) DeleteResourceSet(rsReq ResourceSet) error {
 	fmt.Printf("[DEBUG] Calling resourceSet.delete call successful: %t with error: %v\n", success, err)
 
 	return err
+}
+
+func RemoveResourceSetsWithNamePrefix(rsNamePrefix string) func(string) error {
+	return func(_ string) error {
+		fmt.Println("[DEBUG] Running sweeper")
+		c, err := NewClient(GetConfigFromEnv())
+		if err != nil {
+			return fmt.Errorf("error getting client: %s", err)
+		}
+
+		rss, err := c.GetResourceSets()
+		if err != nil {
+			return fmt.Errorf("error getting resource sets: %s", err)
+		}
+		for _, rs := range rss {
+			if strings.HasPrefix(rs.Name, rsNamePrefix) {
+				err := c.DeleteResourceSet(ResourceSet{Id: rs.Id})
+
+				if err != nil {
+					log.Printf("error destroying resource set `%s` during sweep: %s", rs.Name, err)
+				}
+			}
+		}
+		return nil
+	}
 }
