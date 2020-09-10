@@ -125,12 +125,19 @@ func resourceSetRead(d *schema.ResourceData, m interface{}) error {
 
 func resourceSetUpdate(d *schema.ResourceData, m interface{}) error {
 	config := m.(client.Config)
-	_, err := client.NewClient(config)
+	c, err := client.NewClient(config)
+
+	id := d.Id()
+	rs, err := c.GetResourceSet(client.ResourceSet{
+		Id: id,
+	})
+	fmt.Printf("[DEBUG] Found resource set: %+v with error: %v\n", rs, err)
 
 	if err != nil {
 		return err
 	}
-	return nil
+
+	return resourceSetToData(*rs, d)
 }
 
 func resourceSetDelete(d *schema.ResourceData, m interface{}) error {
@@ -155,8 +162,26 @@ func resourceSetToData(rs client.ResourceSet, d *schema.ResourceData) error {
 	d.Set("name", rs.Name)
 	d.Set("subjects", rs.Subjects)
 	d.Set("objects", rs.Objects)
-	d.Set("limits", rs.Limits)
+	d.Set("limit", limitToMapList(rs.Limits))
 	return nil
+}
+
+func limitToMapList(rsLimits client.ResourceSetLimits) []map[string]interface{} {
+	result := make([]map[string]interface{}, 0, 3)
+	result = append(result, map[string]interface{}{
+		"type":     "cpus",
+		"quantity": rsLimits.Cpus.Total,
+	})
+	result = append(result, map[string]interface{}{
+		"type":     "disk",
+		"quantity": rsLimits.Disk.Total,
+	})
+	result = append(result, map[string]interface{}{
+		"type":     "memory",
+		"quantity": rsLimits.Memory.Total,
+	})
+
+	return result
 }
 
 func setLimitByType(rs *client.ResourceSet, limitType string, limitValue int) {

@@ -97,7 +97,7 @@ func (c Client) GetResourceSet(rsReq ResourceSet) (*ResourceSet, error) {
 	for _, rs := range res.ResourceSets {
 		if rsReq.Id == rs.Id {
 			found = true
-			rsRv = &rs
+			return &rs, nil
 		}
 
 		if rsReq.Name == rs.Name {

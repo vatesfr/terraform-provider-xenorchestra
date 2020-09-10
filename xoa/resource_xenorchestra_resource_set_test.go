@@ -82,7 +82,10 @@ func TestAccResourceSet_create(t *testing.T) {
 func TestAccResourceSet_import(t *testing.T) {
 	resourceName := "xenorchestra_resource_set.bar"
 	checkFn := func(s []*terraform.InstanceState) error {
-		attrs := []string{"id", "name"}
+		attrs := []string{
+			"id",
+			"name",
+		}
 		for _, attr := range attrs {
 			_, ok := s[0].Attributes[attr]
 

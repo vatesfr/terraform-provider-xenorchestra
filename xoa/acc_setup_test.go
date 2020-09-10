@@ -54,4 +54,6 @@ func TestMain(m *testing.M) {
 	CreateResourceSet(testResourceSet)
 
 	resource.TestMain(m)
+
+	TearDownResourceSet(testResourceSet)
 }
