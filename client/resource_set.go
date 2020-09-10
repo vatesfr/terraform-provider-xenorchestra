@@ -28,42 +28,18 @@ type ResourceSetLimit struct {
 }
 
 func (c Client) GetResourceSets() ([]ResourceSet, error) {
-
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-	var res struct {
-		ResourceSets []ResourceSet `json:"-"`
-	}
-	params := map[string]interface{}{
-		"id": "dummy",
-	}
-	err := c.Call(ctx, "resourceSet.getAll", params, &res.ResourceSets)
-	fmt.Printf("[DEBUG] Calling resourceSet.getAll received response: %+v with error: %v\n", res, err)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return res.ResourceSets, nil
+	return c.makeResourceSetGetAllCall()
 }
 
 func (c Client) GetResourceSet(rsReq ResourceSet) (*ResourceSet, error) {
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-	var res struct {
-		ResourceSets []ResourceSet `json:"-"`
-	}
-	params := map[string]interface{}{
-		"id": "dummy",
-	}
-	err := c.Call(ctx, "resourceSet.getAll", params, &res.ResourceSets)
-	fmt.Printf("[DEBUG] Calling resourceSet.getAll received response: %+v with error: %v\n", res, err)
+	resourceSets, err := c.makeResourceSetGetAllCall()
 
 	if err != nil {
 		return nil, err
 	}
-
 	found := false
 	var rsRv *ResourceSet
-	for _, rs := range res.ResourceSets {
+	for _, rs := range resourceSets {
 		if rsReq.Id == rs.Id {
 			found = true
 			return &rs, nil
@@ -80,6 +56,25 @@ func (c Client) GetResourceSet(rsReq ResourceSet) (*ResourceSet, error) {
 	}
 
 	return rsRv, nil
+}
+
+func (c Client) makeResourceSetGetAllCall() ([]ResourceSet, error) {
+
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	var res struct {
+		ResourceSets []ResourceSet `json:"-"`
+	}
+	params := map[string]interface{}{
+		"id": "dummy",
+	}
+	err := c.Call(ctx, "resourceSet.getAll", params, &res.ResourceSets)
+	fmt.Printf("[DEBUG] Calling resourceSet.getAll received response: %+v with error: %v\n", res, err)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return res.ResourceSets, nil
 }
 
 func (c Client) CreateResourceSet(rsReq ResourceSet) (*ResourceSet, error) {
