@@ -45,39 +45,6 @@ var resourceSetObj = map[string]interface{}{
 	},
 }
 
-func TestResourceSetCompare(t *testing.T) {
-	tests := []struct {
-		object map[string]interface{}
-		rs     ResourceSet
-		result bool
-	}{
-		{
-			object: resourceSetObj,
-			rs: ResourceSet{
-				Name: "resource set name",
-			},
-			result: true,
-		},
-		{
-			object: resourceSetObj,
-			rs: ResourceSet{
-				Name: "Not the same name",
-			},
-			result: false,
-		},
-	}
-
-	for _, test := range tests {
-		rs := test.rs
-		result := test.result
-		object := test.object
-
-		if rs.Compare(test.object) != result {
-			t.Errorf("error: expected object `%v` to Compare `%t` to ResourceSet `%v`", object, result, rs)
-		}
-	}
-}
-
 func TestGetResourceSet(t *testing.T) {
 	c, err := NewClient(GetConfigFromEnv())
 

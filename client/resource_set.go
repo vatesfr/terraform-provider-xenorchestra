@@ -25,39 +25,6 @@ type ResourceSetLimit struct {
 	Total     int
 }
 
-func (rs ResourceSet) New(obj map[string]interface{}) XoObject {
-
-	id := obj["id"].(string)
-
-	return ResourceSet{
-		Id: id,
-		Limits: ResourceSetLimits{
-			Cpus: ResourceSetLimit{
-				Total:     1,
-				Available: 2,
-			},
-			Disk: ResourceSetLimit{
-				Total:     1,
-				Available: 2,
-			},
-			Memory: ResourceSetLimit{
-				Total:     1,
-				Available: 2,
-			},
-		},
-	}
-}
-
-func (rs ResourceSet) Compare(obj map[string]interface{}) bool {
-	name := obj["name"].(string)
-
-	if name == rs.Name {
-		return true
-	}
-
-	return false
-}
-
 func (c Client) GetResourceSets() ([]ResourceSet, error) {
 
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
