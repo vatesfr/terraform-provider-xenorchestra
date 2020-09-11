@@ -107,13 +107,13 @@ func testAccResourceSetExists(resourceName string) resource.TestCheckFunc {
 			return err
 		}
 
-		vm, err := c.GetResourceSet(client.ResourceSet{Id: rs.Primary.ID})
+		resourceSet, err := c.GetResourceSetById(rs.Primary.ID)
 
 		if err != nil {
 			return err
 		}
 
-		if vm.Id == rs.Primary.ID {
+		if resourceSet.Id == rs.Primary.ID {
 			return nil
 		}
 		return nil

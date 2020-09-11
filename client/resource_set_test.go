@@ -52,13 +52,15 @@ func TestGetResourceSet(t *testing.T) {
 		t.Fatalf("failed to create client with error: %v", err)
 	}
 
-	rs, err := c.GetResourceSet(ResourceSet{
+	resourceSets, err := c.GetResourceSet(ResourceSet{
 		Name: testResourceSetName,
 	})
 
 	if err != nil {
 		t.Fatalf("failed to retrieve ResourceSet with error: %v", err)
 	}
+
+	rs := resourceSets[0]
 
 	if rs.Name != testResourceSetName {
 		t.Errorf("resource set's name `%s` did not match expected `%s`", rs.Name, testResourceSetName)

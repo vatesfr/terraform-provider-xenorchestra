@@ -111,9 +111,7 @@ func resourceSetRead(d *schema.ResourceData, m interface{}) error {
 	}
 
 	id := d.Id()
-	rs, err := c.GetResourceSet(client.ResourceSet{
-		Id: id,
-	})
+	rs, err := c.GetResourceSetById(id)
 	fmt.Printf("[DEBUG] Found resource set: %+v with error: %v\n", rs, err)
 
 	if err != nil {
@@ -128,9 +126,7 @@ func resourceSetUpdate(d *schema.ResourceData, m interface{}) error {
 	c, err := client.NewClient(config)
 
 	id := d.Id()
-	rs, err := c.GetResourceSet(client.ResourceSet{
-		Id: id,
-	})
+	rs, err := c.GetResourceSetById(id)
 	fmt.Printf("[DEBUG] Found resource set: %+v with error: %v\n", rs, err)
 
 	if err != nil {

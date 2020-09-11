@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -31,23 +32,40 @@ func (c Client) GetResourceSets() ([]ResourceSet, error) {
 	return c.makeResourceSetGetAllCall()
 }
 
-func (c Client) GetResourceSet(rsReq ResourceSet) (*ResourceSet, error) {
+func (c Client) GetResourceSetById(id string) (*ResourceSet, error) {
+	resourceSets, err := c.GetResourceSet(ResourceSet{
+		Id: id,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	l := len(resourceSets)
+	if l != 1 {
+		return nil, errors.New(fmt.Sprintf("found `%d` resource set(s) with id `%s`: %v", l, id, resourceSets))
+	}
+
+	return &resourceSets[0], nil
+}
+
+func (c Client) GetResourceSet(rsReq ResourceSet) ([]ResourceSet, error) {
 	resourceSets, err := c.makeResourceSetGetAllCall()
 
 	if err != nil {
 		return nil, err
 	}
+	rsRv := []ResourceSet{}
 	found := false
-	var rsRv *ResourceSet
 	for _, rs := range resourceSets {
 		if rsReq.Id == rs.Id {
 			found = true
-			return &rs, nil
+			rsRv = append(rsRv, rs)
 		}
 
 		if rsReq.Name == rs.Name {
 			found = true
-			rsRv = &rs
+			rsRv = append(rsRv, rs)
 		}
 	}
 
@@ -106,7 +124,11 @@ func (c Client) DeleteResourceSet(rsReq ResourceSet) error {
 			return err
 		}
 
-		id = rs.Id
+		if len(rs) > 1 {
+			return errors.New(fmt.Sprintf("refusing to delete resource set since `%d` resource sets were returned: %v", len(rs), rs))
+		}
+
+		id = rs[0].Id
 	}
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	var success bool
