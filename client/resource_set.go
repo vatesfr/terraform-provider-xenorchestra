@@ -43,7 +43,7 @@ func (c Client) GetResourceSetById(id string) (*ResourceSet, error) {
 
 	l := len(resourceSets)
 	if l != 1 {
-		return nil, errors.New(fmt.Sprintf("found `%d` resource set(s) with id `%s`: %v", l, id, resourceSets))
+		return nil, errors.New(fmt.Sprintf("found %d resource set(s) with id `%s`: %v", l, id, resourceSets))
 	}
 
 	return &resourceSets[0], nil

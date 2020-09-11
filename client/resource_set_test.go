@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-var testResourceSetName string = "terraform-acc-resource-set2"
+var testResourceSetName string = "xenorchestra-client-resource-set2"
 
 var testResourceSet = ResourceSet{
 	Name: testResourceSetName,

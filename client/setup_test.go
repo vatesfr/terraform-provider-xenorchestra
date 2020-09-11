@@ -20,7 +20,7 @@ func TestMain(m *testing.M) {
 	CreateResourceSet(testResourceSet)
 	code := m.Run()
 
-	RemoveResourceSetsWithNamePrefix("terraform-acc")("")
+	RemoveResourceSetsWithNamePrefix("xenorchestra-client")("")
 
 	os.Exit(code)
 }

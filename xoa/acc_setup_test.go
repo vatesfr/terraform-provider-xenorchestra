@@ -1,11 +1,16 @@
 package xoa
 
 import (
+	"os"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/ddelnano/terraform-provider-xenorchestra/client"
 )
 
 func TestMain(m *testing.M) {
-	resource.TestMain(m)
+	code := m.Run()
+
+	client.RemoveResourceSetsWithNamePrefix("terraform-acc")("")
+
+	os.Exit(code)
 }
