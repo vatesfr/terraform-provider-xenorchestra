@@ -24,14 +24,14 @@ func resourceResourceSet() *schema.Resource {
 				Required: true,
 			},
 			"subjects": &schema.Schema{
-				Type: schema.TypeList,
+				Type: schema.TypeSet,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
 				Optional: true,
 			},
 			"objects": &schema.Schema{
-				Type: schema.TypeList,
+				Type: schema.TypeSet,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
@@ -68,15 +68,15 @@ func resourceSetCreate(d *schema.ResourceData, m interface{}) error {
 
 	name := d.Get("name").(string)
 	limits := d.Get("limit").(*schema.Set)
-	objs := d.Get("objects").([]interface{})
-	subs := d.Get("subjects").([]interface{})
+	objs := d.Get("objects").(*schema.Set)
+	subs := d.Get("subjects").(*schema.Set)
 
 	objects := []string{}
-	for _, obj := range objs {
+	for _, obj := range objs.List() {
 		objects = append(objects, obj.(string))
 	}
 	subjects := []string{}
-	for _, sub := range subs {
+	for _, sub := range subs.List() {
 		subjects = append(subjects, sub.(string))
 	}
 
@@ -127,7 +127,91 @@ func resourceSetUpdate(d *schema.ResourceData, m interface{}) error {
 
 	id := d.Id()
 	rs, err := c.GetResourceSetById(id)
-	fmt.Printf("[DEBUG] Found resource set: %+v with error: %v\n", rs, err)
+	if d.HasChange("limit") {
+		old, new := d.GetChange("limit")
+
+		os := old.(*schema.Set)
+		ns := new.(*schema.Set)
+
+		additions := ns.Difference(os).List()
+		for _, addition := range additions {
+			limit := addition.(map[string]interface{})
+			t := limit["type"].(string)
+			quantity := limit["quantity"].(int)
+			err := c.AddResourceSetLimit(*rs, t, quantity)
+
+			if err != nil {
+				return err
+			}
+		}
+
+		removals := os.Difference(ns).List()
+		for _, removal := range removals {
+
+			limit := removal.(map[string]interface{})
+			t := limit["type"].(string)
+			err := c.RemoveResourceSetLimit(*rs, t)
+
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	if d.HasChange("subjects") {
+		old, new := d.GetChange("subjects")
+
+		os := old.(*schema.Set)
+		ns := new.(*schema.Set)
+
+		additions := ns.Difference(os).List()
+		for _, addition := range additions {
+			subject := addition.(string)
+			err := c.AddResourceSetSubject(*rs, subject)
+
+			if err != nil {
+				return err
+			}
+		}
+
+		removals := os.Difference(ns).List()
+		for _, removal := range removals {
+			subject := removal.(string)
+			err := c.RemoveResourceSetSubject(*rs, subject)
+
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	if d.HasChange("objects") {
+		old, new := d.GetChange("objects")
+
+		os := old.(*schema.Set)
+		ns := new.(*schema.Set)
+
+		additions := ns.Difference(os).List()
+		for _, addition := range additions {
+			subject := addition.(string)
+			err := c.AddResourceSetObject(*rs, subject)
+
+			if err != nil {
+				return err
+			}
+		}
+
+		removals := os.Difference(ns).List()
+		for _, removal := range removals {
+			object := removal.(string)
+			err := c.RemoveResourceSetObject(*rs, object)
+
+			if err != nil {
+				return err
+			}
+		}
+	}
+	rs, err = c.GetResourceSetById(id)
 
 	if err != nil {
 		return err
@@ -164,18 +248,24 @@ func resourceSetToData(rs client.ResourceSet, d *schema.ResourceData) error {
 
 func limitToMapList(rsLimits client.ResourceSetLimits) []map[string]interface{} {
 	result := make([]map[string]interface{}, 0, 3)
-	result = append(result, map[string]interface{}{
-		"type":     "cpus",
-		"quantity": rsLimits.Cpus.Total,
-	})
-	result = append(result, map[string]interface{}{
-		"type":     "disk",
-		"quantity": rsLimits.Disk.Total,
-	})
-	result = append(result, map[string]interface{}{
-		"type":     "memory",
-		"quantity": rsLimits.Memory.Total,
-	})
+	if rsLimits.Cpus.Total != 0 {
+		result = append(result, map[string]interface{}{
+			"type":     "cpus",
+			"quantity": rsLimits.Cpus.Total,
+		})
+	}
+	if rsLimits.Disk.Total != 0 {
+		result = append(result, map[string]interface{}{
+			"type":     "disk",
+			"quantity": rsLimits.Disk.Total,
+		})
+	}
+	if rsLimits.Memory.Total != 0 {
+		result = append(result, map[string]interface{}{
+			"type":     "memory",
+			"quantity": rsLimits.Memory.Total,
+		})
+	}
 
 	return result
 }

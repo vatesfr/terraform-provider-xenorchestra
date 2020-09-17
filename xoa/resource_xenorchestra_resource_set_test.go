@@ -26,11 +26,7 @@ func resourceSetCompositeChecks(resourceName string) resource.TestCheckFunc {
 		resource.TestCheckResourceAttr(resourceName, "name", rsName),
 		resource.TestCheckResourceAttr(resourceName, "objects.#", "2"),
 		resource.TestCheckResourceAttr(resourceName, "subjects.#", "2"),
-		resource.TestCheckResourceAttr(resourceName, "limit.#", "3"),
-		internal.TestCheckTypeSetElemNestedAttrs(resourceName, "limit.*", map[string]string{
-			"type":     "memory",
-			"quantity": "1074000000",
-		}),
+		resource.TestCheckResourceAttr(resourceName, "limit.#", "2"),
 		internal.TestCheckTypeSetElemNestedAttrs(resourceName, "limit.*", map[string]string{
 			"type":     "disk",
 			"quantity": "10740000000",
@@ -85,7 +81,87 @@ func TestAccResourceSet_import(t *testing.T) {
 				ImportState:       true,
 				ImportStateCheck:  checkFn,
 				ImportStateVerify: true,
-				Check:             resourceSetCompositeChecks(resourceName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccResourceSetExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "name", rsName),
+					resource.TestCheckResourceAttr(resourceName, "objects.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "subjects.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "limit.#", "2"),
+					internal.TestCheckTypeSetElemNestedAttrs(resourceName, "limit.*", map[string]string{
+						"type":     "disk",
+						"quantity": "10740000000",
+					}),
+					internal.TestCheckTypeSetElemNestedAttrs(resourceName, "limit.*", map[string]string{
+						"type":     "cpus",
+						"quantity": "4",
+					})),
+			},
+		},
+	})
+}
+
+func TestAccResourceSet_addSubjectsObjectsAndLimits(t *testing.T) {
+	resourceName := "xenorchestra_resource_set.bar"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckResourceSetDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccResourceSetConfig(),
+				Check:  resourceSetCompositeChecks(resourceName),
+			},
+			{
+				Config: testAccResourceSetConfigAddSubjectsObjectsAndLimits(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccResourceSetExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "name", rsName),
+					resource.TestCheckResourceAttr(resourceName, "objects.#", "3"),
+					resource.TestCheckResourceAttr(resourceName, "subjects.#", "3"),
+					resource.TestCheckResourceAttr(resourceName, "limit.#", "3"),
+					internal.TestCheckTypeSetElemNestedAttrs(resourceName, "limit.*", map[string]string{
+						"type":     "memory",
+						"quantity": "1074000000",
+					}),
+					internal.TestCheckTypeSetElemNestedAttrs(resourceName, "limit.*", map[string]string{
+						"type":     "disk",
+						"quantity": "10740000000",
+					}),
+					internal.TestCheckTypeSetElemNestedAttrs(resourceName, "limit.*", map[string]string{
+						"type":     "cpus",
+						"quantity": "4",
+					})),
+			},
+		},
+	})
+}
+
+func TestAccResourceSet_removeSubjectsAndObjects(t *testing.T) {
+	resourceName := "xenorchestra_resource_set.bar"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckResourceSetDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccResourceSetConfig(),
+				Check:  resourceSetCompositeChecks(resourceName),
+			},
+			{
+				Config: testAccResourceSetConfigRemoveSubjectsAndObjects(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccResourceSetExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "name", rsName),
+					resource.TestCheckResourceAttr(resourceName, "objects.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "subjects.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "limit.#", "1"),
+					internal.TestCheckTypeSetElemNestedAttrs(resourceName, "limit.*", map[string]string{
+						"type":     "cpus",
+						"quantity": "4",
+					})),
 			},
 		},
 	})
@@ -157,17 +233,62 @@ resource "xenorchestra_resource_set" "bar" {
 	quantity = 10740000000
     }
 
-    limit {
-	type = "memory"
-	quantity = 1074000000
-    }
-
     subjects = [
 	"one", "two"
     ]
 
     objects = [
 	"one", "two"
+    ]
+}
+`, rsName)
+}
+
+func testAccResourceSetConfigAddSubjectsObjectsAndLimits() string {
+	return fmt.Sprintf(`
+resource "xenorchestra_resource_set" "bar" {
+    name = "%s"
+    limit {
+	type = "cpus"
+	quantity = 4
+    }
+
+    limit {
+	type = "disk"
+	quantity = 10740000000
+    }
+
+    limit {
+	type = "memory"
+	quantity = 1074000000
+    }
+
+    subjects = [
+	"one", "two", "three"
+    ]
+
+    objects = [
+	"one", "two", "three"
+    ]
+}
+`, rsName)
+}
+
+func testAccResourceSetConfigRemoveSubjectsAndObjects() string {
+	return fmt.Sprintf(`
+resource "xenorchestra_resource_set" "bar" {
+    name = "%s"
+    limit {
+	type = "cpus"
+	quantity = 4
+    }
+
+    subjects = [
+	"one"
+    ]
+
+    objects = [
+	"one"
     ]
 }
 `, rsName)
