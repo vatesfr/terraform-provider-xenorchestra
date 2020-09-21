@@ -78,11 +78,12 @@ type VDI struct {
 	Size      int
 }
 
-func (c *Client) CreateVm(name_label, name_description, template, cloudConfig string, cpus, memoryMax int, network_ids []string, disks []VDI) (*Vm, error) {
+func (c *Client) CreateVm(name_label, name_description, template, cloudConfig string, cpus, memoryMax int, networks []map[string]string, disks []VDI) (*Vm, error) {
 	vifs := []map[string]string{}
-	for _, network_id := range network_ids {
+	for _, network := range networks {
 		vifs = append(vifs, map[string]string{
-			"network": network_id,
+			"network": network["network_id"],
+			"mac":     network["macAddress"],
 		})
 	}
 	existingDisks := map[string]interface{}{}

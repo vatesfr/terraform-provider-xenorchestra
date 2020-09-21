@@ -127,7 +127,7 @@ func resourceRecord() *schema.Resource {
 						},
 						"mac_address": &schema.Schema{
 							Type:     schema.TypeString,
-							Computed: true,
+							Optional: true,
 						},
 					},
 				},
@@ -183,13 +183,16 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	network_ids := []string{}
+	network_maps := []map[string]string{}
 	networks := d.Get("network").(*schema.Set)
 
 	for _, network := range networks.List() {
 		net, _ := network.(map[string]interface{})
 
-		network_ids = append(network_ids, net["network_id"].(string))
+		network_maps = append(network_maps, map[string]string{
+			"network_id": net["network_id"].(string),
+			"macAddress": net["mac_address"].(string),
+		})
 	}
 
 	vdis := []client.VDI{}
@@ -213,7 +216,7 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		d.Get("cloud_config").(string),
 		d.Get("cpus").(int),
 		d.Get("memory_max").(int),
-		network_ids,
+		network_maps,
 		vdis,
 	)
 
