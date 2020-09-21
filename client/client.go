@@ -87,6 +87,7 @@ func NewClient(config Config) (*Client, error) {
 
 func (c *Client) Call(ctx context.Context, method string, params, result interface{}, opt ...jsonrpc2.CallOption) error {
 	err := c.rpc.Call(ctx, method, params, &result, opt...)
+	fmt.Printf("[TRACE] Made rpc call `%s` with params: %v and received %+v: result with error: %v\n", method, params, result, err)
 
 	if err != nil {
 		rpcErr, ok := err.(*jsonrpc2.Error)
@@ -111,10 +112,47 @@ type XoObject interface {
 	New(obj map[string]interface{}) XoObject
 }
 
+func (c *Client) GetAllObjectsOfType(obj XoObject, response interface{}) error {
+	xoApiType := ""
+	switch t := obj.(type) {
+	case Network:
+		xoApiType = "network"
+	case PIF:
+		xoApiType = "PIF"
+	case Pool:
+		xoApiType = "pool"
+	case StorageRepository:
+		xoApiType = "SR"
+	case Vm:
+		xoApiType = "VM"
+	case Template:
+		xoApiType = "VM-template"
+	case VIF:
+		xoApiType = "VIF"
+	default:
+		panic(fmt.Sprintf("XO client does not support type: %T", t))
+	}
+	params := map[string]interface{}{
+		"filter": map[string]string{
+			"type": xoApiType,
+		},
+	}
+	ctx, _ := context.WithTimeout(context.Background(), 100*time.Second)
+	err := c.Call(ctx, "xo.getAllObjects", params, &response)
+
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
 func (c *Client) FindFromGetAllObjects(obj XoObject) (interface{}, error) {
 
 	xoApiType := ""
 	switch t := obj.(type) {
+	case Network:
+		xoApiType = "network"
 	case PIF:
 		xoApiType = "PIF"
 	case Pool:
@@ -166,7 +204,7 @@ func (c *Client) FindFromGetAllObjects(obj XoObject) (interface{}, error) {
 		return obj, NotFound{Type: xoApiType, Query: obj}
 	}
 
-	fmt.Printf("[DEBUG] Found the following objects from xo.getAllObjects: %+v\n", objs)
+	fmt.Printf("[TRACE] Found the following objects from xo.getAllObjects: %+v\n", objs)
 	if len(objs) == 1 {
 
 		return objs[0], nil
