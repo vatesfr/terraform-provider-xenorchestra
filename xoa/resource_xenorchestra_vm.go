@@ -128,7 +128,6 @@ func resourceRecord() *schema.Resource {
 						},
 						"mac_address": &schema.Schema{
 							Type:     schema.TypeString,
-							Computed: true,
 							Optional: true,
 							Computed: true,
 							ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
