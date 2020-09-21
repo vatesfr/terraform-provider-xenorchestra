@@ -83,7 +83,7 @@ func (c *Client) CreateVm(name_label, name_description, template, cloudConfig st
 	for _, network := range networks {
 		vifs = append(vifs, map[string]string{
 			"network": network["network_id"],
-			"mac":     network["macAddress"],
+			"mac":     network["mac_address"],
 		})
 	}
 	existingDisks := map[string]interface{}{}

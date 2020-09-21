@@ -3,6 +3,7 @@ package xoa
 import (
 	"bytes"
 	"fmt"
+	"net"
 	"os"
 	"strings"
 	"time"
@@ -129,6 +130,15 @@ func resourceRecord() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 							Optional: true,
+							Computed: true,
+							ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
+								mac_address := val.(string)
+								if _, err := net.ParseMAC(mac_address); err != nil {
+									errs = append(errs, fmt.Errorf("%s Mac Address is invalid", mac_address))
+								}
+								return
+
+							},
 						},
 					},
 				},
@@ -191,8 +201,8 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		net, _ := network.(map[string]interface{})
 
 		network_maps = append(network_maps, map[string]string{
-			"network_id": net["network_id"].(string),
-			"macAddress": net["mac_address"].(string),
+			"network_id":  net["network_id"].(string),
+			"mac_address": net["mac_address"].(string),
 		})
 	}
 
