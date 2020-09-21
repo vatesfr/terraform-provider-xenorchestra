@@ -3,6 +3,7 @@ package xoa
 import (
 	"bytes"
 	"fmt"
+	"net"
 	"os"
 	"strings"
 	"time"
@@ -127,7 +128,16 @@ func resourceRecord() *schema.Resource {
 						},
 						"mac_address": &schema.Schema{
 							Type:     schema.TypeString,
+							Optional: true,
 							Computed: true,
+							ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
+								mac_address := val.(string)
+								if _, err := net.ParseMAC(mac_address); err != nil {
+									errs = append(errs, fmt.Errorf("%s Mac Address is invalid", mac_address))
+								}
+								return
+
+							},
 						},
 					},
 				},
@@ -183,13 +193,16 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	network_ids := []string{}
+	network_maps := []map[string]string{}
 	networks := d.Get("network").(*schema.Set)
 
 	for _, network := range networks.List() {
 		net, _ := network.(map[string]interface{})
 
-		network_ids = append(network_ids, net["network_id"].(string))
+		network_maps = append(network_maps, map[string]string{
+			"network_id":  net["network_id"].(string),
+			"mac_address": net["mac_address"].(string),
+		})
 	}
 
 	vdis := []client.VDI{}
@@ -213,7 +226,7 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		d.Get("cloud_config").(string),
 		d.Get("cpus").(int),
 		d.Get("memory_max").(int),
-		network_ids,
+		network_maps,
 		vdis,
 	)
 

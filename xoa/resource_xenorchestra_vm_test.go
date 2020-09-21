@@ -29,6 +29,28 @@ func TestAccXenorchestraVm_create(t *testing.T) {
 	})
 }
 
+func TestAccXenorchestraVm_createWithMacAddress(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	macAddress := "00:0a:83:b1:c0:83"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigWithMacAddress(macAddress),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					internal.TestCheckTypeSetElemNestedAttrs(resourceName, "network.*", map[string]string{
+						"mac_address": macAddress,
+					}),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_pif.pif", "network")),
+			},
+		},
+	})
+}
+
 func TestAccVm_import(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	checkFn := func(s []*terraform.InstanceState) error {
@@ -252,6 +274,42 @@ resource "xenorchestra_vm" "bar" {
     }
 }
 `
+}
+
+func testAccVmConfigWithMacAddress(macAddress string) string {
+	return testAccCloudConfigConfig() + fmt.Sprintf(`
+data "xenorchestra_sr" "local_storage" {
+    name_label = "Local storage"
+}
+
+data "xenorchestra_template" "template" {
+    name_label = "Focal Template"
+}
+
+data "xenorchestra_pif" "pif" {
+    device = "eth1"
+    vlan = -1
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 256000000
+    cpus  = 1
+    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    name_label = "Terraform testing"
+    name_description = "description"
+    template = "${data.xenorchestra_template.template.id}"
+    network {
+	network_id = "${data.xenorchestra_pif.pif.network}"
+	mac_address = "%s"
+    }
+
+    disk {
+      sr_id = "${data.xenorchestra_sr.local_storage.id}"
+      name_label = "xo provider root"
+      size = 10000000000
+    }
+}
+`, macAddress)
 }
 
 func testAccVmConfigWithSecondVIF() string {
