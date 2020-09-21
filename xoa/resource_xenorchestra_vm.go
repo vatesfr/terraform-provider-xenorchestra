@@ -127,6 +127,7 @@ func resourceRecord() *schema.Resource {
 						},
 						"mac_address": &schema.Schema{
 							Type:     schema.TypeString,
+							Computed: true,
 							Optional: true,
 						},
 					},
