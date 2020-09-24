@@ -138,47 +138,14 @@ func (c *Client) GetAllObjectsOfType(obj XoObject, response interface{}) error {
 		},
 	}
 	ctx, _ := context.WithTimeout(context.Background(), 100*time.Second)
-	err := c.Call(ctx, "xo.getAllObjects", params, &response)
-
-	if err != nil {
-		return err
-	}
-
-	return err
+	return c.Call(ctx, "xo.getAllObjects", params, &response)
 }
 
 func (c *Client) FindFromGetAllObjects(obj XoObject) (interface{}, error) {
-
-	xoApiType := ""
-	switch t := obj.(type) {
-	case Network:
-		xoApiType = "network"
-	case PIF:
-		xoApiType = "PIF"
-	case Pool:
-		xoApiType = "pool"
-	case StorageRepository:
-		xoApiType = "SR"
-	case Vm:
-		xoApiType = "VM"
-	case Template:
-		xoApiType = "VM-template"
-	case VIF:
-		xoApiType = "VIF"
-	default:
-		panic(fmt.Sprintf("XO client does not support type: %T", t))
-	}
-	params := map[string]interface{}{
-		"filter": map[string]string{
-			"type": xoApiType,
-		},
-	}
 	var objsRes struct {
 		Objects map[string]interface{} `json:"-"`
 	}
-	ctx, _ := context.WithTimeout(context.Background(), 100*time.Second)
-	err := c.Call(ctx, "xo.getAllObjects", params, &objsRes.Objects)
-
+	err := c.GetAllObjectsOfType(obj, &objsRes.Objects)
 	if err != nil {
 		return obj, err
 	}
@@ -191,17 +158,13 @@ func (c *Client) FindFromGetAllObjects(obj XoObject) (interface{}, error) {
 			return obj, errors.New("Could not coerce interface{} into map")
 		}
 
-		if v["type"].(string) != xoApiType {
-			continue
-		}
-
 		if obj.Compare(v) {
 			found = true
 			objs = append(objs, obj.New(v))
 		}
 	}
 	if !found {
-		return obj, NotFound{Type: xoApiType, Query: obj}
+		return obj, NotFound{Query: obj}
 	}
 
 	fmt.Printf("[TRACE] Found the following objects from xo.getAllObjects: %+v\n", objs)
