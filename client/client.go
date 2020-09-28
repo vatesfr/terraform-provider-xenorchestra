@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -87,7 +88,7 @@ func NewClient(config Config) (*Client, error) {
 
 func (c *Client) Call(ctx context.Context, method string, params, result interface{}, opt ...jsonrpc2.CallOption) error {
 	err := c.rpc.Call(ctx, method, params, &result, opt...)
-	fmt.Printf("[TRACE] Made rpc call `%s` with params: %v and received %+v: result with error: %v\n", method, params, result, err)
+	log.Printf("[TRACE] Made rpc call `%s` with params: %v and received %+v: result with error: %v\n", method, params, result, err)
 
 	if err != nil {
 		rpcErr, ok := err.(*jsonrpc2.Error)
@@ -167,7 +168,7 @@ func (c *Client) FindFromGetAllObjects(obj XoObject) (interface{}, error) {
 		return obj, NotFound{Query: obj}
 	}
 
-	fmt.Printf("[TRACE] Found the following objects from xo.getAllObjects: %+v\n", objs)
+	log.Printf("[TRACE] Found the following objects from xo.getAllObjects: %+v\n", objs)
 	if len(objs) == 1 {
 
 		return objs[0], nil
