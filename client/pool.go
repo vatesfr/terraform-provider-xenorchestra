@@ -1,5 +1,10 @@
 package client
 
+import (
+	"fmt"
+	"os"
+)
+
 type Pool struct {
 	Id          string
 	NameLabel   string
@@ -49,4 +54,21 @@ func (c *Client) GetPoolByName(name string) (Pool, error) {
 	}
 
 	return pool, nil
+}
+
+func FindPoolForTests(pool *Pool) {
+	poolName, found := os.LookupEnv("XOA_POOL")
+
+	if !found {
+		fmt.Println("The XOA_POOL environment variable must be set")
+		os.Exit(-1)
+	}
+	c, _ := NewClient(GetConfigFromEnv())
+	var err error
+	*pool, err = c.GetPoolByName(poolName)
+
+	if err != nil {
+		fmt.Printf("failed to find a pool with name: %v with error: %v\n", poolName, err)
+		os.Exit(-1)
+	}
 }
