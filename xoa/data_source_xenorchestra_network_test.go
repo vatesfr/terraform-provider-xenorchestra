@@ -35,7 +35,7 @@ var getTestNetwork = func(poolId string) client.Network {
 
 func TestAccXONetworkDataSource_read(t *testing.T) {
 	resourceName := "data.xenorchestra_network.network"
-	net := getTestNetwork("355ee47d-ff4c-4924-3db2-fd86ae629676")
+	net := getTestNetwork(accTestPool.Id)
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
@@ -54,7 +54,7 @@ func TestAccXONetworkDataSource_read(t *testing.T) {
 
 func TestAccXONetworkDataSource_multipleCauseError(t *testing.T) {
 	resourceName := "data.xenorchestra_network.network"
-	net := getTestNetwork("355ee47d-ff4c-4924-3db2-fd86ae629676")
+	net := getTestNetwork(accTestPool.Id)
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,

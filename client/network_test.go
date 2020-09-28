@@ -3,10 +3,6 @@ package client
 import "testing"
 
 var testNetworkName string = integrationTestPrefix + "network"
-var testNetwork = Network{
-	NameLabel: testNetworkName,
-	PoolId:    "355ee47d-ff4c-4924-3db2-fd86ae629676",
-}
 
 func TestGetNetwork(t *testing.T) {
 	c, err := NewClient(GetConfigFromEnv())
