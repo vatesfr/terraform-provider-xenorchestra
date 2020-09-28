@@ -45,7 +45,10 @@ func TestAccXONetworkDataSource_read(t *testing.T) {
 				Config:    testAccXenorchestraDataSourceNetworkConfig(net.NameLabel),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckXenorchestraDataSourceNetwork(resourceName),
-					resource.TestCheckResourceAttrSet(resourceName, "id")),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "name_label"),
+					resource.TestCheckResourceAttrSet(resourceName, "pool_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "bridge")),
 			},
 		},
 	},

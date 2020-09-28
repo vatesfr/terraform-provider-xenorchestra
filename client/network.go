@@ -19,11 +19,19 @@ type Network struct {
 func (net Network) Compare(obj map[string]interface{}) bool {
 	id := obj["id"].(string)
 	nameLabel := obj["name_label"].(string)
+	poolId := obj["$poolId"].(string)
 	if net.Id == id {
 		return true
 	}
 
+	labelsMatch := false
 	if net.NameLabel == nameLabel {
+		labelsMatch = true
+	}
+
+	if net.PoolId == "" && labelsMatch {
+		return true
+	} else if net.PoolId == poolId && labelsMatch {
 		return true
 	}
 
@@ -34,8 +42,10 @@ func (net Network) New(obj map[string]interface{}) XoObject {
 	id := obj["id"].(string)
 	poolId := obj["$poolId"].(string)
 	nameLabel := obj["name_label"].(string)
+	bridge := obj["bridge"].(string)
 	return Network{
 		Id:        id,
+		Bridge:    bridge,
 		PoolId:    poolId,
 		NameLabel: nameLabel,
 	}

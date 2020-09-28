@@ -31,13 +31,11 @@ func dataSourceNetworkRead(d *schema.ResourceData, m interface{}) error {
 	c, err := client.NewClient(config)
 
 	nameLabel := d.Get("name_label").(string)
-	// bridge := d.Get("bridge").(string)
 	poolId := d.Get("pool_id").(string)
 
 	net, err := c.GetNetwork(client.Network{
 		NameLabel: nameLabel,
-		// Bridge:    bridge,
-		PoolId: poolId,
+		PoolId:    poolId,
 	})
 
 	if err != nil {
