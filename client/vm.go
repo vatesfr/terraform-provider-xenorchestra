@@ -41,8 +41,8 @@ type Vm struct {
 	CloudConfig        string       `json:"cloudConfig"`
 }
 
-func (v Vm) Compare(obj map[string]interface{}) bool {
-	other := v.New(obj).(Vm)
+func (v Vm) Compare(obj interface{}) bool {
+	other := obj.(Vm)
 	if v.Id != "" && v.Id == other.Id {
 		return true
 	}

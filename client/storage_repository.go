@@ -8,10 +8,9 @@ type StorageRepository struct {
 	SRType    string
 }
 
-func (s StorageRepository) Compare(obj map[string]interface{}) bool {
-	nameLabel := obj["name_label"].(string)
-	poolId := obj["$poolId"].(string)
-	if s.NameLabel != nameLabel {
+func (s StorageRepository) Compare(obj interface{}) bool {
+	otherSr := obj.(StorageRepository)
+	if s.NameLabel != otherSr.NameLabel {
 		return false
 	}
 
@@ -19,7 +18,7 @@ func (s StorageRepository) Compare(obj map[string]interface{}) bool {
 		return true
 	}
 
-	if s.PoolId == poolId {
+	if s.PoolId == otherSr.PoolId {
 		return true
 	}
 
