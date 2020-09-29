@@ -2,11 +2,13 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"reflect"
 	"time"
 
 	gorillawebsocket "github.com/gorilla/websocket"
@@ -109,8 +111,7 @@ func (c *Client) Call(ctx context.Context, method string, params, result interfa
 }
 
 type XoObject interface {
-	Compare(obj map[string]interface{}) bool
-	New(obj map[string]interface{}) XoObject
+	Compare(obj interface{}) bool
 }
 
 func (c *Client) GetAllObjectsOfType(obj XoObject, response interface{}) error {
@@ -152,16 +153,26 @@ func (c *Client) FindFromGetAllObjects(obj XoObject) (interface{}, error) {
 	}
 
 	found := false
+	t := reflect.TypeOf(obj)
+	value := reflect.New(t)
 	objs := make([]interface{}, 0)
 	for _, resObj := range objsRes.Objects {
 		v, ok := resObj.(map[string]interface{})
 		if !ok {
 			return obj, errors.New("Could not coerce interface{} into map")
 		}
+		b, err := json.Marshal(v)
 
-		if obj.Compare(v) {
+		if err != nil {
+			return obj, err
+		}
+		err = json.Unmarshal(b, value.Interface())
+		if err != nil {
+			return obj, err
+		}
+		if obj.Compare(value.Elem().Interface()) {
 			found = true
-			objs = append(objs, obj.New(v))
+			objs = append(objs, value.Elem().Interface())
 		}
 	}
 	if !found {

@@ -7,9 +7,9 @@ type Template struct {
 	NameLabel string
 }
 
-func (t Template) Compare(obj map[string]interface{}) bool {
-	name_label := obj["name_label"].(string)
-	if t.NameLabel == name_label {
+func (t Template) Compare(obj interface{}) bool {
+	other := obj.(Template)
+	if t.NameLabel == other.NameLabel {
 		return true
 	}
 	return false

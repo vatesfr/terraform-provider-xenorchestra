@@ -32,19 +32,17 @@ func (v VIF) New(obj map[string]interface{}) XoObject {
 	}
 }
 
-func (v VIF) Compare(obj map[string]interface{}) bool {
-	id := obj["id"].(string)
-	if v.Id == id {
+func (v VIF) Compare(obj interface{}) bool {
+	other := obj.(VIF)
+	if v.Id == other.Id {
 		return true
 	}
 
-	macAddress := obj["MAC"].(string)
-	if v.MacAddress == macAddress {
+	if v.MacAddress == other.MacAddress {
 		return true
 	}
 
-	vmId := obj["$VM"].(string)
-	if v.VmId == vmId {
+	if v.VmId == other.VmId {
 		return true
 	}
 	return false

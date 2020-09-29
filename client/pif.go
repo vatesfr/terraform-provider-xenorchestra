@@ -11,10 +11,9 @@ type PIF struct {
 	Vlan     int
 }
 
-func (p PIF) Compare(obj map[string]interface{}) bool {
-	device := obj["device"].(string)
-	vlan := int(obj["vlan"].(float64))
-	if p.Vlan == vlan && p.Device == device {
+func (p PIF) Compare(obj interface{}) bool {
+	otherPif := obj.(PIF)
+	if p.Vlan == otherPif.Vlan && p.Device == otherPif.Device {
 		return true
 	}
 	return false
