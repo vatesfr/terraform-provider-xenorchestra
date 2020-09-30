@@ -1,5 +1,7 @@
 package client
 
+import "errors"
+
 type PIF struct {
 	Device   string
 	Host     string
@@ -19,34 +21,17 @@ func (p PIF) Compare(obj interface{}) bool {
 	return false
 }
 
-func (p PIF) New(obj map[string]interface{}) XoObject {
-	id := obj["id"].(string)
-	device := obj["device"].(string)
-	attached := obj["attached"].(bool)
-	network := obj["$network"].(string)
-	uuid := obj["uuid"].(string)
-	poolId := obj["$poolId"].(string)
-	host := obj["$host"].(string)
-	vlan := int(obj["vlan"].(float64))
-	return PIF{
-		Device:   device,
-		Host:     host,
-		Network:  network,
-		Id:       id,
-		Uuid:     uuid,
-		PoolId:   poolId,
-		Attached: attached,
-		Vlan:     vlan,
-	}
-}
-
-func (c *Client) GetPIFByDevice(dev string, vlan int) (PIF, error) {
+func (c *Client) GetPIFByDevice(dev string, vlan int) ([]PIF, error) {
 	obj, err := c.FindFromGetAllObjects(PIF{Device: dev, Vlan: vlan})
-	pif := obj.(PIF)
 
 	if err != nil {
-		return pif, err
+		return []PIF{}, err
+	}
+	pifs, ok := obj.([]PIF)
+
+	if !ok {
+		return pifs, errors.New("failed to coerce response into PIF slice")
 	}
 
-	return pif, nil
+	return pifs, nil
 }
