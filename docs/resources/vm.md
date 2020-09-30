@@ -29,12 +29,12 @@ EOF
 resource "xenorchestra_vm" "bar" {
     memory_max = 1073733632
     cpus  = 1
-    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    cloud_config = xenorchestra_cloud_config.bar.template
     name_label = "Name"
     name_description = "description"
-    template = "${data.xenorchestra_template.template.id}"
+    template = data.xenorchestra_template.template.id
     network {
-	  network_id = "${data.xenorchestra_pif.pif.network}"
+	  network_id = data.xenorchestra_pif.pif.network
     }
 
     disk {

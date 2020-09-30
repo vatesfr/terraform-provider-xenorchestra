@@ -11,7 +11,7 @@ data "xenorchestra_template" "template" {
 
 resource "xenorchestra_vm" "demo-vm" {
   // ...
-  template # "${data.xenorchestra_template.template.id}"
+  template = data.xenorchestra_template.template.id
   // ...
 }
 ```
