@@ -59,12 +59,13 @@ func (c *Client) GetNetwork(netReq Network) (*Network, error) {
 		return nil, err
 	}
 
-	if _, ok := obj.([]interface{}); ok {
+	nets := obj.([]Network)
+
+	if len(nets) > 1 {
 		return nil, errors.New("Your query returned more than one result. Use `pool_id` or other attributes to filter the result down to a single network")
 	}
 
-	net := obj.(Network)
-	return &net, nil
+	return &nets[0], nil
 }
 
 func (c *Client) GetNetworks() ([]Network, error) {

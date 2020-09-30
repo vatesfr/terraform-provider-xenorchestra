@@ -5,17 +5,16 @@ import (
 )
 
 func TestGetTemplate(t *testing.T) {
-	// TODO: Export this function so it can be used by the client tests
-	// xoa.testAccPreCheck(t)
+	templateName := "Ubuntu Bionic Beaver 18.04"
 	tests := []struct {
 		templateName string
 		template     Template
 		err          error
 	}{
 		{
-			templateName: "Asianux Server 4 (64-bit)",
+			templateName: templateName,
 			template: Template{
-				NameLabel: "Asianux Server 4 (64-bit)",
+				NameLabel: templateName,
 			},
 			err: nil,
 		},
@@ -35,12 +34,20 @@ func TestGetTemplate(t *testing.T) {
 	for _, test := range tests {
 
 		templateName := test.templateName
-		tmp, err := c.GetTemplate(templateName)
+		templates, err := c.GetTemplate(templateName)
 
 		if test.err != err {
-			t.Errorf("failed to get template `%s` expected err: %v received: %v", templateName, test.err, err)
+			t.Fatalf("failed to get template `%s` expected err: %v received: %v", templateName, test.err, err)
 		}
 
+		if _, ok := test.err.(NotFound); ok {
+			continue
+		}
+
+		if len(templates) < 1 {
+			t.Fatalf("failed to find templates for the following name_label: %s", templateName)
+		}
+		tmp := templates[0]
 		if test.template.NameLabel != "" && tmp.NameLabel != templateName {
 			t.Errorf("template returned from xoa does not match. expected %s, found %s", tmp.NameLabel, templateName)
 		}

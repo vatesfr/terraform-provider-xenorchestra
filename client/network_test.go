@@ -83,4 +83,12 @@ func TestGetNetwork(t *testing.T) {
 	if net.NameLabel != testNetworkName {
 		t.Errorf("expected network name_label `%s` to match `%s`", net.NameLabel, testNetworkName)
 	}
+
+	if net.Bridge == "" {
+		t.Errorf("expected network bridge to not be an empty string")
+	}
+
+	if net.PoolId == "" {
+		t.Errorf("expected network pool id to not be an empty string")
+	}
 }

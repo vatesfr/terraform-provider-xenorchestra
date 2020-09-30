@@ -1,10 +1,11 @@
 package client
 
+import "errors"
+
 type Template struct {
-	// TODO: Not sure the difference between these two
-	Id        string
-	Uuid      string
-	NameLabel string
+	Id        string `json:"id"`
+	Uuid      string `json:"uuid"`
+	NameLabel string `json:"name_label"`
 }
 
 func (t Template) Compare(obj interface{}) bool {
@@ -15,24 +16,18 @@ func (t Template) Compare(obj interface{}) bool {
 	return false
 }
 
-func (p Template) New(obj map[string]interface{}) XoObject {
-	id := obj["id"].(string)
-	uuid := obj["uuid"].(string)
-	name_label := obj["name_label"].(string)
-	return Template{
-		Id:        id,
-		NameLabel: name_label,
-		Uuid:      uuid,
-	}
-}
-
-func (c *Client) GetTemplate(name string) (Template, error) {
+func (c *Client) GetTemplate(name string) ([]Template, error) {
 	obj, err := c.FindFromGetAllObjects(Template{NameLabel: name})
-	template := obj.(Template)
-
+	var templates []Template
 	if err != nil {
-		return template, err
+		return templates, err
 	}
 
-	return template, nil
+	templates, ok := obj.([]Template)
+
+	if !ok {
+		return templates, errors.New("failed to coerce response into Template slice")
+	}
+
+	return templates, nil
 }

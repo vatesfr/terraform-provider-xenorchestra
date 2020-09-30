@@ -43,9 +43,10 @@ func TestGetPoolByName(t *testing.T) {
 		t.Errorf("failed to create client with error: %v", err)
 	}
 
-	nameLabel := "xenserver-ddelnano"
+	nameLabel := accTestPool.NameLabel
+	pools, err := c.GetPoolByName(nameLabel)
 
-	pool, err := c.GetPoolByName(nameLabel)
+	pool := pools[0]
 
 	if err != nil {
 		t.Errorf("failed to get pool with error: %v", err)
@@ -53,5 +54,13 @@ func TestGetPoolByName(t *testing.T) {
 
 	if pool.NameLabel != nameLabel {
 		t.Errorf("expected pool to have name `%s` received `%s` instead.", nameLabel, pool.NameLabel)
+	}
+
+	if pool.Cpus.Cores == 0 {
+		t.Errorf("expected pool cpu cores to be set")
+	}
+
+	if pool.Cpus.Sockets == 0 {
+		t.Errorf("expected pool cpu sockets to be set")
 	}
 }

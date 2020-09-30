@@ -187,6 +187,23 @@ func (c *Client) GetVm(vmReq Vm) (*Vm, error) {
 	return &vm, nil
 }
 
+func (c *Client) GetVms() ([]Vm, error) {
+	var response map[string]Vm
+	err := c.GetAllObjectsOfType(Vm{PowerState: "Running"}, &response)
+
+	if err != nil {
+		return []Vm{}, err
+	}
+
+	vms := make([]Vm, 0, len(response))
+	for _, vm := range response {
+		vms = append(vms, vm)
+	}
+
+	log.Printf("[DEBUG] Found vms: %+v", vms)
+	return vms, nil
+}
+
 func (c *Client) waitForModifyVm(id string, timeout time.Duration) error {
 	refreshFn := func() (result interface{}, state string, err error) {
 		vm, err := c.GetVm(Vm{Id: id})

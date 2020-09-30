@@ -26,15 +26,15 @@ func (p Pool) Compare(obj interface{}) bool {
 	return true
 }
 
-func (c *Client) GetPoolByName(name string) (Pool, error) {
+func (c *Client) GetPoolByName(name string) ([]Pool, error) {
 	obj, err := c.FindFromGetAllObjects(Pool{NameLabel: name})
-	pool := obj.(Pool)
+	pools := obj.([]Pool)
 
 	if err != nil {
-		return pool, err
+		return pools, err
 	}
 
-	return pool, nil
+	return pools, nil
 }
 
 func FindPoolForTests(pool *Pool) {
@@ -46,10 +46,17 @@ func FindPoolForTests(pool *Pool) {
 	}
 	c, _ := NewClient(GetConfigFromEnv())
 	var err error
-	*pool, err = c.GetPoolByName(poolName)
+	pools, err := c.GetPoolByName(poolName)
 
 	if err != nil {
 		fmt.Printf("failed to find a pool with name: %v with error: %v\n", poolName, err)
 		os.Exit(-1)
 	}
+
+	if len(pools) != 1 {
+		fmt.Printf("Found %d pools with name_label %s. Please use a label that is unique so tests are reproducible.\n", len(pools), poolName)
+		os.Exit(-1)
+	}
+
+	*pool = pools[0]
 }
