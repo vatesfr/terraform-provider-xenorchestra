@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"time"
@@ -52,24 +51,6 @@ func (v Vm) Compare(obj interface{}) bool {
 	}
 
 	return false
-}
-
-// TODO: Decide if a refactored version of this would work better
-// than the existing XoObject pattern.
-func (v Vm) New(obj map[string]interface{}) XoObject {
-	var vm Vm
-
-	m, err := json.Marshal(obj)
-
-	if err != nil {
-		panic(err)
-	}
-
-	err = json.Unmarshal(m, &vm)
-	if err != nil {
-		panic(err)
-	}
-	return vm
 }
 
 type VDI struct {
