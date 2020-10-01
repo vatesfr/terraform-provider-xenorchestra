@@ -12,9 +12,9 @@ General documentaion about providers in terraform can be found at [the terraform
 
 ## Install
 
-If using terraform 0.12 or lower download a suitable binary from the [releases](https://github.com/terra-farm/terraform-provider-xenorchestra/releases) and copy it to `~/.terraform.d/plugins/terraform-provider-xenorchestra_vX.Y.Z` where `X.Y.Z` is the version.
-
 If using terraform 0.13, terraform is able to install the provider automatically for you. See [this](docs/index.md) for more details.
+
+If using terraform 0.12 or lower download a suitable binary from the [releases](https://github.com/terra-farm/terraform-provider-xenorchestra/releases) and copy it to `~/.terraform.d/plugins/terraform-provider-xenorchestra_vX.Y.Z` where `X.Y.Z` is the version.
 
 ## Support
 
