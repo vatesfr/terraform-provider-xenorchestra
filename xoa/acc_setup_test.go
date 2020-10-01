@@ -15,8 +15,8 @@ func TestMain(m *testing.M) {
 	client.FindPoolForTests(&accTestPool)
 	code := m.Run()
 
-	client.RemoveNetworksWithNamePrefix("terraform-acc")("")
-	client.RemoveResourceSetsWithNamePrefix("terraform-acc")("")
+	client.RemoveNetworksWithNamePrefix(accTestPrefix)("")
+	client.RemoveResourceSetsWithNamePrefix(accTestPrefix)("")
 
 	os.Exit(code)
 }

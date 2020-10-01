@@ -39,7 +39,7 @@ func TestMain(m *testing.M) {
 
 	code := m.Run()
 
-	RemoveResourceSetsWithNamePrefix("xenorchestra-client")("")
+	RemoveResourceSetsWithNamePrefix(integrationTestPrefix)("")
 	RemoveNetworksWithNamePrefix(integrationTestPrefix)("")
 
 	os.Exit(code)
