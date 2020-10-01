@@ -6,12 +6,12 @@ Provides information about a VM template that can be used for creating new VMs.
 
 ```hcl
 data "xenorchestra_template" "template" {
-  name_label = "Ubuntu Bionic Beaver 18.04"
+  name_label # "Ubuntu Bionic Beaver 18.04"
 }
 
 resource "xenorchestra_vm" "demo-vm" {
   // ...
-  template = "${data.xenorchestra_template.template.id}"
+  template # "${data.xenorchestra_template.template.id}"
   // ...
 }
 ```
