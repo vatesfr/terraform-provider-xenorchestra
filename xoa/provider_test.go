@@ -28,4 +28,7 @@ func testAccPreCheck(t *testing.T) {
 	if v := os.Getenv("XOA_PASSWORD"); v == "" {
 		t.Fatal("The XOA_PASSWORD environment variable must be set")
 	}
+	if v := os.Getenv("XOA_POOL"); v == "" {
+		t.Fatal("The XOA_POOL environment variable must be set")
+	}
 }

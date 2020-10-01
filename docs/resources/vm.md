@@ -34,7 +34,7 @@ resource "xenorchestra_vm" "bar" {
     name_description = "description"
     template = "${data.xenorchestra_template.template.id}"
     network {
-	network_id = "${data.xenorchestra_pif.pif.network}"
+	  network_id = "${data.xenorchestra_pif.pif.network}"
     }
 
     disk {
@@ -56,6 +56,7 @@ resource "xenorchestra_vm" "bar" {
 * auto_poweron - (Optional) If the VM will automatically turn on. Defaults to `false`.
 * network - (Required) The network the VM will use
     * network_id - (Required) The ID of the network the VM will be on.
+    * mac_address - (Optional) The mac address of the network interaface
 * disk - (Required) The disk the VM will have access to.
     * sr_id - (Required) The storage repository ID to use.
     * name_label - (Required) The name for the disk.
