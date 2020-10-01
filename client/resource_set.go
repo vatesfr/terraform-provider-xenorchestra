@@ -86,7 +86,7 @@ func (c Client) makeResourceSetGetAllCall() ([]ResourceSet, error) {
 		"id": "dummy",
 	}
 	err := c.Call(ctx, "resourceSet.getAll", params, &res.ResourceSets)
-	fmt.Printf("[DEBUG] Calling resourceSet.getAll received response: %+v with error: %v\n", res, err)
+	log.Printf("[DEBUG] Calling resourceSet.getAll received response: %+v with error: %v\n", res, err)
 
 	if err != nil {
 		return nil, err
@@ -121,7 +121,7 @@ func (c Client) CreateResourceSet(rsReq ResourceSet) (*ResourceSet, error) {
 		"limits":   limits,
 	}
 	err := c.Call(ctx, "resourceSet.create", params, &rs)
-	fmt.Printf("[DEBUG] Calling resourceSet.create with params: %v returned: %+v with error: %v\n", params, rs, err)
+	log.Printf("[DEBUG] Calling resourceSet.create with params: %v returned: %+v with error: %v\n", params, rs, err)
 
 	if err != nil {
 		return nil, err
@@ -152,7 +152,7 @@ func (c Client) DeleteResourceSet(rsReq ResourceSet) error {
 		"id": id,
 	}
 	err := c.Call(ctx, "resourceSet.delete", params, &success)
-	fmt.Printf("[DEBUG] Calling resourceSet.delete call successful: %t with error: %v\n", success, err)
+	log.Printf("[DEBUG] Calling resourceSet.delete call successful: %t with error: %v\n", success, err)
 
 	return err
 }
@@ -165,7 +165,7 @@ func (c Client) RemoveResourceSetSubject(rsReq ResourceSet, subject string) erro
 	}
 	var success bool
 	err := c.Call(ctx, "resourceSet.removeSubject", params, &success)
-	fmt.Printf("[DEBUG] Calling resourceSet.removeSubject call successful: %t with error: %v\n", success, err)
+	log.Printf("[DEBUG] Calling resourceSet.removeSubject call successful: %t with error: %v\n", success, err)
 	return err
 }
 
@@ -177,7 +177,7 @@ func (c Client) AddResourceSetSubject(rsReq ResourceSet, subject string) error {
 	}
 	var success bool
 	err := c.Call(ctx, "resourceSet.addSubject", params, &success)
-	fmt.Printf("[DEBUG] Calling resourceSet.addSubject call successful: %t with error: %v\n", success, err)
+	log.Printf("[DEBUG] Calling resourceSet.addSubject call successful: %t with error: %v\n", success, err)
 	return err
 }
 
@@ -189,7 +189,7 @@ func (c Client) RemoveResourceSetObject(rsReq ResourceSet, object string) error 
 	}
 	var success bool
 	err := c.Call(ctx, "resourceSet.removeObject", params, &success)
-	fmt.Printf("[DEBUG] Calling resourceSet.removeObject call successful: %t with error: %v\n", success, err)
+	log.Printf("[DEBUG] Calling resourceSet.removeObject call successful: %t with error: %v\n", success, err)
 	return err
 }
 
@@ -201,7 +201,7 @@ func (c Client) AddResourceSetObject(rsReq ResourceSet, object string) error {
 	}
 	var success bool
 	err := c.Call(ctx, "resourceSet.addObject", params, &success)
-	fmt.Printf("[DEBUG] Calling resourceSet.addObject call successful: %t with error: %v\n", success, err)
+	log.Printf("[DEBUG] Calling resourceSet.addObject call successful: %t with error: %v\n", success, err)
 	return err
 }
 
@@ -213,7 +213,7 @@ func (c Client) RemoveResourceSetLimit(rsReq ResourceSet, limit string) error {
 	}
 	var success bool
 	err := c.Call(ctx, "resourceSet.removeLimit", params, &success)
-	fmt.Printf("[DEBUG] Calling resourceSet.removeLimit call successful: %t with error: %v\n", success, err)
+	log.Printf("[DEBUG] Calling resourceSet.removeLimit call successful: %t with error: %v\n", success, err)
 	return err
 }
 
@@ -226,7 +226,7 @@ func (c Client) AddResourceSetLimit(rsReq ResourceSet, limit string, quantity in
 	}
 	var success bool
 	err := c.Call(ctx, "resourceSet.addLimit", params, &success)
-	fmt.Printf("[DEBUG] Calling resourceSet.addLimit call with params: %v successful: %t with error: %v\n", params, success, err)
+	log.Printf("[DEBUG] Calling resourceSet.addLimit call with params: %v successful: %t with error: %v\n", params, success, err)
 	return err
 }
 

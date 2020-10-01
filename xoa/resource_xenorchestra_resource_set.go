@@ -1,7 +1,7 @@
 package xoa
 
 import (
-	"fmt"
+	"log"
 
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -112,7 +112,7 @@ func resourceSetRead(d *schema.ResourceData, m interface{}) error {
 
 	id := d.Id()
 	rs, err := c.GetResourceSetById(id)
-	fmt.Printf("[DEBUG] Found resource set: %+v with error: %v\n", rs, err)
+	log.Printf("[DEBUG] Found resource set: %+v with error: %v\n", rs, err)
 
 	if err != nil {
 		return err
