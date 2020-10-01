@@ -8,7 +8,7 @@ import (
 )
 
 var testObjectIndex int = 1
-var accTestPrefix string = "terraform-acc-test-"
+var accTestPrefix string = "terraform-acc"
 var accTestPool client.Pool
 
 func TestMain(m *testing.M) {
