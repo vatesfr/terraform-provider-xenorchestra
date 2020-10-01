@@ -5,8 +5,17 @@ import (
 	"testing"
 )
 
-func CreateNetwork() error {
+func CreateResourceSet(rs ResourceSet) error {
+	c, err := NewClient(GetConfigFromEnv())
 
+	if err != nil {
+		return err
+	}
+	_, err = c.CreateResourceSet(rs)
+	return err
+}
+
+func CreateNetwork() error {
 	c, err := NewClient(GetConfigFromEnv())
 
 	if err != nil {
@@ -26,8 +35,11 @@ var accTestPool Pool
 func TestMain(m *testing.M) {
 	FindPoolForTests(&accTestPool)
 	CreateNetwork()
+	CreateResourceSet(testResourceSet)
+
 	code := m.Run()
 
+	RemoveResourceSetsWithNamePrefix(integrationTestPrefix)("")
 	RemoveNetworksWithNamePrefix(integrationTestPrefix)("")
 
 	os.Exit(code)

@@ -29,15 +29,17 @@ func Provider() terraform.ResourceProvider {
 			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
-			"xenorchestra_vm":           resourceRecord(),
 			"xenorchestra_cloud_config": resourceCloudConfigRecord(),
+			"xenorchestra_vm":           resourceRecord(),
+			"xenorchestra_resource_set": resourceResourceSet(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
-			"xenorchestra_network":  dataSourceXoaNetwork(),
-			"xenorchestra_pif":      dataSourceXoaPIF(),
-			"xenorchestra_pool":     dataSourceXoaPool(),
-			"xenorchestra_template": dataSourceXoaTemplate(),
-			"xenorchestra_sr":       dataSourceXoaStorageRepository(),
+			"xenorchestra_network":      dataSourceXoaNetwork(),
+			"xenorchestra_pif":          dataSourceXoaPIF(),
+			"xenorchestra_pool":         dataSourceXoaPool(),
+			"xenorchestra_template":     dataSourceXoaTemplate(),
+			"xenorchestra_resource_set": dataSourceXoaResourceSet(),
+			"xenorchestra_sr":           dataSourceXoaStorageRepository(),
 		},
 		ConfigureFunc: xoaConfigure,
 	}
