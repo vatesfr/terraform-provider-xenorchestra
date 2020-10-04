@@ -39,6 +39,7 @@ type Vm struct {
 	AutoPoweron        bool         `json:"auto_poweron"`
 	HA                 string       `json:"high_availability"`
 	CloudConfig        string       `json:"cloudConfig"`
+	ResourceSet        string       `json:"resourceSet,omitempty"`
 }
 
 func (v Vm) Compare(obj map[string]interface{}) bool {
@@ -78,7 +79,7 @@ type VDI struct {
 	Size      int
 }
 
-func (c *Client) CreateVm(name_label, name_description, template, cloudConfig string, cpus, memoryMax int, networks []map[string]string, disks []VDI) (*Vm, error) {
+func (c *Client) CreateVm(name_label, name_description, template, cloudConfig, resourceSet string, cpus, memoryMax int, networks []map[string]string, disks []VDI) (*Vm, error) {
 	vifs := []map[string]string{}
 	for _, network := range networks {
 		vifs = append(vifs, map[string]string{
@@ -109,6 +110,10 @@ func (c *Client) CreateVm(name_label, name_description, template, cloudConfig st
 		"existingDisks":    existingDisks,
 		"VIFs":             vifs,
 	}
+
+	if resourceSet != "" {
+		params["resourceSet"] = resourceSet
+	}
 	log.Printf("[DEBUG] VM params for vm.create %#v", params)
 	var vmId string
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Minute)
@@ -131,12 +136,18 @@ func (c *Client) CreateVm(name_label, name_description, template, cloudConfig st
 	return &vm, nil
 }
 
-func (c *Client) UpdateVm(id string, cpus int, nameLabel, nameDescription, ha string, autoPowerOn bool) (*Vm, error) {
+func (c *Client) UpdateVm(id string, cpus int, nameLabel, nameDescription, ha, rs string, autoPowerOn bool) (*Vm, error) {
+
+	var resourceSet interface{} = rs
+	if rs == "" {
+		resourceSet = nil
+	}
 	params := map[string]interface{}{
 		"id":                id,
 		"name_label":        nameLabel,
 		"name_description":  nameDescription,
 		"auto_poweron":      autoPowerOn,
+		"resourceSet":       resourceSet,
 		"high_availability": ha, // valid options are best-effort, restart, ''
 		// TODO: VM must be halted in order to change CPUs
 		// "CPUs":             cpus,
