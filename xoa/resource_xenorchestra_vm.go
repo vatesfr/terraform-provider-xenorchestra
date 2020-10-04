@@ -243,11 +243,7 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 	d.SetId(vm.Id)
 	d.Set("cloud_config", d.Get("cloud_config").(string))
 	d.Set("memory_max", d.Get("memory_max").(int))
-	if rs, ok := d.GetOk("resource_set"); ok {
-		d.Set("resource_set", rs)
-	} else {
-		d.Set("resource_set", nil)
-	}
+	d.Set("resource_set", d.Get("resource_set").(string))
 
 	vifs, err := c.GetVIFs(vm)
 
@@ -438,12 +434,7 @@ func recordToData(resource client.Vm, vifs []client.VIF, d *schema.ResourceData)
 	d.Set("name_description", resource.NameDescription)
 	d.Set("high_availability", resource.HA)
 	d.Set("auto_poweron", resource.AutoPoweron)
-
-	if _, ok := d.GetOk("resource_set"); ok {
-		d.Set("resource_set", resource.ResourceSet)
-	} else {
-		d.Set("resource_set", nil)
-	}
+	d.Set("resource_set", resource.ResourceSet)
 
 	nets := vifsToMapList(vifs)
 	err := d.Set("network", nets)
