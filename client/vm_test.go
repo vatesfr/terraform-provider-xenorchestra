@@ -32,9 +32,11 @@ var vmObjectData string = `
     "size": 1073733632
   },
   "installTime": 1552287083,
+  "resourceSet": "U8kmJKszJC0",
   "name_description": "Testingsdfsdf",
   "name_label": "Hello from terraform!",
   "other": {
+    "xo:resource_set": "\"U8kmJKszJC0\"",
     "base_template_name": "Ubuntu Bionic Beaver 18.04",
     "import_task": "OpaqueRef:a1c9c64b-eeec-48cd-b587-51a8fc7924d0",
     "mac_seed": "bc583da8-d7a4-9437-7630-ce5ecce7efd0",
@@ -179,6 +181,10 @@ func validateVmObject(o Vm) bool {
 	}
 
 	if o.PoolId != "cadf25ab-91ff-6fc0-041f-5a7033c4bc78" {
+		return false
+	}
+
+	if o.ResourceSet == "" {
 		return false
 	}
 

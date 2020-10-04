@@ -212,6 +212,33 @@ func TestAccXenorchestraVm_updatesWithoutReboot(t *testing.T) {
 	})
 }
 
+func TestAccXenorchestraVm_createAndUpdateWithResourceSet(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigWithResourceSet(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "resource_set"),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_pif.pif", "network")),
+			},
+			{
+				Config: testAccVmConfigWithoutResourceSet(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "resource_set", ""),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_pif.pif", "network")),
+			},
+		},
+	})
+}
+
 func testAccVmExists(resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]
@@ -393,4 +420,91 @@ resource "xenorchestra_vm" "bar" {
     }
 }
 `, nameLabel, nameDescription, ha, powerOn)
+}
+
+func testAccVmConfigWithResourceSet() string {
+	return testAccCloudConfigConfig() + testAccVmResourceSet + `
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 256000000
+    cpus  = 1
+    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    name_label = "Terraform testing"
+    name_description = "description"
+    template = "${data.xenorchestra_template.template.id}"
+    resource_set = "${xenorchestra_resource_set.rs.id}"
+    network {
+	network_id = "${data.xenorchestra_pif.pif.network}"
+    }
+
+    disk {
+      sr_id = "${data.xenorchestra_sr.local_storage.id}"
+      name_label = "xo provider root"
+      size = 10000000000
+    }
+}
+`
+}
+
+var testAccVmResourceSet string = `
+data "xenorchestra_sr" "local_storage" {
+    name_label = "Local storage"
+}
+
+data "xenorchestra_template" "template" {
+    name_label = "Focal Template"
+}
+
+data "xenorchestra_pif" "pif" {
+    device = "eth1"
+    vlan = -1
+}
+
+resource "xenorchestra_resource_set" "rs" {
+    name = "vm-acceptance-test"
+    subjects = []
+    objects = [
+	"${data.xenorchestra_template.template.id}",
+	"${data.xenorchestra_sr.local_storage.id}",
+	"${data.xenorchestra_pif.pif.network}",
+    ]
+
+    limit {
+      type = "cpus"
+      quantity = 20
+    }
+
+    limit {
+      type = "disk"
+      quantity = 107374182400
+    }
+
+    limit {
+      type = "memory"
+      quantity = 12884901888
+    }
+}
+`
+
+func testAccVmConfigWithoutResourceSet() string {
+	return testAccCloudConfigConfig() + testAccVmResourceSet + `
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 256000000
+    cpus  = 1
+    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    name_label = "Terraform testing"
+    name_description = "description"
+    template = "${data.xenorchestra_template.template.id}"
+    network {
+	network_id = "${data.xenorchestra_pif.pif.network}"
+    }
+
+    disk {
+      sr_id = "${data.xenorchestra_sr.local_storage.id}"
+      name_label = "xo provider root"
+      size = 10000000000
+    }
+}
+`
 }

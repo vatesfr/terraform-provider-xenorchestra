@@ -3,6 +3,7 @@ package xoa
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"net"
 	"os"
 	"strings"
@@ -108,6 +109,10 @@ func resourceRecord() *schema.Resource {
 			"memory_max": &schema.Schema{
 				Type:     schema.TypeInt,
 				Required: true,
+			},
+			"resource_set": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"network": &schema.Schema{
 				Type:     schema.TypeSet,
@@ -224,6 +229,7 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		d.Get("name_description").(string),
 		d.Get("template").(string),
 		d.Get("cloud_config").(string),
+		d.Get("resource_set").(string),
 		d.Get("cpus").(int),
 		d.Get("memory_max").(int),
 		network_maps,
@@ -237,6 +243,7 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 	d.SetId(vm.Id)
 	d.Set("cloud_config", d.Get("cloud_config").(string))
 	d.Set("memory_max", d.Get("memory_max").(int))
+	d.Set("resource_set", d.Get("resource_set").(string))
 
 	vifs, err := c.GetVIFs(vm)
 
@@ -302,7 +309,9 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 	cpus := d.Get("cpus").(int)
 	autoPowerOn := d.Get("auto_poweron").(bool)
 	ha := d.Get("high_availability").(string)
-	vm, err := c.UpdateVm(d.Id(), cpus, nameLabel, nameDescription, ha, autoPowerOn)
+	rs := d.Get("resource_set").(string)
+	vm, err := c.UpdateVm(d.Id(), cpus, nameLabel, nameDescription, ha, rs, autoPowerOn)
+	log.Printf("[DEBUG] Retrieved vm after update: %+v\n", vm)
 
 	if d.HasChange("network") {
 		origNet, newNet := d.GetChange("network")
@@ -425,6 +434,7 @@ func recordToData(resource client.Vm, vifs []client.VIF, d *schema.ResourceData)
 	d.Set("name_description", resource.NameDescription)
 	d.Set("high_availability", resource.HA)
 	d.Set("auto_poweron", resource.AutoPoweron)
+	d.Set("resource_set", resource.ResourceSet)
 
 	nets := vifsToMapList(vifs)
 	err := d.Set("network", nets)
