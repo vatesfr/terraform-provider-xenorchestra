@@ -1,16 +1,18 @@
 package client
 
-import "errors"
+import (
+	"errors"
+)
 
 type PIF struct {
-	Device   string
-	Host     string
-	Network  string
-	Id       string
-	Uuid     string
-	PoolId   string
-	Attached bool
-	Vlan     int
+	Device   string `json:"device"`
+	Host     string `json:"$host"`
+	Network  string `json:"$network"`
+	Id       string `json:"id"`
+	Uuid     string `json:"uuid"`
+	PoolId   string `json:"$poolId"`
+	Attached bool   `json:"attached"`
+	Vlan     int    `json:"vlan"`
 }
 
 func (p PIF) Compare(obj interface{}) bool {

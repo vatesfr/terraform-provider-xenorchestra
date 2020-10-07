@@ -1,7 +1,6 @@
 package client
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -19,7 +18,6 @@ func TestGetPIFByDevice(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to find PIF with device: %s with error: %v", device, err)
 	}
-	fmt.Printf("PIFS: %+v\n\n", pifs)
 
 	pif := pifs[0]
 

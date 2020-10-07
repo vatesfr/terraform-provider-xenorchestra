@@ -10,6 +10,7 @@ type Pool struct {
 	NameLabel   string  `json:"name_label"`
 	Description string  `json:"name_description"`
 	Cpus        CpuInfo `json:"cpus"`
+	DefaultSR   string  `json:"default_SR"`
 }
 
 type CpuInfo struct {
