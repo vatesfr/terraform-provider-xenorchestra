@@ -12,7 +12,7 @@ data "xenorchestra_network" "net" {
 resource "xenorchestra_vm" "demo-vm" {
   // ...
   network {
-    network_id = "${data.xenorchestra_network.net.id}"
+    network_id = data.xenorchestra_network.net.id
   }
   // ...
 }

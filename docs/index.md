@@ -10,6 +10,23 @@ The provider needs to be configured with the proper credentials before it can be
 
 ## Using the provider
 
+### Using terraform 0.12 and lower
+
+1. Install a pre-compiled release in your terraform [plugins directory](https://www.terraform.io/docs/configuration-0-11/providers.html).
+
+2. Configure the provider with the necessary credentials
+```hcl
+# Configure the XenServer Provider
+provider "xenorchestra" {
+  # Must be ws or wss
+  url      = "ws://hostname-of-server" # Or set XOA_URL environment variable
+  username = "<username>"              # Or set XOA_USER environment variable
+  password = "<password>"              # Or set XOA_PASSWORD environment variable
+}
+```
+
+3. Ensure the provider is properly installed with a `terraform init`.
+
 ### Using terraform 0.13 and higher
 
 1. Add the configuration so terraform can install the provider from the terraform registry and configure the provider with the necessary credentials
@@ -35,23 +52,6 @@ provider "xenorchestra" {
 ```
 
 2. Ensure the provider is properly installed with a `terraform init`.
-
-### Using terraform 0.12 and lower
-
-1. Install a pre-compiled release in your terraform [plugins directory](https://www.terraform.io/docs/configuration-0-11/providers.html).
-
-2. Configure the provider with the necessary credentials
-```hcl
-# Configure the XenServer Provider
-provider "xenorchestra" {
-  # Must be ws or wss
-  url      = "ws://hostname-of-server" # Or set XOA_URL environment variable
-  username = "<username>"              # Or set XOA_USER environment variable
-  password = "<password>"              # Or set XOA_PASSWORD environment variable
-}
-```
-
-3. Ensure the provider is properly installed with a `terraform init`.
 
 ### Upgrading from terraform 0.12 to 0.13
 

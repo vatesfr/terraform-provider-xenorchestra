@@ -17,6 +17,12 @@ runcmd:
  - ls -l /root
 EOF
 }
+
+resource "xenorchestra_vm" "bar" {
+  // ...
+  cloud_config = xenorchestra_cloud_config.demo.template
+  // ...
+}
 ```
 
 ## Argument Reference
