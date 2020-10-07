@@ -13,7 +13,7 @@ data "xenorchestra_pif" "eth0" {
 resource "xenorchestra_vm" "demo-vm" {
   // ...
   network {
-    network_id = "${data.xenorchestra_pif.eth0.network}"
+    network_id = data.xenorchestra_pif.eth0.network
   }
   // ...
 }

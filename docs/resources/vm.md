@@ -9,8 +9,8 @@ data "xenorchestra_template" "template" {
     name_label = "Puppet agent - Bionic 18.04 - 1"
 }
 
-data "xenorchestra_pif" "pif" {
-    device = "eth1"
+data "xenorchestra_network" "net" {
+  name_label = "Pool-wide network associated with eth0"
 }
 
 resource "xenorchestra_cloud_config" "bar" {
@@ -29,12 +29,12 @@ EOF
 resource "xenorchestra_vm" "bar" {
     memory_max = 1073733632
     cpus  = 1
-    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    cloud_config = xenorchestra_cloud_config.bar.template
     name_label = "Name"
     name_description = "description"
-    template = "${data.xenorchestra_template.template.id}"
+    template = data.xenorchestra_template.template.id
     network {
-	  network_id = "${data.xenorchestra_pif.pif.network}"
+	  network_id = data.xenorchestra_network.net.id
     }
 
     disk {
@@ -53,7 +53,6 @@ resource "xenorchestra_vm" "bar" {
 * cpus - (Required) The number of CPUs the VM will have.
 * memory_max - (Required) The amount of memory in bytes the VM will have.
 * high_availabililty - (Optional) The restart priority for the VM. Possible values are `best-effort`, `restart` and empty string (no restarts on failure. Defaults to empty string.
-* resource_set - (Optional) Id of the resource set the VM should be placed into.
 * auto_poweron - (Optional) If the VM will automatically turn on. Defaults to `false`.
 * network - (Required) The network the VM will use
     * network_id - (Required) The ID of the network the VM will be on.
