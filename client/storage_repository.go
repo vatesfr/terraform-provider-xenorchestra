@@ -3,6 +3,7 @@ package client
 import (
 	"errors"
 	"fmt"
+	"os"
 )
 
 type StorageRepository struct {
@@ -20,11 +21,14 @@ func (s StorageRepository) Compare(obj interface{}) bool {
 		return true
 	}
 
+	labelsMatch := false
 	if s.NameLabel == otherSr.NameLabel {
-		return true
+		labelsMatch = true
 	}
 
-	if s.PoolId == otherSr.PoolId {
+	if s.PoolId == "" && labelsMatch {
+		return true
+	} else if s.PoolId == otherSr.PoolId && labelsMatch {
 		return true
 	}
 
@@ -64,4 +68,17 @@ func (c *Client) GetStorageRepository(sr StorageRepository) ([]StorageRepository
 	}
 
 	return srs, nil
+}
+
+func FindStorageRepositoryForTests(pool Pool, sr *StorageRepository) {
+	c, _ := NewClient(GetConfigFromEnv())
+	var err error
+	defaultSr, err := c.GetStorageRepositoryById(pool.DefaultSR)
+
+	if err != nil {
+		fmt.Printf("failed to find the default storage repository with id: %s with error: %v\n", pool.DefaultSR, err)
+		os.Exit(-1)
+	}
+
+	*sr = defaultSr
 }

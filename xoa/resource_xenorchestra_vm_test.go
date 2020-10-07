@@ -242,7 +242,7 @@ func testAccVmExists(resourceName string) resource.TestCheckFunc {
 }
 
 func testAccVmConfig() string {
-	return testAccCloudConfigConfig() + `
+	return testAccCloudConfigConfig("vm-template", "template") + `
 data "xenorchestra_sr" "local_storage" {
     name_label = "Local storage"
 }
@@ -277,7 +277,7 @@ resource "xenorchestra_vm" "bar" {
 }
 
 func testAccVmConfigWithMacAddress(macAddress string) string {
-	return testAccCloudConfigConfig() + fmt.Sprintf(`
+	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
 data "xenorchestra_sr" "local_storage" {
     name_label = "Local storage"
 }
@@ -313,7 +313,7 @@ resource "xenorchestra_vm" "bar" {
 }
 
 func testAccVmConfigWithSecondVIF() string {
-	return testAccCloudConfigConfig() + `
+	return testAccCloudConfigConfig("vm-template", "template") + `
 data "xenorchestra_sr" "local_storage" {
     name_label = "Local storage"
 }
@@ -359,7 +359,7 @@ resource "xenorchestra_vm" "bar" {
 // Terraform config that tests changes to a VM that do not require halting
 // the VM prior to applying
 func testAccVmConfigUpdateAttrsHaltIrrelevant(nameLabel, nameDescription, ha string, powerOn bool) string {
-	return testAccCloudConfigConfig() + fmt.Sprintf(`
+	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
 data "xenorchestra_sr" "local_storage" {
     name_label = "Local storage"
 }

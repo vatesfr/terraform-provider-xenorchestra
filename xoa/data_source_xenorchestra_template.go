@@ -1,6 +1,9 @@
 package xoa
 
 import (
+	"errors"
+	"fmt"
+
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -17,6 +20,10 @@ func dataSourceXoaTemplate() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"pool_id": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -29,9 +36,14 @@ func dataSourceTemplateRead(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	templateName := d.Get("name_label").(string)
+	nameLabel := d.Get("name_label").(string)
+	poolId := d.Get("pool_id").(string)
 
-	tmpl, err := c.GetTemplate(templateName)
+	templateReq := client.Template{
+		NameLabel: nameLabel,
+		PoolId:    poolId,
+	}
+	templates, err := c.GetTemplate(templateReq)
 
 	if err != nil {
 		return err
@@ -41,6 +53,13 @@ func dataSourceTemplateRead(d *schema.ResourceData, m interface{}) error {
 		d.SetId("")
 		return nil
 	}
+
+	l := len(templates)
+	if l != 1 {
+		return errors.New(fmt.Sprintf("found `%d` templates with query %+v. Templates must be uniquely named to use this data source", l, templateReq))
+	}
+
+	tmpl := templates[0]
 
 	d.SetId(tmpl.Id)
 	d.Set("uuid", tmpl.Uuid)

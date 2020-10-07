@@ -9,8 +9,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-var poolNameLabel = "xenserver-ddelnano"
-
 func TestAccXenorchestraDataSource_pool(t *testing.T) {
 	resourceName := "data.xenorchestra_pool.pool"
 	resource.Test(t, resource.TestCase{
@@ -26,7 +24,7 @@ func TestAccXenorchestraDataSource_pool(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "cpus.%", "2"),
 					resource.TestCheckResourceAttrSet(resourceName, "cpus.sockets"),
 					resource.TestCheckResourceAttrSet(resourceName, "cpus.cores"),
-					resource.TestCheckResourceAttr(resourceName, "name_label", poolNameLabel)),
+					resource.TestCheckResourceAttr(resourceName, "name_label", accTestPool.NameLabel)),
 			},
 		},
 	},
@@ -53,5 +51,5 @@ func testAccXenorchestraDataSourcePoolConfig() string {
 data "xenorchestra_pool" "pool" {
     name_label = "%s"
 }
-`, poolNameLabel)
+`, accTestPool.NameLabel)
 }

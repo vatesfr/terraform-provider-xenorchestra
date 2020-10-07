@@ -1,6 +1,7 @@
 package xoa
 
 import (
+	"errors"
 	"fmt"
 	"log"
 
@@ -39,7 +40,7 @@ func dataSourcePoolRead(d *schema.ResourceData, m interface{}) error {
 
 	nameLabel := d.Get("name_label").(string)
 
-	pool, err := c.GetPoolByName(nameLabel)
+	pools, err := c.GetPoolByName(nameLabel)
 
 	if _, ok := err.(client.NotFound); ok {
 		d.SetId("")
@@ -49,6 +50,13 @@ func dataSourcePoolRead(d *schema.ResourceData, m interface{}) error {
 	if err != nil {
 		return err
 	}
+
+	l := len(pools)
+	if l != 1 {
+		return errors.New(fmt.Sprintf("found `%d` pools with name `%s`. Pools must be uniquely named to use this data source", l, nameLabel))
+	}
+
+	pool := pools[0]
 
 	log.Printf("[DEBUG] Found pool with %+v", pool)
 	d.SetId(pool.Id)

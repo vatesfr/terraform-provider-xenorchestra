@@ -1,6 +1,9 @@
 package xoa
 
 import (
+	"errors"
+	"fmt"
+
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -52,7 +55,7 @@ func dataSourcePIFRead(d *schema.ResourceData, m interface{}) error {
 	device := d.Get("device").(string)
 	vlan := d.Get("vlan").(int)
 
-	pif, err := c.GetPIFByDevice(device, vlan)
+	pifs, err := c.GetPIFByDevice(device, vlan)
 
 	if err != nil {
 		return err
@@ -62,6 +65,13 @@ func dataSourcePIFRead(d *schema.ResourceData, m interface{}) error {
 		d.SetId("")
 		return nil
 	}
+
+	l := len(pifs)
+	if l != 1 {
+		return errors.New(fmt.Sprintf("found `%d` pifs with device `%s` and vlan `%d`. Pools must be uniquely named to use this data source", l, device, vlan))
+	}
+
+	pif := pifs[0]
 
 	d.SetId(pif.Id)
 	d.Set("uuid", pif.Uuid)
