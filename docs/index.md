@@ -22,7 +22,7 @@ provider "xenorchestra" {
   url      = "ws://hostname-of-server" # Or set XOA_URL environment variable
   username = "<username>"              # Or set XOA_USER environment variable
   password = "<password>"              # Or set XOA_PASSWORD environment variable
-}
+
 ```
 
 3. Ensure the provider is properly installed with a `terraform init`.
@@ -37,7 +37,7 @@ terraform {
   required_providers {
     xenorchestra = {
       source = "terra-farm/xenorchestra"
-      version = "~> 0.3.0"
+      version = "~> 0.5"
     }
   }
 }
