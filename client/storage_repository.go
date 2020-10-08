@@ -7,11 +7,12 @@ import (
 )
 
 type StorageRepository struct {
-	Id        string `json:"id"`
-	Uuid      string `json:"uuid"`
-	NameLabel string `json:"name_label"`
-	PoolId    string `json:"$poolId"`
-	SRType    string `json:"SR_type"`
+	Id        string   `json:"id"`
+	Uuid      string   `json:"uuid"`
+	NameLabel string   `json:"name_label"`
+	PoolId    string   `json:"$poolId"`
+	SRType    string   `json:"SR_type"`
+	Tags      []string `json:"tags,omitempty"`
 }
 
 func (s StorageRepository) Compare(obj interface{}) bool {
@@ -19,6 +20,14 @@ func (s StorageRepository) Compare(obj interface{}) bool {
 
 	if s.Id == otherSr.Id {
 		return true
+	}
+
+	if len(s.Tags) > 0 {
+		for _, tag := range s.Tags {
+			if !stringInSlice(tag, otherSr.Tags) {
+				return false
+			}
+		}
 	}
 
 	labelsMatch := false
@@ -32,6 +41,15 @@ func (s StorageRepository) Compare(obj interface{}) bool {
 		return true
 	}
 
+	return false
+}
+
+func stringInSlice(needle string, haystack []string) bool {
+	for _, s := range haystack {
+		if s == needle {
+			return true
+		}
+	}
 	return false
 }
 
@@ -70,7 +88,7 @@ func (c *Client) GetStorageRepository(sr StorageRepository) ([]StorageRepository
 	return srs, nil
 }
 
-func FindStorageRepositoryForTests(pool Pool, sr *StorageRepository) {
+func FindStorageRepositoryForTests(pool Pool, sr *StorageRepository, tag string) {
 	c, _ := NewClient(GetConfigFromEnv())
 	var err error
 	defaultSr, err := c.GetStorageRepositoryById(pool.DefaultSR)
@@ -81,4 +99,11 @@ func FindStorageRepositoryForTests(pool Pool, sr *StorageRepository) {
 	}
 
 	*sr = defaultSr
+
+	err = c.AddTag(defaultSr.Id, tag)
+
+	if err != nil {
+		fmt.Printf("failed to set tag on default storage repository with id: %s with error: %v\n", pool.DefaultSR, err)
+		os.Exit(-1)
+	}
 }
