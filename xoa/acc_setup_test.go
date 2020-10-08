@@ -14,11 +14,12 @@ var accDefaultSr client.StorageRepository
 
 func TestMain(m *testing.M) {
 	client.FindPoolForTests(&accTestPool)
-	client.FindStorageRepositoryForTests(accTestPool, &accDefaultSr)
+	client.FindStorageRepositoryForTests(accTestPool, &accDefaultSr, accTestPrefix)
 	code := m.Run()
 
 	client.RemoveNetworksWithNamePrefix(accTestPrefix)("")
 	client.RemoveResourceSetsWithNamePrefix(accTestPrefix)("")
+	client.RemoveTagFromAllObjects(accTestPrefix)("")
 
 	os.Exit(code)
 }

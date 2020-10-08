@@ -28,6 +28,13 @@ func dataSourceXoaStorageRepository() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"tags": &schema.Schema{
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
 		},
 	}
 }
@@ -42,6 +49,7 @@ func dataSourceStorageRepositoryRead(d *schema.ResourceData, m interface{}) erro
 
 	nameLabel := d.Get("name_label").(string)
 	poolId, found := d.GetOk("pool_id")
+	tags, tagsFound := d.GetOk("tags")
 
 	sr := client.StorageRepository{
 		NameLabel: nameLabel,
@@ -49,6 +57,10 @@ func dataSourceStorageRepositoryRead(d *schema.ResourceData, m interface{}) erro
 
 	if found {
 		sr.PoolId = poolId.(string)
+	}
+
+	if tagsFound {
+		sr.Tags = tagsFromInterfaceSlice(tags.([]interface{}))
 	}
 
 	srs, err := c.GetStorageRepository(sr)
@@ -74,4 +86,13 @@ func dataSourceStorageRepositoryRead(d *schema.ResourceData, m interface{}) erro
 	d.Set("uuid", sr.Uuid)
 	d.Set("pool_id", sr.PoolId)
 	return nil
+}
+
+func tagsFromInterfaceSlice(values []interface{}) []string {
+	s := make([]string, 0, len(values))
+
+	for _, value := range values {
+		s = append(s, value.(string))
+	}
+	return s
 }

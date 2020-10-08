@@ -97,8 +97,11 @@ func testAccXenorchestraDataSourceStorageRepositoryConfig() string {
 	return fmt.Sprintf(`
 data "xenorchestra_sr" "sr" {
     name_label = "%s"
+    tags = [
+	"%s"
+    ]
 }
-`, accDefaultSr.NameLabel)
+`, accDefaultSr.NameLabel, accTestPrefix)
 }
 
 func testAccXenorchestraDataSourceStorageRepositoryPoolConfig(poolId string) string {
@@ -106,7 +109,10 @@ func testAccXenorchestraDataSourceStorageRepositoryPoolConfig(poolId string) str
 data "xenorchestra_sr" "sr" {
     name_label = "%s"
     pool_id = "%s"
+    tags = [
+	"%s"
+    ]
 }
-`, accDefaultSr.NameLabel, poolId)
+`, accDefaultSr.NameLabel, poolId, accTestPrefix)
 
 }
