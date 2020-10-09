@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"os"
 	"strings"
 	"time"
 
@@ -320,13 +319,10 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		newNetSet := newNet.(*schema.Set)
 
 		additions := expandNetworks(newNetSet.Difference(origNetSet).List())
-		underTest := os.Getenv("TF_ACC") == "1"
 		for _, addition := range additions {
 			_, vifErr := c.CreateVIF(vm, addition)
-			// TODO: This nasty hack should be removed
-			// See https://github.com/terra-farm/terraform-provider-xenorchestra/issues/56
-			// for more details
-			if vifErr != nil && !underTest {
+
+			if vifErr != nil {
 				return err
 			}
 		}
@@ -336,10 +332,7 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		for _, removal := range removals {
 			vifErr := c.DeleteVIF(removal)
 
-			// TODO: This nasty hack should be removed
-			// See https://github.com/terra-farm/terraform-provider-xenorchestra/issues/56
-			// for more details
-			if vifErr != nil && !underTest {
+			if vifErr != nil {
 				return err
 			}
 		}

@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -169,14 +170,18 @@ func (c *Client) DeleteVm(id string) error {
 
 func (c *Client) GetVm(vmReq Vm) (*Vm, error) {
 	obj, err := c.FindFromGetAllObjects(vmReq)
-	vm := obj.(Vm)
 
 	if err != nil {
-		return &vm, err
+		return nil, err
+	}
+	vms := obj.([]Vm)
+
+	if len(vms) != 1 {
+		return nil, errors.New(fmt.Sprintf("expected to find a single VM from request %+v, instead found %d", vmReq, len(vms)))
 	}
 
-	log.Printf("[DEBUG] Found vm: %+v", vm)
-	return &vm, nil
+	log.Printf("[DEBUG] Found vm: %+v", vms[0])
+	return &vms[0], nil
 }
 
 func (c *Client) GetVms() ([]Vm, error) {
