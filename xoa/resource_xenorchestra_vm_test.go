@@ -23,7 +23,7 @@ func TestAccXenorchestraVm_create(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
-					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_pif.pif", "network")),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
 			},
 		},
 	})
@@ -45,7 +45,7 @@ func TestAccXenorchestraVm_createWithMacAddress(t *testing.T) {
 					internal.TestCheckTypeSetElemNestedAttrs(resourceName, "network.*", map[string]string{
 						"mac_address": macAddress,
 					}),
-					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_pif.pif", "network")),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
 			},
 		},
 	})
@@ -85,7 +85,7 @@ func TestAccVm_import(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttr(resourceName, "name_description", "description"),
 					resource.TestCheckResourceAttr(resourceName, "name_label", "Terraform testing"),
-					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_pif.pif", "network")),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
 			},
 		},
 	})
@@ -128,7 +128,7 @@ func TestAccXenorchestraVm_updateVmWithSecondVif(t *testing.T) {
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttr(resourceName, "network.#", "1"),
-					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_pif.pif", "network")),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
 			},
 			{
 				Config: testAccVmConfigWithSecondVIF(),
@@ -136,8 +136,8 @@ func TestAccXenorchestraVm_updateVmWithSecondVif(t *testing.T) {
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttr(resourceName, "network.#", "2"),
-					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_pif.pif", "network"),
-					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_pif.eth0", "network")),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id"),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
 			},
 		},
 	})
@@ -158,8 +158,8 @@ func TestAccXenorchestraVm_updateVmWithSecondVif(t *testing.T) {
 // 					testAccVmExists(resourceName),
 // 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 // 					resource.TestCheckResourceAttr(resourceName, "network.#", "2"),
-// 					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_pif.pif", "network"),
-// 					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_pif.eth0", "network")),
+// 					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id"),
+// 					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
 // 			},
 // 			{
 // 				Config: testAccVmConfig(),
@@ -167,7 +167,7 @@ func TestAccXenorchestraVm_updateVmWithSecondVif(t *testing.T) {
 // 					testAccVmExists(resourceName),
 // 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 // 					resource.TestCheckResourceAttr(resourceName, "network.#", "1"),
-// 					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_pif.pif", "network")),
+// 					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
 // 			},
 // 		},
 // 	})
@@ -242,18 +242,15 @@ func testAccVmExists(resourceName string) resource.TestCheckFunc {
 }
 
 func testAccVmConfig() string {
-	return testAccCloudConfigConfig("vm-template", "template") + `
-data "xenorchestra_sr" "local_storage" {
-    name_label = "Local storage"
-}
-
+	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
-    name_label = "Focal Template"
+    name_label = "Debian 10 Cloudinit"
 }
 
-data "xenorchestra_pif" "pif" {
-    device = "eth1"
-    vlan = -1
+data "xenorchestra_network" "network" {
+    // TODO: Replace this with a better solution
+    name_label = "Pool-wide network associated with eth0"
+    pool_id = "%s"
 }
 
 resource "xenorchestra_vm" "bar" {
@@ -264,31 +261,28 @@ resource "xenorchestra_vm" "bar" {
     name_description = "description"
     template = "${data.xenorchestra_template.template.id}"
     network {
-	network_id = "${data.xenorchestra_pif.pif.network}"
+	network_id = "${data.xenorchestra_network.network.id}"
     }
 
     disk {
-      sr_id = "${data.xenorchestra_sr.local_storage.id}"
+      sr_id = "%s"
       name_label = "xo provider root"
       size = 10000000000
     }
 }
-`
+`, accTestPool.Id, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithMacAddress(macAddress string) string {
 	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
-data "xenorchestra_sr" "local_storage" {
-    name_label = "Local storage"
-}
-
 data "xenorchestra_template" "template" {
-    name_label = "Focal Template"
+    name_label = "Debian 10 Cloudinit"
 }
 
-data "xenorchestra_pif" "pif" {
-    device = "eth1"
-    vlan = -1
+data "xenorchestra_network" "network" {
+    // TODO: Replace this with a better solution
+    name_label = "Pool-wide network associated with eth0"
+    pool_id = "%s"
 }
 
 resource "xenorchestra_vm" "bar" {
@@ -299,37 +293,35 @@ resource "xenorchestra_vm" "bar" {
     name_description = "description"
     template = "${data.xenorchestra_template.template.id}"
     network {
-	network_id = "${data.xenorchestra_pif.pif.network}"
+	network_id = "${data.xenorchestra_network.network.id}"
 	mac_address = "%s"
     }
 
     disk {
-      sr_id = "${data.xenorchestra_sr.local_storage.id}"
+      sr_id = "%s"
       name_label = "xo provider root"
       size = 10000000000
     }
 }
-`, macAddress)
+`, accTestPool.Id, macAddress, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithSecondVIF() string {
-	return testAccCloudConfigConfig("vm-template", "template") + `
-data "xenorchestra_sr" "local_storage" {
-    name_label = "Local storage"
-}
-
+	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
-    name_label = "Focal Template"
+    name_label = "Debian 10 Cloudinit"
 }
 
-data "xenorchestra_pif" "pif" {
-    device = "eth1"
-    vlan = -1
+data "xenorchestra_network" "network" {
+    // TODO: Replace this with a better solution
+    name_label = "Pool-wide network associated with eth0"
+    pool_id = "%s"
 }
 
-data "xenorchestra_pif" "eth0" {
-    device = "eth0"
-    vlan = -1
+data "xenorchestra_network" "network2" {
+    // TODO: Replace this with a better solution
+    name_label = "Pool-wide network associated with eth1"
+    pool_id = "%[1]s"
 }
 
 resource "xenorchestra_vm" "bar" {
@@ -340,37 +332,33 @@ resource "xenorchestra_vm" "bar" {
     name_description = "description"
     template = "${data.xenorchestra_template.template.id}"
     network {
-	network_id = "${data.xenorchestra_pif.pif.network}"
+	network_id = "${data.xenorchestra_network.network.id}"
     }
-
     network {
-	network_id = "${data.xenorchestra_pif.eth0.network}"
+	network_id = "${data.xenorchestra_network.network2.id}"
     }
 
     disk {
-      sr_id = "${data.xenorchestra_sr.local_storage.id}"
+      sr_id = "%s"
       name_label = "xo provider root"
       size = 10000000000
     }
 }
-`
+`, accTestPool.Id, accDefaultSr.Id)
 }
 
 // Terraform config that tests changes to a VM that do not require halting
 // the VM prior to applying
 func testAccVmConfigUpdateAttrsHaltIrrelevant(nameLabel, nameDescription, ha string, powerOn bool) string {
 	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
-data "xenorchestra_sr" "local_storage" {
-    name_label = "Local storage"
-}
-
 data "xenorchestra_template" "template" {
-    name_label = "Focal Template"
+    name_label = "Debian 10 Cloudinit"
 }
 
-data "xenorchestra_pif" "pif" {
-    device = "eth1"
-    vlan = -1
+data "xenorchestra_network" "network" {
+    // TODO: Replace this with a better solution
+    name_label = "Pool-wide network associated with eth0"
+    pool_id = "%s"
 }
 
 resource "xenorchestra_vm" "bar" {
@@ -383,14 +371,14 @@ resource "xenorchestra_vm" "bar" {
     high_availability = "%s"
     auto_poweron = "%t"
     network {
-	network_id = "${data.xenorchestra_pif.pif.network}"
+	network_id = "${data.xenorchestra_network.network.id}"
     }
 
     disk {
-      sr_id = "${data.xenorchestra_sr.local_storage.id}"
+      sr_id = "%s"
       name_label = "xo provider root"
       size = 10000000000
     }
 }
-`, nameLabel, nameDescription, ha, powerOn)
+`, accTestPool.Id, nameLabel, nameDescription, ha, powerOn, accDefaultSr.Id)
 }
