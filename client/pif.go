@@ -17,6 +17,12 @@ type PIF struct {
 
 func (p PIF) Compare(obj interface{}) bool {
 	otherPif := obj.(PIF)
+
+	hostIdExists := p.Host != ""
+	if hostIdExists && p.Host != otherPif.Host {
+		return false
+	}
+
 	if p.Vlan == otherPif.Vlan && p.Device == otherPif.Device {
 		return true
 	}
@@ -28,6 +34,21 @@ func (c *Client) GetPIFByDevice(dev string, vlan int) ([]PIF, error) {
 
 	if err != nil {
 		return []PIF{}, err
+	}
+	pifs, ok := obj.([]PIF)
+
+	if !ok {
+		return pifs, errors.New("failed to coerce response into PIF slice")
+	}
+
+	return pifs, nil
+}
+
+func (c *Client) GetPIF(pifReq PIF) (pifs []PIF, err error) {
+	obj, err := c.FindFromGetAllObjects(pifReq)
+
+	if err != nil {
+		return
 	}
 	pifs, ok := obj.([]PIF)
 

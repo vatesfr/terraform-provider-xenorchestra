@@ -164,11 +164,11 @@ func (c *Client) FindFromGetAllObjects(obj XoObject) (interface{}, error) {
 		b, err := json.Marshal(v)
 
 		if err != nil {
-			return obj, err
+			return objs, err
 		}
 		err = json.Unmarshal(b, value.Interface())
 		if err != nil {
-			return obj, err
+			return objs, err
 		}
 		if obj.Compare(value.Elem().Interface()) {
 			// log.Printf("[TRACE] object: %+v Compared true to %+v\n", obj, value.Elem())
@@ -177,7 +177,7 @@ func (c *Client) FindFromGetAllObjects(obj XoObject) (interface{}, error) {
 		}
 	}
 	if !found {
-		return obj, NotFound{Query: obj}
+		return objs, NotFound{Query: obj}
 	}
 
 	log.Printf("[TRACE] Found the following objects from xo.getAllObjects: %+v\n", objs)

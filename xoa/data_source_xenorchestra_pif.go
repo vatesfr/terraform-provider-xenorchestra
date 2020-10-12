@@ -28,6 +28,11 @@ func dataSourceXoaPIF() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"host_id": &schema.Schema{
+				Type:     schema.TypeString,
+				Computed: true,
+				Optional: true,
+			},
 			"pool_id": &schema.Schema{
 				Type:     schema.TypeString,
 				Computed: true,
@@ -54,8 +59,17 @@ func dataSourcePIFRead(d *schema.ResourceData, m interface{}) error {
 
 	device := d.Get("device").(string)
 	vlan := d.Get("vlan").(int)
+	host, hostFound := d.GetOk("host_id")
 
-	pifs, err := c.GetPIFByDevice(device, vlan)
+	pifReq := client.PIF{
+		Device: device,
+		Vlan:   vlan,
+	}
+
+	if hostFound {
+		pifReq.Host = host.(string)
+	}
+	pifs, err := c.GetPIF(pifReq)
 
 	if err != nil {
 		return err
@@ -68,7 +82,7 @@ func dataSourcePIFRead(d *schema.ResourceData, m interface{}) error {
 
 	l := len(pifs)
 	if l != 1 {
-		return errors.New(fmt.Sprintf("found `%d` pifs with device `%s` and vlan `%d`. Pools must be uniquely named to use this data source", l, device, vlan))
+		return errors.New(fmt.Sprintf("found `%d` pifs with device `%s` and vlan `%d`. PIFs must be uniquely named to use this data source", l, device, vlan))
 	}
 
 	pif := pifs[0]
