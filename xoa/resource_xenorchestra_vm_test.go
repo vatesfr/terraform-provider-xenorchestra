@@ -244,7 +244,7 @@ func testAccVmExists(resourceName string) resource.TestCheckFunc {
 func testAccVmConfig() string {
 	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
-    name_label = "Debian 10 Cloudinit"
+    name_label = "%s"
 }
 
 data "xenorchestra_network" "network" {
@@ -270,13 +270,13 @@ resource "xenorchestra_vm" "bar" {
       size = 10000000000
     }
 }
-`, accTestPool.Id, accDefaultSr.Id)
+`, accTemplateName, accTestPool.Id, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithMacAddress(macAddress string) string {
 	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
-    name_label = "Debian 10 Cloudinit"
+    name_label = "%s"
 }
 
 data "xenorchestra_network" "network" {
@@ -303,13 +303,13 @@ resource "xenorchestra_vm" "bar" {
       size = 10000000000
     }
 }
-`, accTestPool.Id, macAddress, accDefaultSr.Id)
+`, accTemplateName, accTestPool.Id, macAddress, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithSecondVIF() string {
 	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
-    name_label = "Debian 10 Cloudinit"
+    name_label = "%s"
 }
 
 data "xenorchestra_network" "network" {
@@ -321,7 +321,7 @@ data "xenorchestra_network" "network" {
 data "xenorchestra_network" "network2" {
     // TODO: Replace this with a better solution
     name_label = "Pool-wide network associated with eth1"
-    pool_id = "%[1]s"
+    pool_id = "%[2]s"
 }
 
 resource "xenorchestra_vm" "bar" {
@@ -344,7 +344,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10000000000
     }
 }
-`, accTestPool.Id, accDefaultSr.Id)
+`, accTemplateName, accTestPool.Id, accDefaultSr.Id)
 }
 
 // Terraform config that tests changes to a VM that do not require halting
@@ -352,7 +352,7 @@ resource "xenorchestra_vm" "bar" {
 func testAccVmConfigUpdateAttrsHaltIrrelevant(nameLabel, nameDescription, ha string, powerOn bool) string {
 	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
-    name_label = "Debian 10 Cloudinit"
+    name_label = "%s"
 }
 
 data "xenorchestra_network" "network" {
@@ -380,5 +380,5 @@ resource "xenorchestra_vm" "bar" {
       size = 10000000000
     }
 }
-`, accTestPool.Id, nameLabel, nameDescription, ha, powerOn, accDefaultSr.Id)
+`, accTemplateName, accTestPool.Id, nameLabel, nameDescription, ha, powerOn, accDefaultSr.Id)
 }

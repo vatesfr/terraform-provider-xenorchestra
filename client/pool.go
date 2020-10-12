@@ -11,6 +11,7 @@ type Pool struct {
 	Description string  `json:"name_description"`
 	Cpus        CpuInfo `json:"cpus"`
 	DefaultSR   string  `json:"default_SR"`
+	Master      string  `json:"master"`
 }
 
 type CpuInfo struct {
@@ -27,13 +28,12 @@ func (p Pool) Compare(obj interface{}) bool {
 	return true
 }
 
-func (c *Client) GetPoolByName(name string) ([]Pool, error) {
+func (c *Client) GetPoolByName(name string) (pools []Pool, err error) {
 	obj, err := c.FindFromGetAllObjects(Pool{NameLabel: name})
-	pools := obj.([]Pool)
-
 	if err != nil {
-		return pools, err
+		return
 	}
+	pools = obj.([]Pool)
 
 	return pools, nil
 }

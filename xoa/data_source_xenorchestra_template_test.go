@@ -45,8 +45,8 @@ func testAccCheckXenorchestraDataSourceTemplate(n string) resource.TestCheckFunc
 func testAccXenorchestraDataSourceTemplateConfig(poolId string) string {
 	return fmt.Sprintf(`
 data "xenorchestra_template" "template" {
-    name_label = "CentOS 7"
+    name_label = "%s"
     pool_id = "%s"
 }
-`, poolId)
+`, accTemplateName, poolId)
 }
