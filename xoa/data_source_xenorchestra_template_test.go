@@ -2,7 +2,6 @@ package xoa
 
 import (
 	"fmt"
-	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -19,7 +18,7 @@ func TestAccXenorchestraDataSource_template(t *testing.T) {
 				Config: testAccXenorchestraDataSourceTemplateConfig(accTestPool.Id),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckXenorchestraDataSourceTemplate(resourceName),
-					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile("^OpaqueRef:")),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "uuid"),
 				),
 			},

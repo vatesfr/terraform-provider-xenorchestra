@@ -51,7 +51,7 @@ func TestAccXenorchestraVm_createWithMacAddress(t *testing.T) {
 	})
 }
 
-func TestAccVm_import(t *testing.T) {
+func TestAccXenorchestraVm_import(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	checkFn := func(s []*terraform.InstanceState) error {
 		attrs := []string{"id", "name_label"}
@@ -180,8 +180,8 @@ func TestAccXenorchestraVm_updatesWithoutReboot(t *testing.T) {
 	origNameDesc := "name label"
 	origHa := ""
 	origPowerOn := false
-	updatedNameLabel := "Updated name label"
-	updatedNameDesc := "Updated description"
+	updatedNameLabel := "Terraform Updated name label"
+	updatedNameDesc := "Terraform Updated description"
 	updatedHa := "restart"
 	updatedPowerOn := true
 	resource.Test(t, resource.TestCase{
