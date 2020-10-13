@@ -23,6 +23,10 @@ resource "xenorchestra_vm" "demo-vm" {
 ## Argument Reference
 * name_label - (Required) The name of the storage repository you want to look up.
 * pool_id - (Optional) The ID of the pool the storage repository belongs to. This is useful if you have storage repositories with the same name on different pools.
+* tags - (Optional) List of tags that are applied to the storage repository.
+
+**Note:** If there are multiple storage repositories that match terraform will fail.
+Ensure that your name_label, pool_id and tags identify a unique storage repository.
 
 ## Attributes Reference
 * id - Id of the storage repository.
