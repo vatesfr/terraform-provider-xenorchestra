@@ -5,16 +5,15 @@ import (
 )
 
 func TestGetTemplate(t *testing.T) {
-	templateName := "Ubuntu Bionic Beaver 18.04"
 	tests := []struct {
 		templateName string
 		template     Template
 		err          error
 	}{
 		{
-			templateName: templateName,
+			templateName: testTemplateName,
 			template: Template{
-				NameLabel: templateName,
+				NameLabel: testTemplateName,
 			},
 			err: nil,
 		},
