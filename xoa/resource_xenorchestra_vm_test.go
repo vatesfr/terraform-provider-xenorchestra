@@ -225,7 +225,7 @@ func TestAccXenorchestraVm_createAndUpdateWithResourceSet(t *testing.T) {
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "resource_set"),
-					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_pif.pif", "network")),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
 			},
 			{
 				Config: testAccVmConfigWithoutResourceSet(),
@@ -233,7 +233,7 @@ func TestAccXenorchestraVm_createAndUpdateWithResourceSet(t *testing.T) {
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttr(resourceName, "resource_set", ""),
-					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_pif.pif", "network")),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
 			},
 		},
 	})
@@ -411,50 +411,48 @@ resource "xenorchestra_vm" "bar" {
 }
 
 func testAccVmConfigWithResourceSet() string {
-	return testAccCloudConfigConfig() + testAccVmResourceSet + `
+	return testAccCloudConfigConfig("vm-template", "template") + testAccVmResourceSet() + fmt.Sprintf(`
 
 resource "xenorchestra_vm" "bar" {
     memory_max = 256000000
     cpus  = 1
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
-    name_label = "Terraform testing"
+    name_label = "Terraform testing resource sets"
     name_description = "description"
     template = "${data.xenorchestra_template.template.id}"
     resource_set = "${xenorchestra_resource_set.rs.id}"
     network {
-	network_id = "${data.xenorchestra_pif.pif.network}"
+	network_id = "${data.xenorchestra_network.network.id}"
     }
 
     disk {
-      sr_id = "${data.xenorchestra_sr.local_storage.id}"
+      sr_id = "%s"
       name_label = "xo provider root"
       size = 10000000000
     }
 }
-`
+`, accDefaultSr.Id)
 }
 
-var testAccVmResourceSet string = `
-data "xenorchestra_sr" "local_storage" {
-    name_label = "Local storage"
-}
-
+func testAccVmResourceSet() string {
+	return fmt.Sprintf(`
 data "xenorchestra_template" "template" {
-    name_label = "Focal Template"
+    name_label = "%s"
 }
 
-data "xenorchestra_pif" "pif" {
-    device = "eth1"
-    vlan = -1
+data "xenorchestra_network" "network" {
+    // TODO: Replace this with a better solution
+    name_label = "Pool-wide network associated with eth0"
+    pool_id = "%s"
 }
 
 resource "xenorchestra_resource_set" "rs" {
-    name = "vm-acceptance-test"
+    name = "terraform-vm-acceptance-test"
     subjects = []
     objects = [
 	"${data.xenorchestra_template.template.id}",
-	"${data.xenorchestra_sr.local_storage.id}",
-	"${data.xenorchestra_pif.pif.network}",
+	"%s",
+	"${data.xenorchestra_network.network.id}",
     ]
 
     limit {
@@ -472,27 +470,28 @@ resource "xenorchestra_resource_set" "rs" {
       quantity = 12884901888
     }
 }
-`
+`, accTemplateName, accTestPool.Id, accDefaultSr.Id)
+}
 
 func testAccVmConfigWithoutResourceSet() string {
-	return testAccCloudConfigConfig() + testAccVmResourceSet + `
+	return testAccCloudConfigConfig("vm-template", "template") + testAccVmResourceSet() + fmt.Sprintf(`
 
 resource "xenorchestra_vm" "bar" {
     memory_max = 256000000
     cpus  = 1
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
-    name_label = "Terraform testing"
+    name_label = "Terraform testing resource sets"
     name_description = "description"
     template = "${data.xenorchestra_template.template.id}"
     network {
-	network_id = "${data.xenorchestra_pif.pif.network}"
+	network_id = "${data.xenorchestra_network.network.id}"
     }
 
     disk {
-      sr_id = "${data.xenorchestra_sr.local_storage.id}"
+      sr_id = "%s"
       name_label = "xo provider root"
       size = 10000000000
     }
 }
-`
+`, accDefaultSr.Id)
 }

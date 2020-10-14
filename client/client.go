@@ -90,7 +90,7 @@ func NewClient(config Config) (*Client, error) {
 
 func (c *Client) Call(ctx context.Context, method string, params, result interface{}, opt ...jsonrpc2.CallOption) error {
 	err := c.rpc.Call(ctx, method, params, &result, opt...)
-	log.Printf("[TRACE] Made rpc call `%s` with params: %v and received %+v: result with error: %v\n", method, params, result, err)
+	log.Printf("[TRACE] Made rpc call `%s` with params: %v and received %+v: result with error: %v\n", method, params, reflect.ValueOf(result).Elem(), err)
 
 	if err != nil {
 		rpcErr, ok := err.(*jsonrpc2.Error)

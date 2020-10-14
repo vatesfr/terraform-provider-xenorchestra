@@ -140,7 +140,7 @@ func (c *Client) UpdateVm(id string, cpus int, nameLabel, nameDescription, ha, r
 	log.Printf("[DEBUG] VM params for vm.set: %#v", params)
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Minute)
 	var success bool
-	err := c.rpc.Call(ctx, "vm.set", params, &success)
+	err := c.Call(ctx, "vm.set", params, &success)
 
 	if err != nil {
 		return nil, err
@@ -148,7 +148,7 @@ func (c *Client) UpdateVm(id string, cpus int, nameLabel, nameDescription, ha, r
 
 	// TODO: This is a poor way to ensure that terraform will see the updated
 	// attributes after calling vm.set. Need to investigate a better way to detect this.
-	time.Sleep(15 * time.Second)
+	time.Sleep(25 * time.Second)
 
 	return c.GetVm(Vm{Id: id})
 }

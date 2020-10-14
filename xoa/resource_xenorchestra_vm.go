@@ -151,7 +151,7 @@ func resourceRecord() *schema.Resource {
 					macAddress := network["mac_address"].(string)
 					networkId := network["network_id"].(string)
 					v := fmt.Sprintf("%s-%s", macAddress, networkId)
-					fmt.Printf("[DEBUG] Setting network via %s\n", v)
+					log.Printf("[TRACE] Setting network via %s\n", v)
 
 					return hashcode.String(v)
 				},
@@ -312,6 +312,10 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 	vm, err := c.UpdateVm(d.Id(), cpus, nameLabel, nameDescription, ha, rs, autoPowerOn)
 	log.Printf("[DEBUG] Retrieved vm after update: %+v\n", vm)
 
+	if err != nil {
+		return err
+	}
+
 	if d.HasChange("network") {
 		origNet, newNet := d.GetChange("network")
 
@@ -336,10 +340,6 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 				return err
 			}
 		}
-	}
-
-	if err != nil {
-		return err
 	}
 
 	vifs, err := c.GetVIFs(vm)
