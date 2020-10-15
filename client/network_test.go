@@ -39,12 +39,13 @@ func TestNetworkCompare(t *testing.T) {
 		{
 			net: Network{
 				NameLabel: nameLabel,
+				PoolId:    poolId,
 			},
 			result: true,
 			other: Network{
 				Id:        "355ee47d-ff4c-4924-3db2-fd86ae629676",
 				NameLabel: nameLabel,
-				PoolId:    "355ee47d-ff4c-4924-3db2-fd86ae629676",
+				PoolId:    poolId,
 			},
 		},
 	}
