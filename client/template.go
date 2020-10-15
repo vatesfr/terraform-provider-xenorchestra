@@ -2,7 +2,6 @@ package client
 
 import (
 	"errors"
-	"fmt"
 )
 
 type Template struct {
@@ -30,7 +29,6 @@ func (t Template) Compare(obj interface{}) bool {
 
 func (c *Client) GetTemplate(template Template) ([]Template, error) {
 	obj, err := c.FindFromGetAllObjects(template)
-	fmt.Println(fmt.Sprintf("template %v", template))
 	var templates []Template
 	if err != nil {
 		return templates, err
