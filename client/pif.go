@@ -1,53 +1,60 @@
 package client
 
+import (
+	"errors"
+)
+
 type PIF struct {
-	Device   string
-	Host     string
-	Network  string
-	Id       string
-	Uuid     string
-	PoolId   string
-	Attached bool
-	Vlan     int
+	Device   string `json:"device"`
+	Host     string `json:"$host"`
+	Network  string `json:"$network"`
+	Id       string `json:"id"`
+	Uuid     string `json:"uuid"`
+	PoolId   string `json:"$poolId"`
+	Attached bool   `json:"attached"`
+	Vlan     int    `json:"vlan"`
 }
 
-func (p PIF) Compare(obj map[string]interface{}) bool {
-	device := obj["device"].(string)
-	vlan := int(obj["vlan"].(float64))
-	if p.Vlan == vlan && p.Device == device {
+func (p PIF) Compare(obj interface{}) bool {
+	otherPif := obj.(PIF)
+
+	hostIdExists := p.Host != ""
+	if hostIdExists && p.Host != otherPif.Host {
+		return false
+	}
+
+	if p.Vlan == otherPif.Vlan && p.Device == otherPif.Device {
 		return true
 	}
 	return false
 }
 
-func (p PIF) New(obj map[string]interface{}) XoObject {
-	id := obj["id"].(string)
-	device := obj["device"].(string)
-	attached := obj["attached"].(bool)
-	network := obj["$network"].(string)
-	uuid := obj["uuid"].(string)
-	poolId := obj["$poolId"].(string)
-	host := obj["$host"].(string)
-	vlan := int(obj["vlan"].(float64))
-	return PIF{
-		Device:   device,
-		Host:     host,
-		Network:  network,
-		Id:       id,
-		Uuid:     uuid,
-		PoolId:   poolId,
-		Attached: attached,
-		Vlan:     vlan,
-	}
-}
-
-func (c *Client) GetPIFByDevice(dev string, vlan int) (PIF, error) {
+func (c *Client) GetPIFByDevice(dev string, vlan int) ([]PIF, error) {
 	obj, err := c.FindFromGetAllObjects(PIF{Device: dev, Vlan: vlan})
-	pif := obj.(PIF)
 
 	if err != nil {
-		return pif, err
+		return []PIF{}, err
+	}
+	pifs, ok := obj.([]PIF)
+
+	if !ok {
+		return pifs, errors.New("failed to coerce response into PIF slice")
 	}
 
-	return pif, nil
+	return pifs, nil
+}
+
+func (c *Client) GetPIF(pifReq PIF) (pifs []PIF, err error) {
+	obj, err := c.FindFromGetAllObjects(pifReq)
+
+	if err != nil {
+		return
+	}
+	pifs, ok := obj.([]PIF)
+
+	if !ok {
+		return pifs, errors.New("failed to coerce response into PIF slice")
+	}
+
+	return pifs, nil
 }

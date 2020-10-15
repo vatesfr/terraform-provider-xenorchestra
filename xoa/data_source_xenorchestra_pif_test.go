@@ -15,7 +15,7 @@ func TestAccXenorchestraDataSource_pif(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccXenorchestraDataSourcePIFConfig,
+				Config: testAccXenorchestraDataSourcePIFConfig(),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckXenorchestraDataSourcePIF(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -46,9 +46,12 @@ func testAccCheckXenorchestraDataSourcePIF(n string) resource.TestCheckFunc {
 	}
 }
 
-const testAccXenorchestraDataSourcePIFConfig = `
+func testAccXenorchestraDataSourcePIFConfig() string {
+	return fmt.Sprintf(`
 data "xenorchestra_pif" "pif" {
     device = "eth0"
     vlan = -1
+    host_id = "%s"
 }
-`
+`, accTestPool.Master)
+}

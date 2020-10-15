@@ -1,38 +1,44 @@
 package client
 
+import (
+	"errors"
+)
+
 type Template struct {
-	// TODO: Not sure the difference between these two
-	Id        string
-	Uuid      string
-	NameLabel string
+	Id        string `json:"id"`
+	Uuid      string `json:"uuid"`
+	NameLabel string `json:"name_label"`
+	PoolId    string `json:"$poolId"`
 }
 
-func (t Template) Compare(obj map[string]interface{}) bool {
-	name_label := obj["name_label"].(string)
-	if t.NameLabel == name_label {
+func (t Template) Compare(obj interface{}) bool {
+	other := obj.(Template)
+
+	labelsMatch := false
+	if t.NameLabel == other.NameLabel {
+		labelsMatch = true
+	}
+
+	if t.PoolId == "" && labelsMatch {
+		return true
+	} else if t.PoolId == other.PoolId && labelsMatch {
 		return true
 	}
 	return false
 }
 
-func (p Template) New(obj map[string]interface{}) XoObject {
-	id := obj["id"].(string)
-	uuid := obj["uuid"].(string)
-	name_label := obj["name_label"].(string)
-	return Template{
-		Id:        id,
-		NameLabel: name_label,
-		Uuid:      uuid,
-	}
-}
-
-func (c *Client) GetTemplate(name string) (Template, error) {
-	obj, err := c.FindFromGetAllObjects(Template{NameLabel: name})
-	template := obj.(Template)
-
+func (c *Client) GetTemplate(template Template) ([]Template, error) {
+	obj, err := c.FindFromGetAllObjects(template)
+	var templates []Template
 	if err != nil {
-		return template, err
+		return templates, err
 	}
 
-	return template, nil
+	templates, ok := obj.([]Template)
+
+	if !ok {
+		return templates, errors.New("failed to coerce response into Template slice")
+	}
+
+	return templates, nil
 }

@@ -6,63 +6,78 @@ import (
 
 func TestStorageRepositoryCompare(t *testing.T) {
 	tests := []struct {
-		object map[string]interface{}
+		other  StorageRepository
 		sr     StorageRepository
 		result bool
 	}{
 		{
-			object: map[string]interface{}{
-				"name_label": "Test",
-				"$poolId":    "Sample pool id",
+			other: StorageRepository{
+				NameLabel: "Test",
+				PoolId:    "Sample pool id",
 			},
 			sr:     StorageRepository{NameLabel: "Test"},
 			result: true,
 		},
 		{
-			object: map[string]interface{}{
-				"name_label": "Test",
-				"$poolId":    "Pool A",
+			other: StorageRepository{
+				NameLabel: "Test",
+				PoolId:    "Pool A",
 			},
 			sr:     StorageRepository{NameLabel: "Test", PoolId: "Pool A"},
 			result: true,
 		},
 		{
-			object: map[string]interface{}{
-				"name_label": "Test",
-				"$poolId":    "Pool A",
+			other: StorageRepository{
+				NameLabel: "Test",
+				PoolId:    "does not match",
 			},
 			sr:     StorageRepository{NameLabel: "Test", PoolId: "Pool A"},
-			result: true,
+			result: false,
+		},
+		{
+			other: StorageRepository{
+				NameLabel: "Test",
+				PoolId:    "Pool A",
+			},
+			sr: StorageRepository{
+				NameLabel: "Test",
+				PoolId:    "Pool A",
+				Tags:      []string{"tag1"},
+			},
+			result: false,
 		},
 	}
 
 	for _, test := range tests {
 		sr := test.sr
-		object := test.object
+		other := test.other
 		result := test.result
-		if sr.Compare(object) != result {
-			t.Errorf("Expected Storage Repository %v to Compare %t to %v", sr, result, object)
+		if sr.Compare(other) != result {
+			t.Errorf("Expected Storage Repository %v to Compare %t to %v", sr, result, other)
 		}
 	}
 }
 
-func TestGetStorageRepositoryByType(t *testing.T) {
+func TestGetStorageRepositoryByNameLabel(t *testing.T) {
 	c, err := NewClient(GetConfigFromEnv())
 
 	if err != nil {
-		t.Errorf("failed to create client with error: %v", err)
+		t.Fatalf("failed to create client with error: %v", err)
 	}
-	expectedNameLabel := "XenServer Tools"
-	sr := StorageRepository{
-		NameLabel: expectedNameLabel,
-	}
-	sr, err = c.GetStorageRepository(sr)
+	defaultSr, err := c.GetStorageRepositoryById(accTestPool.DefaultSR)
 
 	if err != nil {
-		t.Errorf("failed to get storage repository with error: %v", err)
+		t.Fatalf("failed to retrieve storage repository by id with error: %v", err)
 	}
 
-	if sr.NameLabel != expectedNameLabel {
-		t.Errorf("expected storage repository to have name `%s` received `%s` instead.", expectedNameLabel, sr.NameLabel)
+	srs, err := c.GetStorageRepository(StorageRepository{NameLabel: defaultSr.NameLabel})
+
+	if err != nil {
+		t.Fatalf("failed to get storage repository by name label with error: %v", err)
+	}
+
+	sr := srs[0]
+	if sr.NameLabel != defaultSr.NameLabel {
+		t.Errorf("expected storage repository to have name `%s` received `%s` instead.", defaultSr.NameLabel, sr.NameLabel)
 	}
 }

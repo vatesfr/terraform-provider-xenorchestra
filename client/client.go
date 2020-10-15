@@ -2,11 +2,13 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"reflect"
 	"time"
 
 	gorillawebsocket "github.com/gorilla/websocket"
@@ -87,8 +89,15 @@ func NewClient(config Config) (*Client, error) {
 }
 
 func (c *Client) Call(ctx context.Context, method string, params, result interface{}, opt ...jsonrpc2.CallOption) error {
-	err := c.rpc.Call(ctx, method, params, &result, opt...)
-	log.Printf("[TRACE] Made rpc call `%s` with params: %v and received %+v: result with error: %v\n", method, params, result, err)
+	err := c.rpc.Call(ctx, method, params, result, opt...)
+	var callRes interface{}
+	t := reflect.TypeOf(result)
+	if t == nil || t.Kind() != reflect.Ptr {
+		callRes = result
+	} else {
+		callRes = reflect.ValueOf(result).Elem()
+	}
+	log.Printf("[TRACE] Made rpc call `%s` with params: %v and received %+v: result with error: %v\n", method, params, callRes, err)
 
 	if err != nil {
 		rpcErr, ok := err.(*jsonrpc2.Error)
@@ -109,8 +118,7 @@ func (c *Client) Call(ctx context.Context, method string, params, result interfa
 }
 
 type XoObject interface {
-	Compare(obj map[string]interface{}) bool
-	New(obj map[string]interface{}) XoObject
+	Compare(obj interface{}) bool
 }
 
 func (c *Client) GetAllObjectsOfType(obj XoObject, response interface{}) error {
@@ -139,7 +147,7 @@ func (c *Client) GetAllObjectsOfType(obj XoObject, response interface{}) error {
 		},
 	}
 	ctx, _ := context.WithTimeout(context.Background(), 100*time.Second)
-	return c.Call(ctx, "xo.getAllObjects", params, &response)
+	return c.Call(ctx, "xo.getAllObjects", params, response)
 }
 
 func (c *Client) FindFromGetAllObjects(obj XoObject) (interface{}, error) {
@@ -152,29 +160,35 @@ func (c *Client) FindFromGetAllObjects(obj XoObject) (interface{}, error) {
 	}
 
 	found := false
-	objs := make([]interface{}, 0)
+	t := reflect.TypeOf(obj)
+	value := reflect.New(t)
+	objs := reflect.MakeSlice(reflect.SliceOf(t), 0, 0)
 	for _, resObj := range objsRes.Objects {
 		v, ok := resObj.(map[string]interface{})
 		if !ok {
 			return obj, errors.New("Could not coerce interface{} into map")
 		}
+		b, err := json.Marshal(v)
 
-		if obj.Compare(v) {
+		if err != nil {
+			return objs, err
+		}
+		err = json.Unmarshal(b, value.Interface())
+		if err != nil {
+			return objs, err
+		}
+		if obj.Compare(value.Elem().Interface()) {
 			found = true
-			objs = append(objs, obj.New(v))
+			objs = reflect.Append(objs, value.Elem())
 		}
 	}
 	if !found {
-		return obj, NotFound{Query: obj}
+		return objs, NotFound{Query: obj}
 	}
 
 	log.Printf("[TRACE] Found the following objects from xo.getAllObjects: %+v\n", objs)
-	if len(objs) == 1 {
 
-		return objs[0], nil
-	}
-
-	return objs, nil
+	return objs.Interface(), nil
 }
 
 type handler struct{}

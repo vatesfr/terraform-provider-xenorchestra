@@ -31,4 +31,7 @@ func testAccPreCheck(t *testing.T) {
 	if v := os.Getenv("XOA_POOL"); v == "" {
 		t.Fatal("The XOA_POOL environment variable must be set")
 	}
+	if v := os.Getenv("XOA_TEMPLATE"); v == "" {
+		t.Fatal("The XOA_TEMPLATE environment variable must be set")
+	}
 }

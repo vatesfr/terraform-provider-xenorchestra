@@ -9,8 +9,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-var nameLabel = "XenServer Tools"
-var poolId = "cadf25ab-91ff-6fc0-041f-5a7033c4bc78"
 var nonExistantPoolId = "does not exist"
 
 func TestAccXenorchestraDataSource_storageRepository(t *testing.T) {
@@ -27,7 +25,7 @@ func TestAccXenorchestraDataSource_storageRepository(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "sr_type"),
 					resource.TestCheckResourceAttrSet(resourceName, "pool_id"),
 					resource.TestCheckResourceAttrSet(resourceName, "uuid"),
-					resource.TestCheckResourceAttr(resourceName, "name_label", nameLabel)),
+					resource.TestCheckResourceAttr(resourceName, "name_label", accDefaultSr.NameLabel)),
 			},
 		},
 	},
@@ -41,14 +39,14 @@ func TestAccXenorchestraDataSource_storageRepositoryWithPoolId(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccXenorchestraDataSourceStorageRepositoryPoolConfig(poolId),
+				Config: testAccXenorchestraDataSourceStorageRepositoryPoolConfig(accDefaultSr.PoolId),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckXenorchestraDataSourceStorageRepository(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "sr_type"),
 					resource.TestCheckResourceAttrSet(resourceName, "pool_id"),
 					resource.TestCheckResourceAttrSet(resourceName, "uuid"),
-					resource.TestCheckResourceAttr(resourceName, "name_label", nameLabel)),
+					resource.TestCheckResourceAttr(resourceName, "name_label", accDefaultSr.NameLabel)),
 			},
 		},
 	},
@@ -99,8 +97,11 @@ func testAccXenorchestraDataSourceStorageRepositoryConfig() string {
 	return fmt.Sprintf(`
 data "xenorchestra_sr" "sr" {
     name_label = "%s"
+    tags = [
+	"%s"
+    ]
 }
-`, nameLabel)
+`, accDefaultSr.NameLabel, accTestPrefix)
 }
 
 func testAccXenorchestraDataSourceStorageRepositoryPoolConfig(poolId string) string {
@@ -108,7 +109,10 @@ func testAccXenorchestraDataSourceStorageRepositoryPoolConfig(poolId string) str
 data "xenorchestra_sr" "sr" {
     name_label = "%s"
     pool_id = "%s"
+    tags = [
+	"%s"
+    ]
 }
-`, nameLabel, poolId)
+`, accDefaultSr.NameLabel, poolId, accTestPrefix)
 
 }

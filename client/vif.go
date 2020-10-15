@@ -2,49 +2,32 @@ package client
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log"
 	"time"
 )
 
 type VIF struct {
-	Id         string
-	Attached   bool
-	Network    string
-	Device     string
-	MacAddress string
-	VmId       string
+	Id         string `json:"id"`
+	Attached   bool   `json:"attached"`
+	Network    string `json:"$network"`
+	Device     string `json:"device"`
+	MacAddress string `json:"MAC"`
+	VmId       string `json:"$VM"`
 }
 
-func (v VIF) New(obj map[string]interface{}) XoObject {
-	id := obj["id"].(string)
-	attached := obj["attached"].(bool)
-	vmId := obj["$VM"].(string)
-	device := obj["device"].(string)
-	networkId := obj["$network"].(string)
-	macAddress := obj["MAC"].(string)
-	return VIF{
-		Id:         id,
-		Attached:   attached,
-		Device:     device,
-		MacAddress: macAddress,
-		Network:    networkId,
-		VmId:       vmId,
-	}
-}
-
-func (v VIF) Compare(obj map[string]interface{}) bool {
-	id := obj["id"].(string)
-	if v.Id == id {
+func (v VIF) Compare(obj interface{}) bool {
+	other := obj.(VIF)
+	if v.Id == other.Id {
 		return true
 	}
 
-	macAddress := obj["MAC"].(string)
-	if v.MacAddress == macAddress {
+	if v.MacAddress == other.MacAddress {
 		return true
 	}
 
-	vmId := obj["$VM"].(string)
-	if v.VmId == vmId {
+	if v.VmId == other.VmId {
 		return true
 	}
 	return false
@@ -56,16 +39,11 @@ func (c *Client) GetVIFs(vm *Vm) ([]VIF, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	if vif, ok := obj.(VIF); ok {
-		return []VIF{vif}, nil
+	vifs, ok := obj.([]VIF)
+	if !ok {
+		return []VIF{}, errors.New("failed to coerce response into VIF slice")
 	}
 
-	objs := obj.([]interface{})
-	var vifs []VIF
-	for _, vif := range objs {
-		vifs = append(vifs, vif.(VIF))
-	}
 	return vifs, nil
 }
 
@@ -80,8 +58,12 @@ func (c *Client) GetVIF(vifReq *VIF) (*VIF, error) {
 		return nil, err
 	}
 
-	vif := obj.(VIF)
-	return &vif, nil
+	vifs := obj.([]VIF)
+
+	if len(vifs) > 1 {
+		return nil, errors.New(fmt.Sprintf("recieved %d VIFs but was expecting a single VIF to be returned", len(vifs)))
+	}
+	return &vifs[0], nil
 }
 
 func (c *Client) CreateVIF(vm *Vm, vif *VIF) (*VIF, error) {

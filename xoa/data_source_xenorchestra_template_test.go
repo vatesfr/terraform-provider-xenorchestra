@@ -2,7 +2,6 @@ package xoa
 
 import (
 	"fmt"
-	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -16,10 +15,10 @@ func TestAccXenorchestraDataSource_template(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccXenorchestraDataSourceTemplateConfig,
+				Config: testAccXenorchestraDataSourceTemplateConfig(accTestPool.Id),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckXenorchestraDataSourceTemplate(resourceName),
-					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile("^OpaqueRef:")),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "uuid"),
 				),
 			},
@@ -42,8 +41,11 @@ func testAccCheckXenorchestraDataSourceTemplate(n string) resource.TestCheckFunc
 	}
 }
 
-const testAccXenorchestraDataSourceTemplateConfig = `
+func testAccXenorchestraDataSourceTemplateConfig(poolId string) string {
+	return fmt.Sprintf(`
 data "xenorchestra_template" "template" {
-    name_label = "Asianux Server 4 (64-bit)"
+    name_label = "%s"
+    pool_id = "%s"
 }
-`
+`, accTemplateName, poolId)
+}

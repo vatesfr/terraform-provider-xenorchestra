@@ -19,4 +19,4 @@ apply:
 	terraform apply
 
 testacc:
-	TF_ACC=1 go test $(TEST) -v
+	TF_ACC=1 go test $(TEST) -v -timeout 20m

@@ -10,6 +10,8 @@ import (
 )
 
 func TestAccXenorchestraCloudConfig_readAfterDelete(t *testing.T) {
+	templateName := "testing"
+	templateText := "template body"
 	resourceName := "xenorchestra_cloud_config.bar"
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -17,18 +19,18 @@ func TestAccXenorchestraCloudConfig_readAfterDelete(t *testing.T) {
 		CheckDestroy: testAccCheckXenorchestraCloudConfigDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCloudConfigConfig(),
+				Config: testAccCloudConfigConfig(templateName, templateText),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCloudConfigExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id")),
 			},
 			{
-				Config:             testAccCloudConfigConfig(),
+				Config:             testAccCloudConfigConfig(templateName, templateText),
 				Check:              testAccCheckXenorchestraCloudConfigDestroyNow(resourceName),
 				ExpectNonEmptyPlan: true,
 			},
 			{
-				Config:             testAccCloudConfigConfig(),
+				Config:             testAccCloudConfigConfig(templateName, templateText),
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: true,
 			},
@@ -38,13 +40,15 @@ func TestAccXenorchestraCloudConfig_readAfterDelete(t *testing.T) {
 
 func TestAccXenorchestraCloudConfig_create(t *testing.T) {
 	resourceName := "xenorchestra_cloud_config.bar"
+	templateName := "testing"
+	templateText := "template body"
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraCloudConfigDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCloudConfigConfig(),
+				Config: testAccCloudConfigConfig(templateName, templateText),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCloudConfigExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id")),
@@ -55,19 +59,23 @@ func TestAccXenorchestraCloudConfig_create(t *testing.T) {
 
 func TestAccXenorchestraCloudConfig_updateName(t *testing.T) {
 	resourceName := "xenorchestra_cloud_config.bar"
+	templateName := "testing"
+	templateText := "template body"
+
+	updatedName := "updated"
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraCloudConfigDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCloudConfigConfig(),
+				Config: testAccCloudConfigConfig(templateName, templateText),
 			},
 			{
-				Config: testAccCloudConfigConfigUpdatedName(),
+				Config: testAccCloudConfigConfig(updatedName, templateText),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCloudConfigExists(resourceName),
-					resource.TestCheckResourceAttr(resourceName, "name", "updated")),
+					resource.TestCheckResourceAttr(resourceName, "name", fmt.Sprintf("%s%s", accTestPrefix, updatedName))),
 			},
 		},
 	})
@@ -75,19 +83,23 @@ func TestAccXenorchestraCloudConfig_updateName(t *testing.T) {
 
 func TestAccXenorchestraCloudConfig_updateTemplate(t *testing.T) {
 	resourceName := "xenorchestra_cloud_config.bar"
+	templateName := "testing"
+	templateText := "template body"
+
+	updatedTemplate := "new template"
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraCloudConfigDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCloudConfigConfig(),
+				Config: testAccCloudConfigConfig(templateName, templateText),
 			},
 			{
-				Config: testAccCloudConfigConfigUpdatedTemplate(),
+				Config: testAccCloudConfigConfig(templateName, updatedTemplate),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCloudConfigExists(resourceName),
-					resource.TestCheckResourceAttr(resourceName, "template", "updated")),
+					resource.TestCheckResourceAttr(resourceName, "template", updatedTemplate)),
 			},
 		},
 	})
@@ -108,13 +120,15 @@ func TestAccXenorchestraCloudConfig_import(t *testing.T) {
 		}
 		return nil
 	}
+	templateName := "testing"
+	templateText := "template body"
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraCloudConfigDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCloudConfigConfig(),
+				Config: testAccCloudConfigConfig(templateName, templateText),
 			},
 			{
 				ResourceName:      resourceName,
@@ -129,31 +143,13 @@ func TestAccXenorchestraCloudConfig_import(t *testing.T) {
 	})
 }
 
-func testAccCloudConfigConfig() string {
-	return `
+func testAccCloudConfigConfig(name, template string) string {
+	return fmt.Sprintf(`
 resource "xenorchestra_cloud_config" "bar" {
-    name = "testing"
-    template = "template"
+    name = "%s%s"
+    template = "%s"
 }
-`
-}
-
-func testAccCloudConfigConfigUpdatedName() string {
-	return `
-resource "xenorchestra_cloud_config" "bar" {
-    name = "updated"
-    template = "template"
-}
-`
-}
-
-func testAccCloudConfigConfigUpdatedTemplate() string {
-	return `
-resource "xenorchestra_cloud_config" "bar" {
-    name = "name"
-    template = "updated"
-}
-`
+`, accTestPrefix, name, template)
 }
 
 func testAccCloudConfigExists(resourceName string) resource.TestCheckFunc {

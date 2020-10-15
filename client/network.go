@@ -12,43 +12,28 @@ import (
 type Network struct {
 	Id        string `json:"id"`
 	NameLabel string `json:"name_label"`
-	Bridge    string
-	PoolId    string
+	Bridge    string `json:"bridge"`
+	PoolId    string `json:"$poolId"`
 }
 
-func (net Network) Compare(obj map[string]interface{}) bool {
-	id := obj["id"].(string)
-	nameLabel := obj["name_label"].(string)
-	poolId := obj["$poolId"].(string)
-	if net.Id == id {
+func (net Network) Compare(obj interface{}) bool {
+	otherNet := obj.(Network)
+	if net.Id == otherNet.Id {
 		return true
 	}
 
 	labelsMatch := false
-	if net.NameLabel == nameLabel {
+	if net.NameLabel == otherNet.NameLabel {
 		labelsMatch = true
 	}
 
 	if net.PoolId == "" && labelsMatch {
 		return true
-	} else if net.PoolId == poolId && labelsMatch {
+	} else if net.PoolId == otherNet.PoolId && labelsMatch {
 		return true
 	}
 
 	return false
-}
-
-func (net Network) New(obj map[string]interface{}) XoObject {
-	id := obj["id"].(string)
-	poolId := obj["$poolId"].(string)
-	nameLabel := obj["name_label"].(string)
-	bridge := obj["bridge"].(string)
-	return Network{
-		Id:        id,
-		Bridge:    bridge,
-		PoolId:    poolId,
-		NameLabel: nameLabel,
-	}
 }
 
 func (c *Client) CreateNetwork(netReq Network) (*Network, error) {
@@ -74,12 +59,13 @@ func (c *Client) GetNetwork(netReq Network) (*Network, error) {
 		return nil, err
 	}
 
-	if _, ok := obj.([]interface{}); ok {
+	nets := obj.([]Network)
+
+	if len(nets) > 1 {
 		return nil, errors.New("Your query returned more than one result. Use `pool_id` or other attributes to filter the result down to a single network")
 	}
 
-	net := obj.(Network)
-	return &net, nil
+	return &nets[0], nil
 }
 
 func (c *Client) GetNetworks() ([]Network, error) {

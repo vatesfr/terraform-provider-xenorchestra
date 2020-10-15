@@ -4,22 +4,22 @@ import "testing"
 
 func TestPoolCompare(t *testing.T) {
 	tests := []struct {
-		object map[string]interface{}
+		other  Pool
 		pool   Pool
 		result bool
 	}{
 		{
-			object: map[string]interface{}{
-				"name_label": "xenserver-ddelnano",
-				"$poolId":    "Sample pool id",
+			other: Pool{
+				Id:        "sample pool id",
+				NameLabel: "xenserver-ddelnano",
 			},
 			pool:   Pool{NameLabel: "xenserver-ddelnano"},
 			result: true,
 		},
 		{
-			object: map[string]interface{}{
-				"name_label": "Does not match",
-				"$poolId":    "Sample pool id",
+			other: Pool{
+				Id:        "sample pool id",
+				NameLabel: "does not match",
 			},
 			pool:   Pool{NameLabel: "xenserver-ddelnano"},
 			result: false,
@@ -28,10 +28,10 @@ func TestPoolCompare(t *testing.T) {
 
 	for _, test := range tests {
 		pool := test.pool
-		object := test.object
+		other := test.other
 		result := test.result
-		if pool.Compare(object) != result {
-			t.Errorf("Expected Pool %v to Compare %t to %v", pool, result, object)
+		if pool.Compare(other) != result {
+			t.Errorf("Expected Pool %v to Compare %t to %v", pool, result, other)
 		}
 	}
 }
@@ -43,9 +43,10 @@ func TestGetPoolByName(t *testing.T) {
 		t.Errorf("failed to create client with error: %v", err)
 	}
 
-	nameLabel := "xenserver-ddelnano"
+	nameLabel := accTestPool.NameLabel
+	pools, err := c.GetPoolByName(nameLabel)
 
-	pool, err := c.GetPoolByName(nameLabel)
+	pool := pools[0]
 
 	if err != nil {
 		t.Errorf("failed to get pool with error: %v", err)
@@ -53,5 +54,13 @@ func TestGetPoolByName(t *testing.T) {
 
 	if pool.NameLabel != nameLabel {
 		t.Errorf("expected pool to have name `%s` received `%s` instead.", nameLabel, pool.NameLabel)
+	}
+
+	if pool.Cpus.Cores == 0 {
+		t.Errorf("expected pool cpu cores to be set")
+	}
+
+	if pool.Cpus.Sockets == 0 {
+		t.Errorf("expected pool cpu sockets to be set")
 	}
 }

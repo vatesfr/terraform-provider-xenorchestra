@@ -2,7 +2,7 @@ package client
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -42,8 +42,8 @@ type Vm struct {
 	ResourceSet        string       `json:"resourceSet,omitempty"`
 }
 
-func (v Vm) Compare(obj map[string]interface{}) bool {
-	other := v.New(obj).(Vm)
+func (v Vm) Compare(obj interface{}) bool {
+	other := obj.(Vm)
 	if v.Id != "" && v.Id == other.Id {
 		return true
 	}
@@ -53,24 +53,6 @@ func (v Vm) Compare(obj map[string]interface{}) bool {
 	}
 
 	return false
-}
-
-// TODO: Decide if a refactored version of this would work better
-// than the existing XoObject pattern.
-func (v Vm) New(obj map[string]interface{}) XoObject {
-	var vm Vm
-
-	m, err := json.Marshal(obj)
-
-	if err != nil {
-		panic(err)
-	}
-
-	err = json.Unmarshal(m, &vm)
-	if err != nil {
-		panic(err)
-	}
-	return vm
 }
 
 type VDI struct {
@@ -158,7 +140,7 @@ func (c *Client) UpdateVm(id string, cpus int, nameLabel, nameDescription, ha, r
 	log.Printf("[DEBUG] VM params for vm.set: %#v", params)
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Minute)
 	var success bool
-	err := c.rpc.Call(ctx, "vm.set", params, &success)
+	err := c.Call(ctx, "vm.set", params, &success)
 
 	if err != nil {
 		return nil, err
@@ -166,7 +148,7 @@ func (c *Client) UpdateVm(id string, cpus int, nameLabel, nameDescription, ha, r
 
 	// TODO: This is a poor way to ensure that terraform will see the updated
 	// attributes after calling vm.set. Need to investigate a better way to detect this.
-	time.Sleep(15 * time.Second)
+	time.Sleep(25 * time.Second)
 
 	return c.GetVm(Vm{Id: id})
 }
@@ -188,14 +170,35 @@ func (c *Client) DeleteVm(id string) error {
 
 func (c *Client) GetVm(vmReq Vm) (*Vm, error) {
 	obj, err := c.FindFromGetAllObjects(vmReq)
-	vm := obj.(Vm)
 
 	if err != nil {
-		return &vm, err
+		return nil, err
+	}
+	vms := obj.([]Vm)
+
+	if len(vms) != 1 {
+		return nil, errors.New(fmt.Sprintf("expected to find a single VM from request %+v, instead found %d", vmReq, len(vms)))
 	}
 
-	log.Printf("[DEBUG] Found vm: %+v", vm)
-	return &vm, nil
+	log.Printf("[DEBUG] Found vm: %+v", vms[0])
+	return &vms[0], nil
+}
+
+func (c *Client) GetVms() ([]Vm, error) {
+	var response map[string]Vm
+	err := c.GetAllObjectsOfType(Vm{PowerState: "Running"}, &response)
+
+	if err != nil {
+		return []Vm{}, err
+	}
+
+	vms := make([]Vm, 0, len(response))
+	for _, vm := range response {
+		vms = append(vms, vm)
+	}
+
+	log.Printf("[DEBUG] Found vms: %+v", vms)
+	return vms, nil
 }
 
 func (c *Client) waitForModifyVm(id string, timeout time.Duration) error {
