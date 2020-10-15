@@ -161,7 +161,6 @@ func (c *Client) FindFromGetAllObjects(obj XoObject) (interface{}, error) {
 
 	found := false
 	t := reflect.TypeOf(obj)
-	value := reflect.New(t)
 	objs := reflect.MakeSlice(reflect.SliceOf(t), 0, 0)
 	for _, resObj := range objsRes.Objects {
 		v, ok := resObj.(map[string]interface{})
@@ -173,6 +172,7 @@ func (c *Client) FindFromGetAllObjects(obj XoObject) (interface{}, error) {
 		if err != nil {
 			return objs, err
 		}
+		value := reflect.New(t)
 		err = json.Unmarshal(b, value.Interface())
 		if err != nil {
 			return objs, err
@@ -186,7 +186,7 @@ func (c *Client) FindFromGetAllObjects(obj XoObject) (interface{}, error) {
 		return objs, NotFound{Query: obj}
 	}
 
-	log.Printf("[TRACE] Found the following objects from xo.getAllObjects: %+v\n", objs)
+	log.Printf("[DEBUG] Found the following objects from xo.getAllObjects: %+v\n", objs)
 
 	return objs.Interface(), nil
 }

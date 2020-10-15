@@ -111,11 +111,11 @@ func (c *Client) CreateVm(name_label, name_description, template, cloudConfig, r
 		return nil, err
 	}
 
-	vm := Vm{
-		Id: vmId,
-	}
-
-	return &vm, nil
+	return c.GetVm(
+		Vm{
+			Id: vmId,
+		},
+	)
 }
 
 func (c *Client) UpdateVm(id string, cpus int, nameLabel, nameDescription, ha, rs string, autoPowerOn bool) (*Vm, error) {
