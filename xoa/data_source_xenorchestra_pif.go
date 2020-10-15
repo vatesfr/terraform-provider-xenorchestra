@@ -59,16 +59,14 @@ func dataSourcePIFRead(d *schema.ResourceData, m interface{}) error {
 
 	device := d.Get("device").(string)
 	vlan := d.Get("vlan").(int)
-	host, hostFound := d.GetOk("host_id")
+	host := d.Get("host_id").(string)
 
 	pifReq := client.PIF{
 		Device: device,
 		Vlan:   vlan,
+		Host:   host,
 	}
 
-	if hostFound {
-		pifReq.Host = host.(string)
-	}
 	pifs, err := c.GetPIF(pifReq)
 
 	if err != nil {

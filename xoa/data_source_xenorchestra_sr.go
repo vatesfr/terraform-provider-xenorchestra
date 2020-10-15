@@ -48,19 +48,13 @@ func dataSourceStorageRepositoryRead(d *schema.ResourceData, m interface{}) erro
 	}
 
 	nameLabel := d.Get("name_label").(string)
-	poolId, found := d.GetOk("pool_id")
-	tags, tagsFound := d.GetOk("tags")
+	poolId := d.Get("pool_id").(string)
+	tags := d.Get("tags").([]interface{})
 
 	sr := client.StorageRepository{
 		NameLabel: nameLabel,
-	}
-
-	if found {
-		sr.PoolId = poolId.(string)
-	}
-
-	if tagsFound {
-		sr.Tags = tagsFromInterfaceSlice(tags.([]interface{}))
+		PoolId:    poolId,
+		Tags:      tagsFromInterfaceSlice(tags),
 	}
 
 	srs, err := c.GetStorageRepository(sr)
