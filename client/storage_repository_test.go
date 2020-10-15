@@ -34,6 +34,18 @@ func TestStorageRepositoryCompare(t *testing.T) {
 			sr:     StorageRepository{NameLabel: "Test", PoolId: "Pool A"},
 			result: false,
 		},
+		{
+			other: StorageRepository{
+				NameLabel: "Test",
+				PoolId:    "Pool A",
+			},
+			sr: StorageRepository{
+				NameLabel: "Test",
+				PoolId:    "Pool A",
+				Tags:      []string{"tag1"},
+			},
+			result: false,
+		},
 	}
 
 	for _, test := range tests {
