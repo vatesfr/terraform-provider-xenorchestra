@@ -178,7 +178,6 @@ func (c *Client) FindFromGetAllObjects(obj XoObject) (interface{}, error) {
 			return objs, err
 		}
 		if obj.Compare(value.Elem().Interface()) {
-			// log.Printf("[TRACE] object: %+v Compared true to %+v\n", obj, value.Elem())
 			found = true
 			objs = reflect.Append(objs, value.Elem())
 		}
