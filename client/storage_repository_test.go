@@ -29,10 +29,10 @@ func TestStorageRepositoryCompare(t *testing.T) {
 		{
 			other: StorageRepository{
 				NameLabel: "Test",
-				PoolId:    "Pool A",
+				PoolId:    "does not match",
 			},
 			sr:     StorageRepository{NameLabel: "Test", PoolId: "Pool A"},
-			result: true,
+			result: false,
 		},
 	}
 

@@ -18,7 +18,7 @@ type StorageRepository struct {
 func (s StorageRepository) Compare(obj interface{}) bool {
 	otherSr := obj.(StorageRepository)
 
-	if s.Id == otherSr.Id {
+	if s.Id != "" && s.Id == otherSr.Id {
 		return true
 	}
 
