@@ -29,6 +29,24 @@ func TestAccXenorchestraVm_create(t *testing.T) {
 	})
 }
 
+func TestAccXenorchestraVm_createWithoutCloudConfig(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmWithoutCloudInitConfig(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
+			},
+		},
+	})
+}
+
 func TestAccXenorchestraVm_createWithMacAddress(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	macAddress := "00:0a:83:b1:c0:83"
@@ -266,6 +284,38 @@ func testAccVmExists(resourceName string) resource.TestCheckFunc {
 		}
 		return nil
 	}
+}
+
+func testAccVmWithoutCloudInitConfig() string {
+	return fmt.Sprintf(`
+data "xenorchestra_template" "template" {
+    name_label = "%s"
+    pool_id = "%s"
+}
+
+data "xenorchestra_network" "network" {
+    // TODO: Replace this with a better solution
+    name_label = "Pool-wide network associated with eth0"
+    pool_id = "%[2]s"
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 256000000
+    cpus  = 1
+    name_label = "Terraform testing"
+    name_description = "description"
+    template = "${data.xenorchestra_template.template.id}"
+    network {
+	network_id = "${data.xenorchestra_network.network.id}"
+    }
+
+    disk {
+      sr_id = "%s"
+      name_label = "xo provider root"
+      size = 10000000000
+    }
+}
+`, accTemplateName, accTestPool.Id, accDefaultSr.Id)
 }
 
 func testAccVmConfig() string {

@@ -84,7 +84,7 @@ func resourceRecord() *schema.Resource {
 			},
 			"cloud_config": &schema.Schema{
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
 			},
 			"core_os": &schema.Schema{
 				Type:     schema.TypeBool,
