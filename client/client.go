@@ -89,8 +89,15 @@ func NewClient(config Config) (*Client, error) {
 }
 
 func (c *Client) Call(ctx context.Context, method string, params, result interface{}, opt ...jsonrpc2.CallOption) error {
-	err := c.rpc.Call(ctx, method, params, &result, opt...)
-	log.Printf("[TRACE] Made rpc call `%s` with params: %v and received %+v: result with error: %v\n", method, params, reflect.ValueOf(result).Elem(), err)
+	err := c.rpc.Call(ctx, method, params, result, opt...)
+	var callRes interface{}
+	t := reflect.TypeOf(result)
+	if t == nil || t.Kind() != reflect.Ptr {
+		callRes = result
+	} else {
+		callRes = reflect.ValueOf(result).Elem()
+	}
+	log.Printf("[TRACE] Made rpc call `%s` with params: %v and received %+v: result with error: %v\n", method, params, callRes, err)
 
 	if err != nil {
 		rpcErr, ok := err.(*jsonrpc2.Error)
@@ -140,7 +147,7 @@ func (c *Client) GetAllObjectsOfType(obj XoObject, response interface{}) error {
 		},
 	}
 	ctx, _ := context.WithTimeout(context.Background(), 100*time.Second)
-	return c.Call(ctx, "xo.getAllObjects", params, &response)
+	return c.Call(ctx, "xo.getAllObjects", params, response)
 }
 
 func (c *Client) FindFromGetAllObjects(obj XoObject) (interface{}, error) {
