@@ -83,7 +83,6 @@ func (c *Client) CreateVm(name_label, name_description, template, cloudConfig, r
 		"name_label":       name_label,
 		"name_description": name_description,
 		"template":         template,
-		"cloudConfig":      cloudConfig,
 		"coreOs":           false,
 		"cpuCap":           nil,
 		"cpuWeight":        nil,
@@ -91,6 +90,10 @@ func (c *Client) CreateVm(name_label, name_description, template, cloudConfig, r
 		"memoryMax":        memoryMax,
 		"existingDisks":    existingDisks,
 		"VIFs":             vifs,
+	}
+
+	if cloudConfig != "" {
+		params["cloudConfig"] = cloudConfig
 	}
 
 	if resourceSet != "" {
