@@ -89,8 +89,12 @@ func (c *Client) GetStorageRepository(sr StorageRepository) ([]StorageRepository
 }
 
 func FindStorageRepositoryForTests(pool Pool, sr *StorageRepository, tag string) {
-	c, _ := NewClient(GetConfigFromEnv())
-	var err error
+	c, err := NewClient(GetConfigFromEnv())
+	if err != nil {
+		fmt.Printf("failed to create client with error: %v", err)
+		os.Exit(-1)
+	}
+
 	defaultSr, err := c.GetStorageRepositoryById(pool.DefaultSR)
 
 	if err != nil {
