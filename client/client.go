@@ -69,17 +69,16 @@ func NewClient(config Config) (*Client, error) {
 	}
 
 	objStream := websocket.NewObjectStream(ws)
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	var h jsonrpc2.Handler
 	h = &handler{}
-	c := jsonrpc2.NewConn(ctx, objStream, h)
+	c := jsonrpc2.NewConn(context.Background(), objStream, h)
 
 	reqParams := map[string]interface{}{
 		"email":    username,
 		"password": password,
 	}
 	var reply signInResponse
-	err = c.Call(ctx, "session.signInWithPassword", reqParams, &reply)
+	err = c.Call(context.Background(), "session.signInWithPassword", reqParams, &reply)
 	if err != nil {
 		return nil, err
 	}
@@ -88,8 +87,8 @@ func NewClient(config Config) (*Client, error) {
 	}, nil
 }
 
-func (c *Client) Call(ctx context.Context, method string, params, result interface{}, opt ...jsonrpc2.CallOption) error {
-	err := c.rpc.Call(ctx, method, params, result, opt...)
+func (c *Client) Call(method string, params, result interface{}, opt ...jsonrpc2.CallOption) error {
+	err := c.rpc.Call(context.Background(), method, params, result, opt...)
 	var callRes interface{}
 	t := reflect.TypeOf(result)
 	if t == nil || t.Kind() != reflect.Ptr {
@@ -146,8 +145,7 @@ func (c *Client) GetAllObjectsOfType(obj XoObject, response interface{}) error {
 			"type": xoApiType,
 		},
 	}
-	ctx, _ := context.WithTimeout(context.Background(), 100*time.Second)
-	return c.Call(ctx, "xo.getAllObjects", params, response)
+	return c.Call("xo.getAllObjects", params, response)
 }
 
 func (c *Client) FindFromGetAllObjects(obj XoObject) (interface{}, error) {

@@ -40,12 +40,7 @@ func dataSourceXoaStorageRepository() *schema.Resource {
 }
 
 func dataSourceStorageRepositoryRead(d *schema.ResourceData, m interface{}) error {
-	config := m.(client.Config)
-	c, err := client.NewClient(config)
-
-	if err != nil {
-		return err
-	}
+	c := m.(*client.Client)
 
 	nameLabel := d.Get("name_label").(string)
 	poolId := d.Get("pool_id").(string)

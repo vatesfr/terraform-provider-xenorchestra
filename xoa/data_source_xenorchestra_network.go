@@ -27,8 +27,7 @@ func dataSourceXoaNetwork() *schema.Resource {
 }
 
 func dataSourceNetworkRead(d *schema.ResourceData, m interface{}) error {
-	config := m.(client.Config)
-	c, err := client.NewClient(config)
+	c := m.(*client.Client)
 
 	nameLabel := d.Get("name_label").(string)
 	poolId := d.Get("pool_id").(string)

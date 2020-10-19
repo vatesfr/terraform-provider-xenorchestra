@@ -1,11 +1,9 @@
 package client
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"log"
-	"time"
 )
 
 type VIF struct {
@@ -73,8 +71,7 @@ func (c *Client) CreateVIF(vm *Vm, vif *VIF) (*VIF, error) {
 		"network": vif.Network,
 		"vm":      vm.Id,
 	}
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	err := c.Call(ctx, "vm.createInterface", params, &id)
+	err := c.Call("vm.createInterface", params, &id)
 
 	if err != nil {
 		return nil, err
@@ -102,15 +99,14 @@ func (c *Client) DeleteVIF(vifReq *VIF) (err error) {
 		"id": vif.Id,
 	}
 	var result bool
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-	err = c.Call(ctx, "vif.disconnect", params, &result)
+	err = c.Call("vif.disconnect", params, &result)
 	log.Printf("[DEBUG] Calling vif.disconnect received err: %v", err)
 
 	if err != nil {
 		return err
 	}
 
-	err = c.Call(ctx, "vif.delete", params, &result)
+	err = c.Call("vif.delete", params, &result)
 	log.Printf("[DEBUG] Calling vif.delete received err: %v", err)
 
 	if err != nil {

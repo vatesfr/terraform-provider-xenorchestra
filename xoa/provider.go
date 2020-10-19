@@ -45,14 +45,14 @@ func Provider() terraform.ResourceProvider {
 	}
 }
 
-func xoaConfigure(d *schema.ResourceData) (c interface{}, err error) {
+func xoaConfigure(d *schema.ResourceData) (interface{}, error) {
 	url := d.Get("url").(string)
 	username := d.Get("username").(string)
 	password := d.Get("password").(string)
-	c = client.Config{
+	config := client.Config{
 		Url:      url,
 		Username: username,
 		Password: password,
 	}
-	return c, nil
+	return client.NewClient(config)
 }

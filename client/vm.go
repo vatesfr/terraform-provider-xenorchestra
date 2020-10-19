@@ -1,7 +1,6 @@
 package client
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -101,8 +100,7 @@ func (c *Client) CreateVm(name_label, name_description, template, cloudConfig, r
 	}
 	log.Printf("[DEBUG] VM params for vm.create %#v", params)
 	var vmId string
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Minute)
-	err := c.Call(ctx, "vm.create", params, &vmId)
+	err := c.Call("vm.create", params, &vmId)
 
 	if err != nil {
 		return nil, err
@@ -141,9 +139,8 @@ func (c *Client) UpdateVm(id string, cpus int, nameLabel, nameDescription, ha, r
 		// pv_args, cpuMask cpuWeight cpuCap affinityHost vga videoram coresPerSocket hasVendorDevice expNestedHvm resourceSet share startDelay nicType hvmBootFirmware virtualizationMode
 	}
 	log.Printf("[DEBUG] VM params for vm.set: %#v", params)
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Minute)
 	var success bool
-	err := c.Call(ctx, "vm.set", params, &success)
+	err := c.Call("vm.set", params, &success)
 
 	if err != nil {
 		return nil, err
@@ -161,8 +158,7 @@ func (c *Client) DeleteVm(id string) error {
 		"id": id,
 	}
 	var reply []interface{}
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Minute)
-	err := c.Call(ctx, "vm.delete", params, &reply)
+	err := c.Call("vm.delete", params, &reply)
 
 	if err != nil {
 		return err

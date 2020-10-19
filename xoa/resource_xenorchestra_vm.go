@@ -190,12 +190,7 @@ func resourceRecord() *schema.Resource {
 }
 
 func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
-	config := m.(client.Config)
-	c, err := client.NewClient(config)
-
-	if err != nil {
-		return err
-	}
+	c := m.(*client.Client)
 
 	network_maps := []map[string]string{}
 	networks := d.Get("network").(*schema.Set)
@@ -274,14 +269,9 @@ func vifsToMapList(vifs []client.VIF) []map[string]interface{} {
 }
 
 func resourceVmRead(d *schema.ResourceData, m interface{}) error {
-	xoaId := d.Id()
-	config := m.(client.Config)
-	c, err := client.NewClient(config)
+	c := m.(*client.Client)
 
-	if err != nil {
-		return err
-	}
-	vm, err := c.GetVm(client.Vm{Id: xoaId})
+	vm, err := c.GetVm(client.Vm{Id: d.Id()})
 
 	if _, ok := err.(client.NotFound); ok {
 		d.SetId("")
@@ -302,12 +292,7 @@ func resourceVmRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
-	config := m.(client.Config)
-	c, err := client.NewClient(config)
-
-	if err != nil {
-		return err
-	}
+	c := m.(*client.Client)
 
 	nameLabel := d.Get("name_label").(string)
 	nameDescription := d.Get("name_description").(string)
@@ -358,14 +343,9 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceVmDelete(d *schema.ResourceData, m interface{}) error {
-	config := m.(client.Config)
-	c, err := client.NewClient(config)
+	c := m.(*client.Client)
 
-	if err != nil {
-		return err
-	}
-
-	err = c.DeleteVm(d.Id())
+	err := c.DeleteVm(d.Id())
 
 	if err != nil {
 		return err
@@ -394,16 +374,9 @@ func expandNetworks(networks []interface{}) []*client.VIF {
 }
 
 func RecordImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
-	xoaId := d.Id()
+	c := m.(*client.Client)
 
-	config := m.(client.Config)
-	c, err := client.NewClient(config)
-
-	if err != nil {
-		return nil, err
-	}
-
-	vm, err := c.GetVm(client.Vm{Id: xoaId})
+	vm, err := c.GetVm(client.Vm{Id: d.Id()})
 	if err != nil {
 		return nil, err
 	}

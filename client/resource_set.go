@@ -1,12 +1,10 @@
 package client
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"log"
 	"strings"
-	"time"
 )
 
 type ResourceSet struct {
@@ -86,14 +84,13 @@ func (c Client) GetResourceSet(rsReq ResourceSet) ([]ResourceSet, error) {
 
 func (c Client) makeResourceSetGetAllCall() ([]ResourceSet, error) {
 
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	var res struct {
 		ResourceSets []ResourceSet `json:"-"`
 	}
 	params := map[string]interface{}{
 		"id": "dummy",
 	}
-	err := c.Call(ctx, "resourceSet.getAll", params, &res.ResourceSets)
+	err := c.Call("resourceSet.getAll", params, &res.ResourceSets)
 	log.Printf("[DEBUG] Calling resourceSet.getAll received response: %+v with error: %v\n", res, err)
 
 	if err != nil {
@@ -119,7 +116,6 @@ func createLimitsMap(rsl ResourceSetLimits) map[string]interface{} {
 }
 
 func (c Client) CreateResourceSet(rsReq ResourceSet) (*ResourceSet, error) {
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	rs := ResourceSet{}
 	limits := createLimitsMap(rsReq.Limits)
 	params := map[string]interface{}{
@@ -128,7 +124,7 @@ func (c Client) CreateResourceSet(rsReq ResourceSet) (*ResourceSet, error) {
 		"objects":  rsReq.Objects,
 		"limits":   limits,
 	}
-	err := c.Call(ctx, "resourceSet.create", params, &rs)
+	err := c.Call("resourceSet.create", params, &rs)
 	log.Printf("[DEBUG] Calling resourceSet.create with params: %v returned: %+v with error: %v\n", params, rs, err)
 
 	if err != nil {
@@ -154,86 +150,79 @@ func (c Client) DeleteResourceSet(rsReq ResourceSet) error {
 
 		id = rs[0].Id
 	}
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	var success bool
 	params := map[string]interface{}{
 		"id": id,
 	}
-	err := c.Call(ctx, "resourceSet.delete", params, &success)
+	err := c.Call("resourceSet.delete", params, &success)
 	log.Printf("[DEBUG] Calling resourceSet.delete call successful: %t with error: %v\n", success, err)
 
 	return err
 }
 
 func (c Client) RemoveResourceSetSubject(rsReq ResourceSet, subject string) error {
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	params := map[string]interface{}{
 		"id":      rsReq.Id,
 		"subject": subject,
 	}
 	var success bool
-	err := c.Call(ctx, "resourceSet.removeSubject", params, &success)
+	err := c.Call("resourceSet.removeSubject", params, &success)
 	log.Printf("[DEBUG] Calling resourceSet.removeSubject call successful: %t with error: %v\n", success, err)
 	return err
 }
 
 func (c Client) AddResourceSetSubject(rsReq ResourceSet, subject string) error {
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	params := map[string]interface{}{
 		"id":      rsReq.Id,
 		"subject": subject,
 	}
 	var success bool
-	err := c.Call(ctx, "resourceSet.addSubject", params, &success)
+	err := c.Call("resourceSet.addSubject", params, &success)
 	log.Printf("[DEBUG] Calling resourceSet.addSubject call successful: %t with error: %v\n", success, err)
 	return err
 }
 
 func (c Client) RemoveResourceSetObject(rsReq ResourceSet, object string) error {
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	params := map[string]interface{}{
 		"id":     rsReq.Id,
 		"object": object,
 	}
 	var success bool
-	err := c.Call(ctx, "resourceSet.removeObject", params, &success)
+	err := c.Call("resourceSet.removeObject", params, &success)
 	log.Printf("[DEBUG] Calling resourceSet.removeObject call successful: %t with error: %v\n", success, err)
 	return err
 }
 
 func (c Client) AddResourceSetObject(rsReq ResourceSet, object string) error {
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	params := map[string]interface{}{
 		"id":     rsReq.Id,
 		"object": object,
 	}
 	var success bool
-	err := c.Call(ctx, "resourceSet.addObject", params, &success)
+	err := c.Call("resourceSet.addObject", params, &success)
 	log.Printf("[DEBUG] Calling resourceSet.addObject call successful: %t with error: %v\n", success, err)
 	return err
 }
 
 func (c Client) RemoveResourceSetLimit(rsReq ResourceSet, limit string) error {
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	params := map[string]interface{}{
 		"id":      rsReq.Id,
 		"limitId": limit,
 	}
 	var success bool
-	err := c.Call(ctx, "resourceSet.removeLimit", params, &success)
+	err := c.Call("resourceSet.removeLimit", params, &success)
 	log.Printf("[DEBUG] Calling resourceSet.removeLimit call successful: %t with error: %v\n", success, err)
 	return err
 }
 
 func (c Client) AddResourceSetLimit(rsReq ResourceSet, limit string, quantity int) error {
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	params := map[string]interface{}{
 		"id":       rsReq.Id,
 		"limitId":  limit,
 		"quantity": quantity,
 	}
 	var success bool
-	err := c.Call(ctx, "resourceSet.addLimit", params, &success)
+	err := c.Call("resourceSet.addLimit", params, &success)
 	log.Printf("[DEBUG] Calling resourceSet.addLimit call with params: %v successful: %t with error: %v\n", params, success, err)
 	return err
 }

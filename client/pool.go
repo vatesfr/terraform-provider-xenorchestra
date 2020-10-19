@@ -45,8 +45,12 @@ func FindPoolForTests(pool *Pool) {
 		fmt.Println("The XOA_POOL environment variable must be set")
 		os.Exit(-1)
 	}
-	c, _ := NewClient(GetConfigFromEnv())
-	var err error
+	c, err := NewClient(GetConfigFromEnv())
+	if err != nil {
+		fmt.Printf("failed to create client with error: %v", err)
+		os.Exit(-1)
+	}
+
 	pools, err := c.GetPoolByName(poolName)
 
 	if err != nil {

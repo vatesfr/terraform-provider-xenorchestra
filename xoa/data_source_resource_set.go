@@ -21,12 +21,7 @@ func dataSourceXoaResourceSet() *schema.Resource {
 }
 
 func dataSourceResourceSetRead(d *schema.ResourceData, m interface{}) error {
-	config := m.(client.Config)
-	c, err := client.NewClient(config)
-
-	if err != nil {
-		return err
-	}
+	c := m.(*client.Client)
 
 	name := d.Get("name").(string)
 
