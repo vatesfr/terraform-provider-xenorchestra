@@ -11,8 +11,27 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-func TestAccXenorchestraVm_create(t *testing.T) {
+func TestAccXenorchestraVm_createAndPlanWithNonExistantVm(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
+	removeVm := func() {
+		c, err := client.NewClient(client.GetConfigFromEnv())
+		if err != nil {
+			t.Fatalf("failed to create client with error: %v", err)
+		}
+
+		vm, err := c.GetVm(client.Vm{
+			NameLabel: "Terraform testing",
+		})
+
+		if err != nil {
+			t.Fatalf("failed to find VM with error: %v", err)
+		}
+
+		err = c.DeleteVm(vm.Id)
+		if err != nil {
+			t.Fatalf("failed to delete VM with error: %v", err)
+		}
+	}
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -24,6 +43,13 @@ func TestAccXenorchestraVm_create(t *testing.T) {
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
+				Destroy: false,
+			},
+			{
+				PreConfig:          removeVm,
+				Config:             testAccVmConfig(),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
 			},
 		},
 	})
