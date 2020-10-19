@@ -1,10 +1,5 @@
 package client
 
-import (
-	"context"
-	"time"
-)
-
 type CloudConfig struct {
 	Name     string `json:"name"`
 	Template string `json:"template"`
@@ -20,8 +15,7 @@ func (c *Client) GetCloudConfig(id string) (*CloudConfig, error) {
 		"id": id,
 	}
 	var getAllResp CloudConfigResponse
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	err := c.Call(ctx, "cloudConfig.getAll", params, &getAllResp.Result)
+	err := c.Call("cloudConfig.getAll", params, &getAllResp.Result)
 
 	if err != nil {
 		return nil, err
@@ -48,8 +42,7 @@ func (c *Client) CreateCloudConfig(name, template string) (*CloudConfig, error) 
 		"template": template,
 	}
 	var resp bool
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	err := c.Call(ctx, "cloudConfig.create", params, &resp)
+	err := c.Call("cloudConfig.create", params, &resp)
 
 	if err != nil {
 		return nil, err
@@ -58,7 +51,7 @@ func (c *Client) CreateCloudConfig(name, template string) (*CloudConfig, error) 
 	// Since the Id isn't returned in the reponse loop over all cloud configs
 	// and find the one we just created
 	var getAllResp CloudConfigResponse
-	err = c.Call(ctx, "cloudConfig.getAll", params, &getAllResp.Result)
+	err = c.Call("cloudConfig.getAll", params, &getAllResp.Result)
 
 	if err != nil {
 		return nil, err
@@ -78,8 +71,7 @@ func (c *Client) DeleteCloudConfig(id string) error {
 		"id": id,
 	}
 	var resp bool
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	err := c.Call(ctx, "cloudConfig.delete", params, &resp)
+	err := c.Call("cloudConfig.delete", params, &resp)
 
 	if err != nil {
 		return err

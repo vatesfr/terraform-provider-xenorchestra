@@ -1,11 +1,9 @@
 package client
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"log"
-	"time"
 )
 
 func (c *Client) AddTag(id, tag string) error {
@@ -14,8 +12,7 @@ func (c *Client) AddTag(id, tag string) error {
 		"id":  id,
 		"tag": tag,
 	}
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-	err := c.Call(ctx, "tag.add", params, &success)
+	err := c.Call("tag.add", params, &success)
 
 	if err != nil {
 		return err
@@ -29,8 +26,7 @@ func (c *Client) RemoveTag(id, tag string) error {
 		"id":  id,
 		"tag": tag,
 	}
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-	err := c.Call(ctx, "tag.remove", params, &success)
+	err := c.Call("tag.remove", params, &success)
 
 	if err != nil {
 		return err
@@ -47,8 +43,7 @@ func (c *Client) GetObjectsWithTags(tags []string) ([]string, error) {
 			"tags": tags,
 		},
 	}
-	ctx, _ := context.WithTimeout(context.Background(), 100*time.Second)
-	c.Call(ctx, "xo.getAllObjects", params, &objsRes.Objects)
+	c.Call("xo.getAllObjects", params, &objsRes.Objects)
 	log.Printf("[DEBUG] Found objects with tags `%s`: %v\n", tags, objsRes)
 
 	t := []string{}

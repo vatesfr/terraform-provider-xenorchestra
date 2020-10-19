@@ -1,12 +1,10 @@
 package client
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"log"
 	"strings"
-	"time"
 )
 
 type Network struct {
@@ -43,8 +41,7 @@ func (c *Client) CreateNetwork(netReq Network) (*Network, error) {
 		"name": netReq.NameLabel,
 	}
 
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-	err := c.Call(ctx, "network.create", params, &id)
+	err := c.Call("network.create", params, &id)
 
 	if err != nil {
 		return nil, err
@@ -85,8 +82,7 @@ func (c *Client) DeleteNetwork(id string) error {
 		"id": id,
 	}
 
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-	err := c.Call(ctx, "network.delete", params, &success)
+	err := c.Call("network.delete", params, &success)
 
 	return err
 }

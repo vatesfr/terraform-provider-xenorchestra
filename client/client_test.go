@@ -45,7 +45,7 @@ func TestCall_withJsonRPC2Error(t *testing.T) {
 	params := map[string]interface{}{
 		"test": "test",
 	}
-	err := c.Call(context.TODO(), "dummy method", params, nil)
+	err := c.Call("dummy method", params, nil)
 
 	if err == nil {
 		t.Errorf("Call method should have returned non-nil error")
@@ -73,7 +73,7 @@ func TestCall_withJsonRPC2ErrorWithNilData(t *testing.T) {
 	params := map[string]interface{}{
 		"test": "test",
 	}
-	err := c.Call(context.TODO(), "dummy method", params, nil)
+	err := c.Call("dummy method", params, nil)
 
 	if err == nil {
 		t.Errorf("Call method should have returned non-nil error")
@@ -95,7 +95,7 @@ func TestCall_withNonJsonRPC2Error(t *testing.T) {
 	params := map[string]interface{}{
 		"test": "test",
 	}
-	err := c.Call(context.TODO(), "dummy method", params, nil)
+	err := c.Call("dummy method", params, nil)
 
 	if err == nil {
 		t.Errorf("Call method should have returned non-nil error")
