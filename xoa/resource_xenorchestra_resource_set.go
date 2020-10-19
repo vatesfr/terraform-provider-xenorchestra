@@ -59,7 +59,7 @@ func resourceResourceSet() *schema.Resource {
 }
 
 func resourceSetCreate(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.Client)
+	c := m.(*client.Client)
 
 	name := d.Get("name").(string)
 	limits := d.Get("limit").(*schema.Set)
@@ -98,7 +98,7 @@ func resourceSetCreate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceSetRead(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.Client)
+	c := m.(*client.Client)
 
 	id := d.Id()
 	rs, err := c.GetResourceSetById(id)
@@ -117,7 +117,7 @@ func resourceSetRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceSetUpdate(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.Client)
+	c := m.(*client.Client)
 
 	id := d.Id()
 	rs, err := c.GetResourceSetById(id)
@@ -215,7 +215,7 @@ func resourceSetUpdate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceSetDelete(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.Client)
+	c := m.(*client.Client)
 
 	err := c.DeleteResourceSet(client.ResourceSet{Id: d.Id()})
 

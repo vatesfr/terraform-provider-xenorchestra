@@ -190,7 +190,7 @@ func resourceRecord() *schema.Resource {
 }
 
 func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.Client)
+	c := m.(*client.Client)
 
 	network_maps := []map[string]string{}
 	networks := d.Get("network").(*schema.Set)
@@ -269,7 +269,7 @@ func vifsToMapList(vifs []client.VIF) []map[string]interface{} {
 }
 
 func resourceVmRead(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.Client)
+	c := m.(*client.Client)
 
 	vm, err := c.GetVm(client.Vm{Id: d.Id()})
 
@@ -292,7 +292,7 @@ func resourceVmRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.Client)
+	c := m.(*client.Client)
 
 	nameLabel := d.Get("name_label").(string)
 	nameDescription := d.Get("name_description").(string)
@@ -343,7 +343,7 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceVmDelete(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.Client)
+	c := m.(*client.Client)
 
 	err := c.DeleteVm(d.Id())
 
@@ -374,7 +374,7 @@ func expandNetworks(networks []interface{}) []*client.VIF {
 }
 
 func RecordImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
-	c := m.(client.Client)
+	c := m.(*client.Client)
 
 	vm, err := c.GetVm(client.Vm{Id: d.Id()})
 	if err != nil {
