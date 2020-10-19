@@ -114,6 +114,11 @@ func resourceSetRead(d *schema.ResourceData, m interface{}) error {
 	rs, err := c.GetResourceSetById(id)
 	log.Printf("[DEBUG] Found resource set: %+v with error: %v\n", rs, err)
 
+	if _, ok := err.(client.NotFound); ok {
+		d.SetId("")
+		return nil
+	}
+
 	if err != nil {
 		return err
 	}

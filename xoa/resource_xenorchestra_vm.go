@@ -282,6 +282,12 @@ func resourceVmRead(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 	vm, err := c.GetVm(client.Vm{Id: xoaId})
+
+	if _, ok := err.(client.NotFound); ok {
+		d.SetId("")
+		return nil
+	}
+
 	if err != nil {
 		return err
 	}

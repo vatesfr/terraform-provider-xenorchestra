@@ -28,6 +28,19 @@ type ResourceSetLimit struct {
 	Total     int `json:"total,omitempty"`
 }
 
+func (rs ResourceSet) Compare(obj interface{}) bool {
+	other := obj.(ResourceSet)
+	if other.Id == rs.Id {
+		return true
+	}
+
+	if other.Name == rs.Name {
+		return true
+	}
+
+	return false
+}
+
 func (c Client) GetResourceSets() ([]ResourceSet, error) {
 	return c.makeResourceSetGetAllCall()
 }
@@ -58,19 +71,14 @@ func (c Client) GetResourceSet(rsReq ResourceSet) ([]ResourceSet, error) {
 	rsRv := []ResourceSet{}
 	found := false
 	for _, rs := range resourceSets {
-		if rsReq.Id == rs.Id {
-			found = true
+		if rs.Compare(rsReq) {
 			rsRv = append(rsRv, rs)
-		}
-
-		if rsReq.Name == rs.Name {
 			found = true
-			rsRv = append(rsRv, rs)
 		}
 	}
 
 	if !found {
-		return rsRv, NotFound{}
+		return rsRv, NotFound{Query: rsReq}
 	}
 
 	return rsRv, nil
