@@ -11,7 +11,7 @@ Any and all contributions are welcome! Don't hesitate to reach out to ask if you
 
 The provider has two types of tests: client integration and terraform acceptance tests.
 
-*Note:* The client integration and acceptance tests create real resources! The test suite will create and remove resources during the test run but it's possible that crashing the provider will leave resources dangling. Until #XXX is done you may need to re-run the test suite or clean up some of the state yourself.
+*Note:* The client integration and acceptance tests create real resources! The test suite will create and remove resources during the test run but it's possible that crashing the provider will leave resources dangling. Until #84 is done you may need to re-run the test suite or clean up some of the state yourself.
 
 
 ### Running the tests
