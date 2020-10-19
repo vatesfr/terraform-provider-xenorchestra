@@ -1,6 +1,15 @@
 .PHONY: import testacc dist
 
-TEST ?= ./...
+
+ifdef TEST
+    TEST := ./... -run $(TEST)
+else
+    TEST := ./...
+endif
+
+ifdef TF_LOG
+    TF_LOG := TF_LOG=$(TF_LOG)
+endif
 
 build:
 	go build -o terraform-provider-xenorchestra
@@ -19,4 +28,4 @@ apply:
 	terraform apply
 
 testacc:
-	TF_ACC=1 go test $(TEST) -v -timeout 20m
+	TF_ACC=1 $(TF_LOG) go test $(TEST) -v -count 1 -timeout 40m
