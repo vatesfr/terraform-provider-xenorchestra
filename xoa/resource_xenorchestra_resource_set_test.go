@@ -37,16 +37,46 @@ func resourceSetCompositeChecks(resourceName string) resource.TestCheckFunc {
 		}))
 }
 
-func TestAccResourceSet_create(t *testing.T) {
+func TestAccResourceSet_createAndPlanWithNonExistantResourceSet(t *testing.T) {
 	resourceName := "xenorchestra_resource_set.bar"
+	removeResourceSet := func() {
+		c, err := client.NewClient(client.GetConfigFromEnv())
+		if err != nil {
+			t.Fatalf("failed to create client with error: %v", err)
+		}
+
+		rs, err := c.GetResourceSet(client.ResourceSet{
+			Name: rsName,
+		})
+
+		if err != nil {
+			t.Fatalf("failed to find resource set with error: %v", err)
+		}
+
+		if len(rs) != 1 {
+			t.Fatalf("expected to find 1 resource set, found '%d' instead", len(rs))
+		}
+
+		err = c.DeleteResourceSet(rs[0])
+		if err != nil {
+			t.Fatalf("failed to delete resource set with error: %v", err)
+		}
+	}
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckResourceSetDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceSetConfig(),
-				Check:  resourceSetCompositeChecks(resourceName),
+				Config:  testAccResourceSetConfig(),
+				Check:   resourceSetCompositeChecks(resourceName),
+				Destroy: false,
+			},
+			{
+				PreConfig:          removeResourceSet,
+				Config:             testAccResourceSetConfig(),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
 			},
 		},
 	})
