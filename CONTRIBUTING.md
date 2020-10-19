@@ -11,7 +11,7 @@ Any and all contributions are welcome! Don't hesitate to reach out to ask if you
 
 The provider has two types of tests: client integration and terraform acceptance tests.
 
-*Note:* The client integration and acceptance tests create real resources! The test suite will create and remove resources during the test run but it's possible that crashing the provider will leave resources dangling. Until #84 is done you may need to re-run the test suite or clean up some of the state yourself.
+*Note:* The client integration and acceptance tests create real resources! The test suite will create and remove resources during the test run but it's possible that crashing the provider will leave resources dangling. Until [#84](https://github.com/terra-farm/terraform-provider-xenorchestra/issues/84) is done you may need to re-run the test suite or clean up some of the state yourself.
 
 
 ### Running the tests
@@ -21,7 +21,7 @@ The following environment variables must be set:
 - XOA_USER - the username of a user with admin privileges
 - XOA_PASSWORD - the password of the associated user
 - XOA_POOL - The XO pool you want to target when running the tests. VMs, storage repositories and other resources will be created / launched on this pool
-- XOA_TEMPLATE - A VM template that has an existing OS *already installed*
+- XOA_TEMPLATE - A VM template that has an existing OS **already installed**
 
 I typically keep these in a ~/.xoa file and run the following before running the test suite
 
