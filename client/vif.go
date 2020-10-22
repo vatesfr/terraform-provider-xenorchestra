@@ -34,6 +34,10 @@ func (v VIF) Compare(obj interface{}) bool {
 func (c *Client) GetVIFs(vm *Vm) ([]VIF, error) {
 	obj, err := c.FindFromGetAllObjects(VIF{VmId: vm.Id})
 
+	if _, ok := err.(NotFound); ok {
+		return []VIF{}, nil
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +81,43 @@ func (c *Client) CreateVIF(vm *Vm, vif *VIF) (*VIF, error) {
 		return nil, err
 	}
 
+	// var success bool
+	// err = c.Call("vif.connect", map[string]interface{}{
+	// 	"id": id,
+	// }, &success)
+
+	// if err != nil {
+	// 	return nil, err
+	// }
+
 	return c.GetVIF(&VIF{Id: id})
+}
+
+func (c *Client) ConnectVIF(vifReq *VIF) (err error) {
+	vif, err := c.GetVIF(vifReq)
+
+	if err != nil {
+		return
+	}
+	var success bool
+	err = c.Call("vif.connect", map[string]interface{}{
+		"id": vif.Id,
+	}, &success)
+	return
+}
+
+func (c *Client) DisconnectVIF(vifReq *VIF) (err error) {
+	vif, err := c.GetVIF(vifReq)
+
+	if err != nil {
+		return
+	}
+
+	var success bool
+	err = c.Call("vif.disconnect", map[string]interface{}{
+		"id": vif.Id,
+	}, &success)
+	return
 }
 
 func (c *Client) DeleteVIF(vifReq *VIF) (err error) {
@@ -95,17 +135,16 @@ func (c *Client) DeleteVIF(vifReq *VIF) (err error) {
 		vif = vifReq
 	}
 
-	params := map[string]interface{}{
-		"id": vif.Id,
-	}
-	var result bool
-	err = c.Call("vif.disconnect", params, &result)
-	log.Printf("[DEBUG] Calling vif.disconnect received err: %v", err)
+	err = c.DisconnectVIF(vif)
 
 	if err != nil {
 		return err
 	}
 
+	params := map[string]interface{}{
+		"id": vif.Id,
+	}
+	var result bool
 	err = c.Call("vif.delete", params, &result)
 	log.Printf("[DEBUG] Calling vif.delete received err: %v", err)
 
