@@ -120,11 +120,12 @@ func resourceRecord() *schema.Resource {
 					Schema: map[string]*schema.Schema{
 						"attached": &schema.Schema{
 							Type:     schema.TypeBool,
-							Computed: true,
+							Default:  true,
+							Optional: true,
 						},
 						"device": &schema.Schema{
 							Type:     schema.TypeString,
-							Computed: true,
+							Required: true,
 						},
 						"network_id": &schema.Schema{
 							Type:     schema.TypeString,
@@ -134,6 +135,7 @@ func resourceRecord() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 							Computed: true,
+							// ForceNew: true,
 							ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
 								mac_address := val.(string)
 								if _, err := net.ParseMAC(mac_address); err != nil {
@@ -145,16 +147,11 @@ func resourceRecord() *schema.Resource {
 						},
 					},
 				},
-				Set: func(value interface{}) int {
-					network := value.(map[string]interface{})
-
-					macAddress := network["mac_address"].(string)
-					networkId := network["network_id"].(string)
-					v := fmt.Sprintf("%s-%s", macAddress, networkId)
-					log.Printf("[TRACE] Setting network via %s\n", v)
-
-					return hashcode.String(v)
-				},
+				// Set: func(v interface{}) int {
+				// 	vif := v.(map[string]interface{})
+				// 	device := vif["device"].(string)
+				// 	return hashcode.String(device)
+				// },
 			},
 			"disk": &schema.Schema{
 				Type:     schema.TypeSet,
@@ -185,6 +182,13 @@ func resourceRecord() *schema.Resource {
 					return hashcode.String(buf.String())
 				},
 			},
+		},
+		CustomizeDiff: func(diff *schema.ResourceDiff, v interface{}) error {
+			for _, key := range diff.GetChangedKeysPrefix("") {
+				old, new := diff.GetChange(key)
+				log.Printf("[DEBUG] Seeing diff for key: %s with before: %+v and after: %+v and from Get(): %+v\n", key, old, new, diff.Get(key))
+			}
+			return nil
 		},
 	}
 }
@@ -246,15 +250,17 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 	}
 
 	err = d.Set("network", vifsToMapList(vifs))
+	fmt.Printf("Tried setting network state and received error: %v", err)
 
 	if err != nil {
 		return err
 	}
+	fmt.Printf("The network state looks like this: %+v and the full state is: %+v\n", d.Get("network"), d.State())
 	return nil
 }
 
-func vifsToMapList(vifs []client.VIF) []map[string]interface{} {
-	result := make([]map[string]interface{}, 0, len(vifs))
+func vifsToMapList(vifs []client.VIF) []interface{} {
+	result := make([]interface{}, 0, len(vifs))
 	for _, vif := range vifs {
 		vifMap := map[string]interface{}{
 			"attached":    vif.Attached,
@@ -283,6 +289,7 @@ func resourceVmRead(d *schema.ResourceData, m interface{}) error {
 	}
 
 	vifs, err := c.GetVIFs(vm)
+	log.Printf("[DEBUG] Found VIFs for vm: %v\n", vifs)
 
 	if err != nil {
 		return err
@@ -314,11 +321,22 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		newNetSet := newNet.(*schema.Set)
 
 		additions := expandNetworks(newNetSet.Difference(origNetSet).List())
+		log.Printf("Found the following additions: %v from old: %v new: %v\n", newNetSet.Difference(origNetSet).List(), origNetSet, newNetSet)
 		for _, addition := range additions {
-			_, vifErr := c.CreateVIF(vm, addition)
+			updateVif := shouldUpdateVif(*addition, expandNetworks(origNetSet.List()))
 
-			if vifErr != nil {
-				return err
+			if updateVif {
+				if addition.Attached {
+					c.ConnectVIF(addition)
+				} else {
+					c.DisconnectVIF(addition)
+				}
+			} else {
+				_, vifErr := c.CreateVIF(vm, addition)
+
+				if vifErr != nil {
+					return err
+				}
 			}
 		}
 
@@ -333,13 +351,7 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 
-	vifs, err := c.GetVIFs(vm)
-
-	if err != nil {
-		return err
-	}
-
-	return recordToData(*vm, vifs, d)
+	return resourceVmRead(d, m)
 }
 
 func resourceVmDelete(d *schema.ResourceData, m interface{}) error {
@@ -410,9 +422,66 @@ func recordToData(resource client.Vm, vifs []client.VIF, d *schema.ResourceData)
 
 	nets := vifsToMapList(vifs)
 	err := d.Set("network", nets)
+	fmt.Printf("Tried setting network state and received error: %v\n", err)
 
 	if err != nil {
 		return err
 	}
+	fmt.Printf("The network state looks like this: %+v and the full state is: %+v\n", d.Get("network"), d.State())
 	return nil
+}
+
+func shouldUpdateVif(vif client.VIF, vifs []*client.VIF) bool {
+	found := false
+	vifCopy := vif
+	var vifFound client.VIF
+	for _, vifToCheck := range vifs {
+		if vifToCheck.Id == vifCopy.Id || vifToCheck.MacAddress == vifCopy.MacAddress {
+			found = true
+			vifFound = *vifToCheck
+		}
+	}
+
+	if !found {
+		return false
+	}
+
+	vifCopy.Attached = !vifCopy.Attached
+	if vifHash(vifCopy, true) == vifHash(vifFound, true) {
+		return true
+	}
+
+	return false
+}
+
+func vifHash(value interface{}, withAttached bool) int {
+	var macAddress string
+	var networkId string
+	var device string
+	var attached bool
+	switch t := value.(type) {
+	case client.VIF:
+		macAddress = t.MacAddress
+		networkId = t.Network
+		device = t.Device
+		attached = t.Attached
+	case map[string]interface{}:
+		network := value.(map[string]interface{})
+		macAddress = network["mac_address"].(string)
+		networkId = network["network_id"].(string)
+		device = network["device"].(string)
+		attached = network["attached"].(bool)
+	default:
+		panic(fmt.Sprintf("can't has type %T", t))
+	}
+
+	var v string
+	if withAttached {
+		v = fmt.Sprintf("%s-%s-%s-%t", macAddress, networkId, device, attached)
+	} else {
+		v = fmt.Sprintf("%s-%s-%s", macAddress, networkId, device)
+	}
+	log.Printf("[DEBUG] Setting network via %s\n", v)
+
+	return hashcode.String(v)
 }

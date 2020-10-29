@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
 	"github.com/ddelnano/terraform-provider-xenorchestra/xoa/internal"
@@ -88,6 +89,100 @@ func TestAccXenorchestraVm_createWithMacAddress(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					internal.TestCheckTypeSetElemNestedAttrs(resourceName, "network.*", map[string]string{
 						"mac_address": macAddress,
+					}),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
+			},
+		},
+	})
+}
+
+func TestAccXenorchestraVm_disconnectAttachedVif(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmVifAttachedConfig(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
+			},
+			{
+				Config:             testAccVmVifDetachedConfig(),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccVmVifDetachedConfig(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "network.0.attached", "false"),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
+			},
+		},
+	})
+}
+
+func TestAccXenorchestraVm_attachDisconnectedVif(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	removeVif := func() {
+		c, err := client.NewClient(client.GetConfigFromEnv())
+		if err != nil {
+			t.Fatalf("failed to create client with error: %v", err)
+		}
+
+		vm, err := c.GetVm(client.Vm{
+			NameLabel: "Terraform testing",
+		})
+
+		if err != nil {
+			t.Fatalf("failed to find VM with error: %v", err)
+		}
+		time.Sleep(30 * time.Second)
+
+		err = c.DisconnectVIF(&client.VIF{Id: vm.VIFs[0]})
+		if err != nil {
+			t.Fatalf("failed to disconnect VIF with error: %v", err)
+		}
+	}
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmVifAttachedConfig(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
+			},
+			{
+				PreConfig: removeVif,
+				Config:    testAccVmVifAttachedConfig(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					internal.TestCheckTypeSetElemNestedAttrs(resourceName, "network.*", map[string]string{
+						"attached": "false",
+						"device":   "0",
+					}),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccVmVifAttachedConfig(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					internal.TestCheckTypeSetElemNestedAttrs(resourceName, "network.*", map[string]string{
+						"attached": "true",
+						"device":   "0",
 					}),
 					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
 			},
@@ -180,42 +275,56 @@ func TestAccXenorchestraVm_updateVmWithSecondVif(t *testing.T) {
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttr(resourceName, "network.#", "2"),
-					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id"),
-					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.0.*", "data.xenorchestra_network.network", "id"),
+					resource.TestCheckResourceAttr(resourceName, "network.0.device", "0"),
+					resource.TestCheckResourceAttr(resourceName, "network.0.attached", "true"),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.1.*", "data.xenorchestra_network.network2", "id"),
+					resource.TestCheckResourceAttr(resourceName, "network.1.device", "1"),
+					resource.TestCheckResourceAttr(resourceName, "network.1.attached", "true")),
 			},
 		},
 	})
 }
 
-// TODO: This test fails due to the missing PV drivers issue I've been trying to track down
-// Until then this test will fail.
-// func TestAccXenorchestraVm_removeVifFromVm(t *testing.T) {
-// 	resourceName := "xenorchestra_vm.bar"
-// 	resource.Test(t, resource.TestCase{
-// 		PreCheck:     func() { testAccPreCheck(t) },
-// 		Providers:    testAccProviders,
-// 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
-// 		Steps: []resource.TestStep{
-// 			{
-// 				Config: testAccVmConfigWithSecondVIF(),
-// 				Check: resource.ComposeAggregateTestCheckFunc(
-// 					testAccVmExists(resourceName),
-// 					resource.TestCheckResourceAttrSet(resourceName, "id"),
-// 					resource.TestCheckResourceAttr(resourceName, "network.#", "2"),
-// 					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id"),
-// 					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
-// 			},
-// 			{
-// 				Config: testAccVmConfig(),
-// 				Check: resource.ComposeAggregateTestCheckFunc(
-// 					testAccVmExists(resourceName),
-// 					resource.TestCheckResourceAttrSet(resourceName, "id"),
-// 					resource.TestCheckResourceAttr(resourceName, "network.#", "1"),
-// 					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
-// 			},
-// 		},
-// 	})
-// }
+func TestAccXenorchestraVm_removeVifFromVmAndDeviceOrdering(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigWithThreeVIFs(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "network.#", "3"),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.0.*", "data.xenorchestra_network.network", "id"),
+					resource.TestCheckResourceAttr(resourceName, "network.0.device", "0"),
+					resource.TestCheckResourceAttr(resourceName, "network.0.attached", "true"),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.1.*", "data.xenorchestra_network.network2", "id"),
+					resource.TestCheckResourceAttr(resourceName, "network.1.device", "1"),
+					resource.TestCheckResourceAttr(resourceName, "network.1.attached", "true"),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.2.*", "data.xenorchestra_network.network2", "id"),
+					resource.TestCheckResourceAttr(resourceName, "network.2.device", "2"),
+					resource.TestCheckResourceAttr(resourceName, "network.2.attached", "true")),
+			},
+			{
+				Config: testAccVmConfigWithSecondVIF(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "network.#", "2"),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id"),
+					resource.TestCheckResourceAttr(resourceName, "network.0.device", "0"),
+					resource.TestCheckResourceAttr(resourceName, "network.0.attached", "true"),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.1.*", "data.xenorchestra_network.network", "id"),
+					resource.TestCheckResourceAttr(resourceName, "network.1.device", "2"),
+					resource.TestCheckResourceAttr(resourceName, "network.1.attached", "true")),
+			},
+		},
+	})
+}
 
 func TestAccXenorchestraVm_updatesWithoutReboot(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
@@ -326,7 +435,7 @@ data "xenorchestra_network" "network" {
 }
 
 resource "xenorchestra_vm" "bar" {
-    memory_max = 256000000
+    memory_max = 4295000000
     cpus  = 1
     name_label = "Terraform testing"
     name_description = "description"
@@ -357,7 +466,7 @@ data "xenorchestra_network" "network" {
 }
 
 resource "xenorchestra_vm" "bar" {
-    memory_max = 256000000
+    memory_max = 4295000000
     cpus  = 1
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
     name_label = "Terraform testing"
@@ -365,6 +474,73 @@ resource "xenorchestra_vm" "bar" {
     template = "${data.xenorchestra_template.template.id}"
     network {
 	network_id = "${data.xenorchestra_network.network.id}"
+    }
+
+    disk {
+      sr_id = "%s"
+      name_label = "xo provider root"
+      size = 10000000000
+    }
+}
+`, accTemplateName, accTestPool.Id, accDefaultSr.Id)
+}
+
+func testAccVmVifAttachedConfig() string {
+	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
+data "xenorchestra_template" "template" {
+    name_label = "%s"
+}
+
+data "xenorchestra_network" "network" {
+    // TODO: Replace this with a better solution
+    name_label = "Pool-wide network associated with eth0"
+    pool_id = "%s"
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 4295000000
+    cpus  = 1
+    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    name_label = "Terraform testing"
+    name_description = "description"
+    template = "${data.xenorchestra_template.template.id}"
+    network {
+	network_id = "${data.xenorchestra_network.network.id}"
+	attached = true
+	device = "0"
+    }
+
+    disk {
+      sr_id = "%s"
+      name_label = "xo provider root"
+      size = 10000000000
+    }
+}
+`, accTemplateName, accTestPool.Id, accDefaultSr.Id)
+}
+
+func testAccVmVifDetachedConfig() string {
+	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
+data "xenorchestra_template" "template" {
+    name_label = "%s"
+}
+
+data "xenorchestra_network" "network" {
+    // TODO: Replace this with a better solution
+    name_label = "Pool-wide network associated with eth0"
+    pool_id = "%s"
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 4295000000
+    cpus  = 1
+    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    name_label = "Terraform testing"
+    name_description = "description"
+    template = "${data.xenorchestra_template.template.id}"
+    network {
+	network_id = "${data.xenorchestra_network.network.id}"
+	attached = false
     }
 
     disk {
@@ -389,7 +565,7 @@ data "xenorchestra_network" "network" {
 }
 
 resource "xenorchestra_vm" "bar" {
-    memory_max = 256000000
+    memory_max = 4295000000
     cpus  = 1
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
     name_label = "Terraform testing"
@@ -428,7 +604,7 @@ data "xenorchestra_network" "network2" {
 }
 
 resource "xenorchestra_vm" "bar" {
-    memory_max = 256000000
+    memory_max = 4295000000
     cpus  = 1
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
     name_label = "Terraform testing"
@@ -436,6 +612,50 @@ resource "xenorchestra_vm" "bar" {
     template = "${data.xenorchestra_template.template.id}"
     network {
 	network_id = "${data.xenorchestra_network.network.id}"
+    }
+    network {
+	network_id = "${data.xenorchestra_network.network2.id}"
+    }
+
+    disk {
+      sr_id = "%s"
+      name_label = "xo provider root"
+      size = 10000000000
+    }
+}
+`, accTemplateName, accTestPool.Id, accDefaultSr.Id)
+}
+
+func testAccVmConfigWithThreeVIFs() string {
+	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
+data "xenorchestra_template" "template" {
+    name_label = "%s"
+}
+
+data "xenorchestra_network" "network" {
+    // TODO: Replace this with a better solution
+    name_label = "Pool-wide network associated with eth0"
+    pool_id = "%s"
+}
+
+data "xenorchestra_network" "network2" {
+    // TODO: Replace this with a better solution
+    name_label = "Pool-wide network associated with eth1"
+    pool_id = "%[2]s"
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 4295000000
+    cpus  = 1
+    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    name_label = "Terraform testing"
+    name_description = "description"
+    template = "${data.xenorchestra_template.template.id}"
+    network {
+	network_id = "${data.xenorchestra_network.network.id}"
+    }
+    network {
+	network_id = "${data.xenorchestra_network.network2.id}"
     }
     network {
 	network_id = "${data.xenorchestra_network.network2.id}"
@@ -465,7 +685,7 @@ data "xenorchestra_network" "network" {
 }
 
 resource "xenorchestra_vm" "bar" {
-    memory_max = 256000000
+    memory_max = 4295000000
     cpus  = 1
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
     name_label = "%s"
@@ -490,7 +710,7 @@ func testAccVmConfigWithResourceSet() string {
 	return testAccCloudConfigConfig("vm-template", "template") + testAccVmResourceSet() + fmt.Sprintf(`
 
 resource "xenorchestra_vm" "bar" {
-    memory_max = 256000000
+    memory_max = 4295000000
     cpus  = 1
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
     name_label = "Terraform testing resource sets"
@@ -553,7 +773,7 @@ func testAccVmConfigWithoutResourceSet() string {
 	return testAccCloudConfigConfig("vm-template", "template") + testAccVmResourceSet() + fmt.Sprintf(`
 
 resource "xenorchestra_vm" "bar" {
-    memory_max = 256000000
+    memory_max = 4295000000
     cpus  = 1
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
     name_label = "Terraform testing resource sets"
