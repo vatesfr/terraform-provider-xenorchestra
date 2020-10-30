@@ -4,12 +4,78 @@ import (
 	"fmt"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
 	"github.com/ddelnano/terraform-provider-xenorchestra/xoa/internal"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
+
+func Test_shouldUpdateVif(t *testing.T) {
+	cases := []struct {
+		vif                  client.VIF
+		haystack             []*client.VIF
+		expectedShouldUpdate bool
+		expectedShouldAttach bool
+	}{
+		{
+			vif: client.VIF{
+				MacAddress: "mac address",
+				Attached:   true,
+			},
+			haystack: []*client.VIF{
+				&client.VIF{
+					Id:         "id",
+					MacAddress: "mac address",
+					Attached:   false,
+				},
+			},
+			expectedShouldUpdate: true,
+			expectedShouldAttach: true,
+		},
+		{
+			vif: client.VIF{
+				Id:       "id",
+				Attached: true,
+			},
+			haystack: []*client.VIF{
+				&client.VIF{
+					Id:       "id",
+					Attached: false,
+				},
+			},
+			expectedShouldUpdate: true,
+			expectedShouldAttach: true,
+		},
+		{
+			vif: client.VIF{
+				Id:       "id",
+				Attached: false,
+			},
+			haystack: []*client.VIF{
+				&client.VIF{
+					Id:       "id",
+					Attached: false,
+				},
+			},
+			expectedShouldUpdate: false,
+			expectedShouldAttach: false,
+		},
+	}
+
+	for _, c := range cases {
+		shouldUpdate, shouldAttach := shouldUpdateVif(c.vif, c.haystack)
+
+		if c.expectedShouldUpdate != shouldUpdate {
+			t.Errorf("expected shouldUpdate '%t' to match '%t' when comparing VIF: %+v against the following VIFs: %+v", c.expectedShouldUpdate, shouldUpdate, c.vif, c.haystack)
+		}
+
+		if c.expectedShouldAttach != shouldAttach {
+			t.Errorf("expected shouldAttach '%t' to match '%t' when comparing VIF: %+v against the following VIFs: %+v", c.expectedShouldAttach, shouldAttach, c.vif, c.haystack)
+		}
+	}
+}
 
 func TestAccXenorchestraVm_createAndPlanWithNonExistantVm(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
@@ -73,9 +139,10 @@ func TestAccXenorchestraVm_createWithoutCloudConfig(t *testing.T) {
 	})
 }
 
-func TestAccXenorchestraVm_createWithMacAddress(t *testing.T) {
+func TestAccXenorchestraVm_createAndUpdateWithMacAddress(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	macAddress := "00:0a:83:b1:c0:83"
+	otherMacAddress := "00:0a:83:b1:c0:00"
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -86,8 +153,20 @@ func TestAccXenorchestraVm_createWithMacAddress(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "network.#", "1"),
 					internal.TestCheckTypeSetElemNestedAttrs(resourceName, "network.*", map[string]string{
 						"mac_address": macAddress,
+					}),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
+			},
+			{
+				Config: testAccVmConfigWithMacAddress(otherMacAddress),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "network.#", "1"),
+					internal.TestCheckTypeSetElemNestedAttrs(resourceName, "network.*", map[string]string{
+						"mac_address": otherMacAddress,
 					}),
 					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
 			},
@@ -142,6 +221,8 @@ func TestAccXenorchestraVm_attachDisconnectedVif(t *testing.T) {
 			t.Fatalf("failed to find VM with error: %v", err)
 		}
 
+		// Sleep so that the VM has a change to load the PV drivers
+		time.Sleep(20 * time.Second)
 		err = c.DisconnectVIF(&client.VIF{Id: vm.VIFs[0]})
 		if err != nil {
 			t.Fatalf("failed to disconnect VIF with error: %v", err)
@@ -241,7 +322,7 @@ func testAccCheckXenorchestraVmDestroy(s *terraform.State) error {
 	return nil
 }
 
-func TestAccXenorchestraVm_updateVmWithSecondVif(t *testing.T) {
+func TestAccXenorchestraVm_addVifAndRemoveVif(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -269,45 +350,15 @@ func TestAccXenorchestraVm_updateVmWithSecondVif(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "network.1.device", "1"),
 					resource.TestCheckResourceAttr(resourceName, "network.1.attached", "true")),
 			},
-		},
-	})
-}
-
-func TestAccXenorchestraVm_removeVifFromVmAndDeviceOrdering(t *testing.T) {
-	resourceName := "xenorchestra_vm.bar"
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckXenorchestraVmDestroy,
-		Steps: []resource.TestStep{
 			{
-				Config: testAccVmConfigWithThreeVIFs(),
+				Config: testAccVmConfig(),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
-					resource.TestCheckResourceAttr(resourceName, "network.#", "3"),
+					resource.TestCheckResourceAttr(resourceName, "network.#", "1"),
 					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.0.*", "data.xenorchestra_network.network", "id"),
 					resource.TestCheckResourceAttr(resourceName, "network.0.device", "0"),
-					resource.TestCheckResourceAttr(resourceName, "network.0.attached", "true"),
-					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.1.*", "data.xenorchestra_network.network2", "id"),
-					resource.TestCheckResourceAttr(resourceName, "network.1.device", "1"),
-					resource.TestCheckResourceAttr(resourceName, "network.1.attached", "true"),
-					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.2.*", "data.xenorchestra_network.network2", "id"),
-					resource.TestCheckResourceAttr(resourceName, "network.2.device", "2"),
-					resource.TestCheckResourceAttr(resourceName, "network.2.attached", "true")),
-			},
-			{
-				Config: testAccVmConfigWithSecondVIF(),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccVmExists(resourceName),
-					resource.TestCheckResourceAttrSet(resourceName, "id"),
-					resource.TestCheckResourceAttr(resourceName, "network.#", "2"),
-					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id"),
-					resource.TestCheckResourceAttr(resourceName, "network.0.device", "0"),
-					resource.TestCheckResourceAttr(resourceName, "network.0.attached", "true"),
-					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.1.*", "data.xenorchestra_network.network", "id"),
-					resource.TestCheckResourceAttr(resourceName, "network.1.device", "2"),
-					resource.TestCheckResourceAttr(resourceName, "network.1.attached", "true")),
+					resource.TestCheckResourceAttr(resourceName, "network.0.attached", "true")),
 			},
 		},
 	})

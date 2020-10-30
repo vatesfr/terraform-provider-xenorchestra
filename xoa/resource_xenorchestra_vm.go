@@ -122,7 +122,7 @@ func resourceRecord() *schema.Resource {
 					Schema: map[string]*schema.Schema{
 						"attached": &schema.Schema{
 							Type:     schema.TypeBool,
-							Computed: true,
+							Default:  true,
 							Optional: true,
 						},
 						"device": &schema.Schema{
@@ -148,16 +148,6 @@ func resourceRecord() *schema.Resource {
 						},
 					},
 				},
-				// Set: func(value interface{}) int {
-				// 	network := value.(map[string]interface{})
-
-				// 	macAddress := network["mac_address"].(string)
-				// 	networkId := network["network_id"].(string)
-				// 	v := fmt.Sprintf("%s-%s", macAddress, networkId)
-				// 	log.Printf("[TRACE] Setting network via %s\n", v)
-
-				// 	return hashcode.String(v)
-				// },
 			},
 			"disk": &schema.Schema{
 				Type:     schema.TypeSet,
@@ -321,14 +311,15 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		nSet := schema.NewSet(vifHash, newNet.([]interface{}))
 
 		additions := expandNetworks(nSet.Difference(oSet).List())
-		log.Printf("Found the following additions: %v from old: %v new: %v\n", nSet.Difference(oSet).List(), oSet, nSet)
+		log.Printf("[DEBUG] Found the following network additions: %v previous set: %v new set: %v\n", nSet.Difference(oSet).List(), oSet, nSet)
 		for _, addition := range additions {
-			updateVif := shouldUpdateVif(*addition, expandNetworks(oSet.List()))
+			updateVif, shouldAttach := shouldUpdateVif(*addition, expandNetworks(oSet.List()))
 
 			if updateVif {
-				if addition.Attached {
+				switch shouldAttach {
+				case true:
 					c.ConnectVIF(addition)
-				} else {
+				case false:
 					c.DisconnectVIF(addition)
 				}
 			} else {
@@ -341,11 +332,11 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		}
 
 		removals := expandNetworks(oSet.Difference(nSet).List())
-		log.Printf("Found the following removals: %v from old: %v new: %v\n", additions, oSet, nSet)
+		log.Printf("[DEBUG] Found the following network removals: %v previous set: %v new set: %v\n", additions, oSet, nSet)
 		for _, removal := range removals {
 			// Since we've already processed the updates we only need to deal with
 			// VIFs that need to be removed.
-			if shouldUpdateVif(*removal, expandNetworks(nSet.List())) {
+			if ok, _ := shouldUpdateVif(*removal, expandNetworks(nSet.List())); ok {
 				continue
 			}
 
@@ -357,14 +348,7 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 
-	vifs, err := c.GetVIFs(vm)
-	log.Printf("[DEBUG] Found VIFs for vm: %v\n", vifs)
-
-	if err != nil {
-		return err
-	}
-
-	return recordToData(*vm, vifs, d)
+	return resourceVmRead(d, m)
 }
 
 func resourceVmDelete(d *schema.ResourceData, m interface{}) error {
@@ -469,7 +453,7 @@ func vifHash(value interface{}) int {
 	return hashcode.String(v)
 }
 
-func shouldUpdateVif(vif client.VIF, vifs []*client.VIF) bool {
+func shouldUpdateVif(vif client.VIF, vifs []*client.VIF) (bool, bool) {
 	found := false
 	vifCopy := vif
 	var vifFound client.VIF
@@ -480,14 +464,10 @@ func shouldUpdateVif(vif client.VIF, vifs []*client.VIF) bool {
 		}
 	}
 
-	if !found {
-		return false
+	vifFound.Attached = !vifFound.Attached
+	if found && vifHash(vifCopy) == vifHash(vifFound) {
+		return true, vifCopy.Attached
 	}
 
-	vifCopy.Attached = !vifCopy.Attached
-	if vifHash(vifCopy) == vifHash(vifFound) {
-		return true
-	}
-
-	return false
+	return false, false
 }
