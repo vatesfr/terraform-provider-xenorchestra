@@ -57,6 +57,14 @@ func resourceRecord() *schema.Resource {
 			Create: &duration,
 			Update: &duration,
 		},
+		SchemaVersion: 1,
+		StateUpgraders: []schema.StateUpgrader{
+			{
+				Version: 0,
+				Type:    vmResourceV0().CoreConfigSchema().ImpliedType(),
+				Upgrade: migrateXOVmStateV0ToV1,
+			},
+		},
 		Schema: map[string]*schema.Schema{
 			"name_label": &schema.Schema{
 				Type:     schema.TypeString,
@@ -246,6 +254,16 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
+func sortNetworksByDevice(networks []map[string]interface{}) []map[string]interface{} {
+
+	sort.Slice(networks, func(i, j int) bool {
+		one, _ := strconv.Atoi(networks[i]["device"].(string))
+		other, _ := strconv.Atoi(networks[j]["device"].(string))
+		return one < other
+	})
+	return networks
+}
+
 func vifsToMapList(vifs []client.VIF) []map[string]interface{} {
 	result := make([]map[string]interface{}, 0, len(vifs))
 	for _, vif := range vifs {
@@ -258,12 +276,7 @@ func vifsToMapList(vifs []client.VIF) []map[string]interface{} {
 		result = append(result, vifMap)
 	}
 
-	sort.Slice(result, func(i, j int) bool {
-		one, _ := strconv.Atoi(result[i]["device"].(string))
-		other, _ := strconv.Atoi(result[j]["device"].(string))
-		return one < other
-	})
-	return result
+	return sortNetworksByDevice(result)
 }
 
 func resourceVmRead(d *schema.ResourceData, m interface{}) error {
