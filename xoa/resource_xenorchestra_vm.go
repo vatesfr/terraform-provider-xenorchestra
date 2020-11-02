@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -114,13 +116,14 @@ func resourceRecord() *schema.Resource {
 				Optional: true,
 			},
 			"network": &schema.Schema{
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Required: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"attached": &schema.Schema{
 							Type:     schema.TypeBool,
-							Computed: true,
+							Default:  true,
+							Optional: true,
 						},
 						"device": &schema.Schema{
 							Type:     schema.TypeString,
@@ -144,16 +147,6 @@ func resourceRecord() *schema.Resource {
 							},
 						},
 					},
-				},
-				Set: func(value interface{}) int {
-					network := value.(map[string]interface{})
-
-					macAddress := network["mac_address"].(string)
-					networkId := network["network_id"].(string)
-					v := fmt.Sprintf("%s-%s", macAddress, networkId)
-					log.Printf("[TRACE] Setting network via %s\n", v)
-
-					return hashcode.String(v)
 				},
 			},
 			"disk": &schema.Schema{
@@ -193,9 +186,9 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 	c := m.(*client.Client)
 
 	network_maps := []map[string]string{}
-	networks := d.Get("network").(*schema.Set)
+	networks := d.Get("network").([]interface{})
 
-	for _, network := range networks.List() {
+	for _, network := range networks {
 		net, _ := network.(map[string]interface{})
 
 		network_maps = append(network_maps, map[string]string{
@@ -253,6 +246,25 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
+func sortNetworksByDevice(networks []*client.VIF) []*client.VIF {
+	sort.Slice(networks, func(i, j int) bool {
+		one, _ := strconv.Atoi(networks[i].Device)
+		other, _ := strconv.Atoi(networks[j].Device)
+		return one < other
+	})
+	return networks
+}
+
+func sortNetworkMapByDevice(networks []map[string]interface{}) []map[string]interface{} {
+
+	sort.Slice(networks, func(i, j int) bool {
+		one, _ := strconv.Atoi(networks[i]["device"].(string))
+		other, _ := strconv.Atoi(networks[j]["device"].(string))
+		return one < other
+	})
+	return networks
+}
+
 func vifsToMapList(vifs []client.VIF) []map[string]interface{} {
 	result := make([]map[string]interface{}, 0, len(vifs))
 	for _, vif := range vifs {
@@ -265,7 +277,7 @@ func vifsToMapList(vifs []client.VIF) []map[string]interface{} {
 		result = append(result, vifMap)
 	}
 
-	return result
+	return sortNetworkMapByDevice(result)
 }
 
 func resourceVmRead(d *schema.ResourceData, m interface{}) error {
@@ -309,37 +321,53 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 
 	if d.HasChange("network") {
 		origNet, newNet := d.GetChange("network")
+		oSet := schema.NewSet(vifHash, origNet.([]interface{}))
+		nSet := schema.NewSet(vifHash, newNet.([]interface{}))
 
-		origNetSet := origNet.(*schema.Set)
-		newNetSet := newNet.(*schema.Set)
-
-		additions := expandNetworks(newNetSet.Difference(origNetSet).List())
-		for _, addition := range additions {
-			_, vifErr := c.CreateVIF(vm, addition)
-
-			if vifErr != nil {
-				return err
-			}
-		}
-
-		removals := expandNetworks(origNetSet.Difference(newNetSet).List())
-
+		removals := expandNetworks(oSet.Difference(nSet).List())
+		log.Printf("[DEBUG] Found the following network removals: %v previous set: %v new set: %v\n", oSet.Difference(nSet).List(), oSet, nSet)
 		for _, removal := range removals {
-			vifErr := c.DeleteVIF(removal)
+			// We will process the updates with the additons so we only need to deal with
+			// VIFs that need to be removed.
+			updateVif, _ := shouldUpdateVif(*removal, expandNetworks(nSet.List()))
+			if updateVif {
+				continue
+			} else {
 
-			if vifErr != nil {
-				return err
+				vifErr := c.DeleteVIF(removal)
+
+				if vifErr != nil {
+					return vifErr
+				}
+			}
+		}
+
+		additions := sortNetworksByDevice(expandNetworks(nSet.Difference(oSet).List()))
+		log.Printf("[DEBUG] Found the following network additions: %v previous set: %v new set: %v\n", nSet.Difference(oSet).List(), oSet, nSet)
+		for _, addition := range additions {
+			updateVif, shouldAttach := shouldUpdateVif(*addition, expandNetworks(oSet.List()))
+			var vifErr error
+			if updateVif {
+				switch shouldAttach {
+				case true:
+					vifErr = c.ConnectVIF(addition)
+				case false:
+					vifErr = c.DisconnectVIF(addition)
+				}
+				if vifErr != nil {
+					return vifErr
+				}
+			} else {
+				_, vifErr := c.CreateVIF(vm, addition)
+
+				if vifErr != nil {
+					return vifErr
+				}
 			}
 		}
 	}
 
-	vifs, err := c.GetVIFs(vm)
-
-	if err != nil {
-		return err
-	}
-
-	return recordToData(*vm, vifs, d)
+	return resourceVmRead(d, m)
 }
 
 func resourceVmDelete(d *schema.ResourceData, m interface{}) error {
@@ -415,4 +443,50 @@ func recordToData(resource client.Vm, vifs []client.VIF, d *schema.ResourceData)
 		return err
 	}
 	return nil
+}
+
+func vifHash(value interface{}) int {
+	var macAddress string
+	var networkId string
+	var device string
+	var attached bool
+	switch t := value.(type) {
+	case client.VIF:
+		macAddress = t.MacAddress
+		networkId = t.Network
+		device = t.Device
+		attached = t.Attached
+	case map[string]interface{}:
+		network := value.(map[string]interface{})
+		macAddress = network["mac_address"].(string)
+		networkId = network["network_id"].(string)
+		device = network["device"].(string)
+		attached = network["attached"].(bool)
+	default:
+		panic(fmt.Sprintf("can't has type %T", t))
+	}
+
+	v := fmt.Sprintf("%s-%s-%s-%t", macAddress, networkId, device, attached)
+	log.Printf("[TRACE] Using the following as input to the VIF hash function: %s\n", v)
+
+	return hashcode.String(v)
+}
+
+func shouldUpdateVif(vif client.VIF, vifs []*client.VIF) (bool, bool) {
+	found := false
+	vifCopy := vif
+	var vifFound client.VIF
+	for _, vifToCheck := range vifs {
+		if vifToCheck.Id == vifCopy.Id || vifToCheck.MacAddress == vifCopy.MacAddress {
+			found = true
+			vifFound = *vifToCheck
+		}
+	}
+
+	vifFound.Attached = !vifFound.Attached
+	if found && vifHash(vifCopy) == vifHash(vifFound) {
+		return true, vifCopy.Attached
+	}
+
+	return false, false
 }
