@@ -246,7 +246,16 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
-func sortNetworksByDevice(networks []map[string]interface{}) []map[string]interface{} {
+func sortNetworksByDevice(networks []*client.VIF) []*client.VIF {
+	sort.Slice(networks, func(i, j int) bool {
+		one, _ := strconv.Atoi(networks[i].Device)
+		other, _ := strconv.Atoi(networks[j].Device)
+		return one < other
+	})
+	return networks
+}
+
+func sortNetworkMapByDevice(networks []map[string]interface{}) []map[string]interface{} {
 
 	sort.Slice(networks, func(i, j int) bool {
 		one, _ := strconv.Atoi(networks[i]["device"].(string))
@@ -268,7 +277,7 @@ func vifsToMapList(vifs []client.VIF) []map[string]interface{} {
 		result = append(result, vifMap)
 	}
 
-	return sortNetworksByDevice(result)
+	return sortNetworkMapByDevice(result)
 }
 
 func resourceVmRead(d *schema.ResourceData, m interface{}) error {
@@ -333,7 +342,7 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 			}
 		}
 
-		additions := expandNetworks(nSet.Difference(oSet).List())
+		additions := sortNetworksByDevice(expandNetworks(nSet.Difference(oSet).List()))
 		log.Printf("[DEBUG] Found the following network additions: %v previous set: %v new set: %v\n", nSet.Difference(oSet).List(), oSet, nSet)
 		for _, addition := range additions {
 			updateVif, shouldAttach := shouldUpdateVif(*addition, expandNetworks(oSet.List()))
