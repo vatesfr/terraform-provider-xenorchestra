@@ -328,7 +328,7 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 				vifErr := c.DeleteVIF(removal)
 
 				if vifErr != nil {
-					return err
+					return vifErr
 				}
 			}
 		}
@@ -337,18 +337,21 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		log.Printf("[DEBUG] Found the following network additions: %v previous set: %v new set: %v\n", nSet.Difference(oSet).List(), oSet, nSet)
 		for _, addition := range additions {
 			updateVif, shouldAttach := shouldUpdateVif(*addition, expandNetworks(oSet.List()))
+			var vifErr error
 			if updateVif {
 				switch shouldAttach {
 				case true:
-					c.ConnectVIF(addition)
+					vifErr = c.ConnectVIF(addition)
 				case false:
-					c.DisconnectVIF(addition)
+					vifErr = c.DisconnectVIF(addition)
+				}
+				if vifErr != nil {
+					return vifErr
 				}
 			} else {
 				_, vifErr := c.CreateVIF(vm, addition)
 
 				if vifErr != nil {
-					// TODO: Add test for this
 					return vifErr
 				}
 			}
@@ -455,7 +458,7 @@ func vifHash(value interface{}) int {
 	}
 
 	v := fmt.Sprintf("%s-%s-%s-%t", macAddress, networkId, device, attached)
-	log.Printf("[TRACE] Setting network via %s\n", v)
+	log.Printf("[TRACE] Using the following as input to the VIF hash function: %s\n", v)
 
 	return hashcode.String(v)
 }
