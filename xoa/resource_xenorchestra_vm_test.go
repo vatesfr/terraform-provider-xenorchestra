@@ -364,6 +364,38 @@ func TestAccXenorchestraVm_addVifAndRemoveVif(t *testing.T) {
 	})
 }
 
+func TestAccXenorchestraVm_replaceExistingVifs(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	firstMacAddress := "02:00:00:00:00:00"
+	secondMacAddress := "02:00:00:00:00:11"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigWithTwoMacAddresses(firstMacAddress, secondMacAddress),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "network.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "network.0.mac_address", firstMacAddress),
+					resource.TestCheckResourceAttr(resourceName, "network.1.mac_address", secondMacAddress)),
+			},
+			{
+				Config: testAccVmConfigWithTwoMacAddresses(secondMacAddress, firstMacAddress),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "network.#", "2"),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.0.*", "data.xenorchestra_network.network", "id"),
+					resource.TestCheckResourceAttr(resourceName, "network.0.mac_address", secondMacAddress),
+					resource.TestCheckResourceAttr(resourceName, "network.1.mac_address", firstMacAddress)),
+			},
+		},
+	})
+}
+
 func TestAccXenorchestraVm_updatesWithoutReboot(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 
@@ -620,6 +652,44 @@ resource "xenorchestra_vm" "bar" {
     }
 }
 `, accTemplateName, accTestPool.Id, macAddress, accDefaultSr.Id)
+}
+
+func testAccVmConfigWithTwoMacAddresses(firstMac, secondMac string) string {
+	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
+data "xenorchestra_template" "template" {
+    name_label = "%s"
+}
+
+data "xenorchestra_network" "network" {
+    // TODO: Replace this with a better solution
+    name_label = "Pool-wide network associated with eth0"
+    pool_id = "%s"
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 4295000000
+    cpus  = 1
+    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    name_label = "Terraform testing"
+    name_description = "description"
+    template = "${data.xenorchestra_template.template.id}"
+    network {
+	network_id = "${data.xenorchestra_network.network.id}"
+	mac_address = "%s"
+    }
+
+    network {
+	network_id = "${data.xenorchestra_network.network.id}"
+	mac_address = "%s"
+    }
+
+    disk {
+      sr_id = "%s"
+      name_label = "xo provider root"
+      size = 10000000000
+    }
+}
+`, accTemplateName, accTestPool.Id, firstMac, secondMac, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithSecondVIF() string {

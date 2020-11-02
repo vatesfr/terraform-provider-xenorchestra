@@ -57,14 +57,6 @@ func resourceRecord() *schema.Resource {
 			Create: &duration,
 			Update: &duration,
 		},
-		SchemaVersion: 1,
-		StateUpgraders: []schema.StateUpgrader{
-			{
-				Version: 0,
-				Type:    vmResourceV0().CoreConfigSchema().ImpliedType(),
-				Upgrade: migrateXOVmStateV0ToV1,
-			},
-		},
 		Schema: map[string]*schema.Schema{
 			"name_label": &schema.Schema{
 				Type:     schema.TypeString,
@@ -323,11 +315,28 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		oSet := schema.NewSet(vifHash, origNet.([]interface{}))
 		nSet := schema.NewSet(vifHash, newNet.([]interface{}))
 
+		removals := expandNetworks(oSet.Difference(nSet).List())
+		log.Printf("[DEBUG] What the fuck Found the following network removals: %v previous set: %v new set: %v\n", oSet.Difference(nSet).List(), oSet, nSet)
+		for _, removal := range removals {
+			// We will process the updates with the additons so we only need to deal with
+			// VIFs that need to be removed.
+			updateVif, _ := shouldUpdateVif(*removal, expandNetworks(nSet.List()))
+			if updateVif {
+				continue
+			} else {
+
+				vifErr := c.DeleteVIF(removal)
+
+				if vifErr != nil {
+					return err
+				}
+			}
+		}
+
 		additions := expandNetworks(nSet.Difference(oSet).List())
 		log.Printf("[DEBUG] Found the following network additions: %v previous set: %v new set: %v\n", nSet.Difference(oSet).List(), oSet, nSet)
 		for _, addition := range additions {
 			updateVif, shouldAttach := shouldUpdateVif(*addition, expandNetworks(oSet.List()))
-
 			if updateVif {
 				switch shouldAttach {
 				case true:
@@ -339,24 +348,9 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 				_, vifErr := c.CreateVIF(vm, addition)
 
 				if vifErr != nil {
-					return err
+					// TODO: Add test for this
+					return vifErr
 				}
-			}
-		}
-
-		removals := expandNetworks(oSet.Difference(nSet).List())
-		log.Printf("[DEBUG] Found the following network removals: %v previous set: %v new set: %v\n", additions, oSet, nSet)
-		for _, removal := range removals {
-			// Since we've already processed the updates we only need to deal with
-			// VIFs that need to be removed.
-			if ok, _ := shouldUpdateVif(*removal, expandNetworks(nSet.List())); ok {
-				continue
-			}
-
-			vifErr := c.DeleteVIF(removal)
-
-			if vifErr != nil {
-				return err
 			}
 		}
 	}
