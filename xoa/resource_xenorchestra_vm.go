@@ -316,7 +316,7 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		nSet := schema.NewSet(vifHash, newNet.([]interface{}))
 
 		removals := expandNetworks(oSet.Difference(nSet).List())
-		log.Printf("[DEBUG] What the fuck Found the following network removals: %v previous set: %v new set: %v\n", oSet.Difference(nSet).List(), oSet, nSet)
+		log.Printf("[DEBUG] Found the following network removals: %v previous set: %v new set: %v\n", oSet.Difference(nSet).List(), oSet, nSet)
 		for _, removal := range removals {
 			// We will process the updates with the additons so we only need to deal with
 			// VIFs that need to be removed.
