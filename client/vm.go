@@ -32,6 +32,7 @@ type Vm struct {
 	Memory             MemoryObject `json:"memory"`
 	PowerState         string       `json:"power_state"`
 	VIFs               []string     `json:"VIFs"`
+	VBDs               []string     `json:"$VBDs"`
 	VirtualizationMode string       `json:"virtualizationMode"`
 	PoolId             string       `json:"$poolId"`
 	Template           string       `json:"template"`
@@ -52,12 +53,6 @@ func (v Vm) Compare(obj interface{}) bool {
 	}
 
 	return false
-}
-
-type VDI struct {
-	SrId      string
-	NameLabel string
-	Size      int
 }
 
 func (c *Client) CreateVm(name_label, name_description, template, cloudConfig, resourceSet string, cpus, memoryMax int, networks []map[string]string, disks []VDI) (*Vm, error) {

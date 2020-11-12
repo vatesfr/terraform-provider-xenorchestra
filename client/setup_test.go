@@ -32,10 +32,12 @@ func CreateNetwork() error {
 
 var integrationTestPrefix string = "xenorchestra-client-"
 var accTestPool Pool
+var accDefaultSr StorageRepository
 var testTemplateName string
 
 func TestMain(m *testing.M) {
 	FindPoolForTests(&accTestPool)
+	FindStorageRepositoryForTests(accTestPool, &accDefaultSr, integrationTestPrefix)
 	CreateNetwork()
 	CreateResourceSet(testResourceSet)
 

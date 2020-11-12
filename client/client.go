@@ -137,6 +137,10 @@ func (c *Client) GetAllObjectsOfType(obj XoObject, response interface{}) error {
 		xoApiType = "VM-template"
 	case VIF:
 		xoApiType = "VIF"
+	case VBD:
+		xoApiType = "VBD"
+	case VDI:
+		xoApiType = "VDI"
 	default:
 		panic(fmt.Sprintf("XO client does not support type: %T", t))
 	}
