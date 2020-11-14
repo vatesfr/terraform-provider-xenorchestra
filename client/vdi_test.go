@@ -26,7 +26,6 @@ func TestGetVmDisks(t *testing.T) {
 		t.Fatalf("failed to find disks for Vm")
 	}
 
-	fmt.Printf("Found disks with %+v", disks)
 	if !validateDisk(disks[0]) {
 		t.Errorf("failed to validate that disks contained expected data")
 	}

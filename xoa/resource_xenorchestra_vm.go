@@ -151,9 +151,6 @@ func resourceRecord() *schema.Resource {
 			"disk": &schema.Schema{
 				Type:     schema.TypeList,
 				Required: true,
-				// DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-				// 	return false
-				// },
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"sr_id": &schema.Schema{
@@ -578,7 +575,6 @@ func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, d 
 
 	disksMapList := disksToMapList(disks)
 	err = d.Set("disk", disksMapList)
-	fmt.Printf("Printing disksMapList: %+v with error: %+v\n", disksMapList, err)
 	if err != nil {
 		return err
 	}

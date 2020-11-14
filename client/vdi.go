@@ -71,7 +71,6 @@ func (c *Client) GetDisks(vm *Vm) ([]Disk, error) {
 		return []Disk{}, errors.New(fmt.Sprintf("failed to coerce %v into VBD", obj))
 	}
 
-	fmt.Printf("Found the following disks before looking for VDIs %+v", disks)
 	vdis := []Disk{}
 	for _, disk := range disks {
 		vdi, err := c.GetParentVDI(disk)
@@ -90,8 +89,9 @@ func (c *Client) GetParentVDI(vbd VBD) (VDI, error) {
 		VDIId: vbd.VDI,
 	})
 
-	// Rather than detect not found errors we let the caller
-	// decide that for themselves.
+	// Rather than detect not found errors for finding the
+	// parent VDI this is considered an error so we return
+	// it to the caller.
 	if err != nil {
 		return VDI{}, err
 	}
@@ -130,15 +130,6 @@ func (c *Client) DeleteDisk(vm Vm, d Disk) error {
 	if err != nil {
 		return err
 	}
-
-	// deleteParams := map[string]interface{}{
-	// 	"id": d.Id,
-	// }
-	// err = c.Call("vbd.delete", deleteParams, &success)
-
-	// if err != nil {
-	// 	return err
-	// }
 
 	vdiDeleteParams := map[string]interface{}{
 		"id": d.VDIId,
