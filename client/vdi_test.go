@@ -94,3 +94,30 @@ func TestCreateDiskAndDeleteDisk(t *testing.T) {
 		}
 	}
 }
+
+func TestDisconnectDiskAndConnectDisk(t *testing.T) {
+	c, err := NewClient(GetConfigFromEnv())
+
+	if err != nil {
+		t.Fatalf("failed to create client with error: %v", err)
+	}
+
+	// TODO: Create Vm for client tests / optionally allow
+	// for running tests against a running Vm
+	vm := Vm{
+		Id: "75e7a443-f9c5-0afa-29ef-c15a33690a00",
+	}
+	disks, err := c.GetDisks(&vm)
+
+	if err != nil {
+		t.Fatalf("failed to retrieve disks with error: %v", err)
+	}
+
+	if err := c.DisconnectDisk(disks[1]); err != nil {
+		t.Fatalf("failed to disconnect disk: %+v with error: %v", disks[1], err)
+	}
+
+	if err := c.ConnectDisk(disks[1]); err != nil {
+		t.Errorf("failed to connect disk: %+v with error: %v", disks[1], err)
+	}
+}

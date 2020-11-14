@@ -131,17 +131,33 @@ func (c *Client) DeleteDisk(vm Vm, d Disk) error {
 		return err
 	}
 
-	deleteParams := map[string]interface{}{
-		"id": d.Id,
-	}
-	err = c.Call("vbd.delete", deleteParams, &success)
+	// deleteParams := map[string]interface{}{
+	// 	"id": d.Id,
+	// }
+	// err = c.Call("vbd.delete", deleteParams, &success)
 
-	if err != nil {
-		return err
-	}
+	// if err != nil {
+	// 	return err
+	// }
 
 	vdiDeleteParams := map[string]interface{}{
 		"id": d.VDIId,
 	}
 	return c.Call("vdi.delete", vdiDeleteParams, &success)
+}
+
+func (c *Client) ConnectDisk(d Disk) error {
+	var success bool
+	params := map[string]interface{}{
+		"id": d.Id,
+	}
+	return c.Call("vbd.connect", params, &success)
+}
+
+func (c *Client) DisconnectDisk(d Disk) error {
+	var success bool
+	params := map[string]interface{}{
+		"id": d.Id,
+	}
+	return c.Call("vbd.disconnect", params, &success)
 }

@@ -357,8 +357,7 @@ func resourceVmRead(d *schema.ResourceData, m interface{}) error {
 	if err != nil {
 		return err
 	}
-	recordToData(*vm, vifs, disks, d)
-	return nil
+	return recordToData(*vm, vifs, disks, d)
 }
 
 func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
@@ -435,6 +434,12 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		log.Printf("[DEBUG] Found the following network removals: %v previous set: %v new set: %v\n", oSet.Difference(nSet).List(), oSet, nSet)
 		for _, removal := range removals {
 
+			updateDisk := shouldUpdateDisk(removal, expandDisks(nSet.List()))
+
+			if updateDisk {
+				continue
+			}
+
 			if err := c.DeleteDisk(*vm, removal); err != nil {
 				return err
 			}
@@ -444,8 +449,24 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		log.Printf("[DEBUG] Found the following network additions: %v previous set: %v new set: %v\n", nSet.Difference(oSet).List(), oSet, nSet)
 		for _, disk := range additions {
 
-			if _, err := c.CreateDisk(*vm, disk); err != nil {
-				return err
+			updateDisk := shouldUpdateDisk(disk, expandDisks(oSet.List()))
+
+			if updateDisk {
+				switch disk.Attached {
+				case true:
+					err = c.ConnectDisk(disk)
+				case false:
+					err = c.DisconnectDisk(disk)
+				}
+
+				if err != nil {
+					return err
+				}
+
+			} else {
+				if _, err := c.CreateDisk(*vm, disk); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -527,9 +548,9 @@ func RecordImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData
 	if err != nil {
 		return rd, err
 	}
-	recordToData(*vm, vifs, disks, d)
+	err = recordToData(*vm, vifs, disks, d)
 
-	return rd, nil
+	return rd, err
 }
 
 func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, d *schema.ResourceData) error {
@@ -632,4 +653,21 @@ func shouldUpdateVif(vif client.VIF, vifs []*client.VIF) (bool, bool) {
 	}
 
 	return false, false
+}
+
+func shouldUpdateDisk(d client.Disk, disks []client.Disk) bool {
+	found := false
+	var diskFound client.Disk
+	for _, disk := range disks {
+		if disk.Id == d.Id {
+			found = true
+			diskFound = disk
+		}
+	}
+
+	diskFound.Attached = !diskFound.Attached
+	if found && diskHash(diskFound) == diskHash(d) {
+		return true
+	}
+	return false
 }

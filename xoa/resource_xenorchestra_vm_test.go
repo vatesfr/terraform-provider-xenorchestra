@@ -50,6 +50,61 @@ func Test_diskHash(t *testing.T) {
 	}
 }
 
+func Test_shouldUpdateDisk(t *testing.T) {
+	cases := []struct {
+		disk                 client.Disk
+		haystack             []client.Disk
+		expectedShouldUpdate bool
+	}{
+		{
+			disk: client.Disk{
+				client.VBD{
+					Id:       "id 1",
+					Attached: true,
+				},
+				client.VDI{},
+			},
+			haystack: []client.Disk{
+				{
+					client.VBD{
+						Id:       "id 1",
+						Attached: false,
+					},
+					client.VDI{},
+				},
+			},
+			expectedShouldUpdate: true,
+		},
+		{
+			disk: client.Disk{
+				client.VBD{
+					Id:       "does not match",
+					Attached: true,
+				},
+				client.VDI{},
+			},
+			haystack: []client.Disk{
+				{
+					client.VBD{
+						Id:       "id 1",
+						Attached: false,
+					},
+					client.VDI{},
+				},
+			},
+			expectedShouldUpdate: false,
+		},
+	}
+
+	for _, c := range cases {
+		shouldUpdate := shouldUpdateDisk(c.disk, c.haystack)
+
+		if c.expectedShouldUpdate != shouldUpdate {
+			t.Errorf("expected shouldUpdate '%t' to match '%t' when comparing disk: %+v against the following disks: %+v", c.expectedShouldUpdate, shouldUpdate, c.disk, c.haystack)
+		}
+	}
+}
+
 func Test_shouldUpdateVif(t *testing.T) {
 	cases := []struct {
 		vif                  client.VIF
@@ -291,6 +346,101 @@ func TestAccXenorchestraVm_attachDisconnectedVif(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttr(resourceName, "network.0.attached", "true"),
 					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
+			},
+		},
+	})
+}
+
+func TestAccXenorchestraVm_attachDisconnectedDisk(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	disconnectDisk := func() {
+		c, err := client.NewClient(client.GetConfigFromEnv())
+		if err != nil {
+			t.Fatalf("failed to create client with error: %v", err)
+		}
+
+		vm, err := c.GetVm(client.Vm{
+			NameLabel: "Terraform testing",
+		})
+
+		if err != nil {
+			t.Fatalf("failed to find VM with error: %v", err)
+		}
+
+		disks, err := c.GetDisks(vm)
+
+		if err != nil {
+			t.Fatalf("failed to retrieve the following vm's disks: %+v with error: %v", vm, err)
+		}
+
+		err = c.DisconnectDisk(disks[0])
+		if err != nil {
+			t.Fatalf("failed to disconnect disk with error: %v", err)
+		}
+	}
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfig(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "disk.#", "1"),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
+			},
+			{
+				PreConfig: disconnectDisk,
+				Config:    testAccVmConfigWithAdditionalDisk(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "disk.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "disk.0.attached", "false")),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccVmConfig(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "disk.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "disk.0.attached", "true")),
+			},
+		},
+	})
+}
+
+func TestAccXenorchestraVm_disconnectAttachedDisk(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfig(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "disk.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "disk.0.attached", "true")),
+			},
+			{
+				Config:             testAccVmConfigDisconnectedDisk(),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccVmConfigDisconnectedDisk(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "disk.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "disk.0.attached", "false")),
 			},
 		},
 	})
@@ -623,6 +773,39 @@ resource "xenorchestra_vm" "bar" {
       sr_id = "%s"
       name_label = "disk 1"
       size = 10001317888
+    }
+}
+`, accTemplateName, accTestPool.Id, accDefaultSr.Id)
+}
+
+func testAccVmConfigDisconnectedDisk() string {
+	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
+data "xenorchestra_template" "template" {
+    name_label = "%s"
+}
+
+data "xenorchestra_network" "network" {
+    // TODO: Replace this with a better solution
+    name_label = "Pool-wide network associated with eth0"
+    pool_id = "%s"
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 4295000000
+    cpus  = 1
+    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    name_label = "Terraform testing"
+    name_description = "description"
+    template = "${data.xenorchestra_template.template.id}"
+    network {
+	network_id = "${data.xenorchestra_network.network.id}"
+    }
+
+    disk {
+      sr_id = "%s"
+      name_label = "disk 1"
+      size = 10001317888
+      attached = false
     }
 }
 `, accTemplateName, accTestPool.Id, accDefaultSr.Id)
