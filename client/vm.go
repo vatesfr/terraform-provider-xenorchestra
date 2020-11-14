@@ -40,6 +40,7 @@ type Vm struct {
 	HA                 string       `json:"high_availability"`
 	CloudConfig        string       `json:"cloudConfig"`
 	ResourceSet        string       `json:"resourceSet,omitempty"`
+	Tags               []string     `json:"tags"`
 }
 
 func (v Vm) Compare(obj interface{}) bool {
@@ -50,6 +51,19 @@ func (v Vm) Compare(obj interface{}) bool {
 
 	if v.NameLabel != "" && v.NameLabel == other.NameLabel {
 		return true
+	}
+
+	tagCount := len(v.Tags)
+	if tagCount > 0 {
+		for _, tag := range v.Tags {
+			if stringInSlice(tag, other.Tags) {
+				tagCount--
+			}
+		}
+
+		if tagCount == 0 {
+			return true
+		}
 	}
 
 	return false
@@ -213,4 +227,23 @@ func (c *Client) waitForModifyVm(id string, timeout time.Duration) error {
 	}
 	_, err := stateConf.WaitForState()
 	return err
+}
+
+func FindVmForTests(vm *Vm, tag string) error {
+	c, err := NewClient(GetConfigFromEnv())
+	if err != nil {
+		return fmt.Errorf("error getting client: %s", err)
+	}
+
+	vmRes, err := c.GetVm(Vm{
+		Tags: []string{tag},
+	})
+
+	if err != nil {
+		return err
+	}
+
+	*vm = *vmRes
+
+	return nil
 }

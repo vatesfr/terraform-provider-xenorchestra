@@ -34,7 +34,12 @@ func (c *Client) RemoveTag(id, tag string) error {
 	return nil
 }
 
-func (c *Client) GetObjectsWithTags(tags []string) ([]string, error) {
+type Object struct {
+	Id   string
+	Type string
+}
+
+func (c *Client) GetObjectsWithTags(tags []string) ([]Object, error) {
 	var objsRes struct {
 		Objects map[string]interface{} `json:"-"`
 	}
@@ -46,7 +51,7 @@ func (c *Client) GetObjectsWithTags(tags []string) ([]string, error) {
 	c.Call("xo.getAllObjects", params, &objsRes.Objects)
 	log.Printf("[DEBUG] Found objects with tags `%s`: %v\n", tags, objsRes)
 
-	t := []string{}
+	t := []Object{}
 	for _, resObject := range objsRes.Objects {
 		obj, ok := resObject.(map[string]interface{})
 
@@ -55,7 +60,11 @@ func (c *Client) GetObjectsWithTags(tags []string) ([]string, error) {
 		}
 
 		id := obj["id"].(string)
-		t = append(t, id)
+		objType := obj["type"].(string)
+		t = append(t, Object{
+			Id:   id,
+			Type: objType,
+		})
 	}
 	return t, nil
 }
@@ -75,7 +84,7 @@ func RemoveTagFromAllObjects(tag string) func(string) error {
 
 		for _, object := range objects {
 			log.Printf("[DEBUG] Remove tag `%s` on object `%s`\n", tag, object)
-			err = c.RemoveTag(object, tag)
+			err = c.RemoveTag(object.Id, tag)
 
 			if err != nil {
 				log.Printf("error remove tag `%s` during sweep: %v", tag, err)

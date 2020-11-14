@@ -34,10 +34,12 @@ var integrationTestPrefix string = "xenorchestra-client-"
 var accTestPool Pool
 var accDefaultSr StorageRepository
 var testTemplateName string
+var accVm Vm
 
 func TestMain(m *testing.M) {
 	FindPoolForTests(&accTestPool)
 	FindStorageRepositoryForTests(accTestPool, &accDefaultSr, integrationTestPrefix)
+	FindVmForTests(&accVm, integrationTestPrefix)
 	CreateNetwork()
 	CreateResourceSet(testResourceSet)
 

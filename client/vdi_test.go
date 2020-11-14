@@ -12,11 +12,7 @@ func TestGetVmDisks(t *testing.T) {
 		t.Fatalf("failed to create client with error: %v", err)
 	}
 
-	// TODO: Create Vm for client tests / optionally allow
-	// for running tests against a running Vm
-	disks, err := c.GetDisks(&Vm{
-		Id: "75e7a443-f9c5-0afa-29ef-c15a33690a00",
-	})
+	disks, err := c.GetDisks(&accVm)
 
 	if err != nil {
 		t.Fatalf("failed to get disks of VM with error: %v", err)
@@ -57,14 +53,9 @@ func TestCreateDiskAndDeleteDisk(t *testing.T) {
 		t.Fatalf("failed to create client with error: %v", err)
 	}
 
-	// TODO: Create Vm for client tests / optionally allow
-	// for running tests against a running Vm
-	vm := Vm{
-		Id: "75e7a443-f9c5-0afa-29ef-c15a33690a00",
-	}
 	diskNameLabel := fmt.Sprintf("%stesting", integrationTestPrefix)
 	diskId, err := c.CreateDisk(
-		vm,
+		accVm,
 		Disk{
 			VBD{},
 			VDI{
@@ -79,14 +70,14 @@ func TestCreateDiskAndDeleteDisk(t *testing.T) {
 		t.Fatalf("failed to create disk with error: %v", err)
 	}
 
-	disks, err := c.GetDisks(&vm)
+	disks, err := c.GetDisks(&accVm)
 
 	for _, disk := range disks {
 		if disk.NameLabel != diskNameLabel {
 			continue
 		}
 
-		err = c.DeleteDisk(vm, disk)
+		err = c.DeleteDisk(accVm, disk)
 
 		if err != nil {
 			t.Errorf("failed to delete disk with id: %s with error: %v", diskId, err)
@@ -101,12 +92,7 @@ func TestDisconnectDiskAndConnectDisk(t *testing.T) {
 		t.Fatalf("failed to create client with error: %v", err)
 	}
 
-	// TODO: Create Vm for client tests / optionally allow
-	// for running tests against a running Vm
-	vm := Vm{
-		Id: "75e7a443-f9c5-0afa-29ef-c15a33690a00",
-	}
-	disks, err := c.GetDisks(&vm)
+	disks, err := c.GetDisks(&accVm)
 
 	if err != nil {
 		t.Fatalf("failed to retrieve disks with error: %v", err)
