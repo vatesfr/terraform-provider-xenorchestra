@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -229,21 +230,54 @@ func (c *Client) waitForModifyVm(id string, timeout time.Duration) error {
 	return err
 }
 
-func FindVmForTests(vm *Vm, tag string) error {
+func FindOrCreateVmForTests(vm *Vm, srId, networkId, templateName, tag string) {
 	c, err := NewClient(GetConfigFromEnv())
 	if err != nil {
-		return fmt.Errorf("error getting client: %s", err)
+		fmt.Printf("failed to create client with error: %v\n", err)
+		os.Exit(-1)
 	}
 
-	vmRes, err := c.GetVm(Vm{
+	var vmRes *Vm
+	vmRes, err = c.GetVm(Vm{
 		Tags: []string{tag},
 	})
 
+	if _, ok := err.(NotFound); ok {
+		// Create Vm with the right tag and
+		// vmRes, err = c.CreateVm(
+		// 	fmt.Sprintf("%sterraform-testing", tag),
+		// 	"",
+		// 	templateName,
+		// 	"",
+		// 	"",
+		// 	1,
+		// 	2147483648,
+		// 	[]map[string]string{
+		// 		{
+		// 			"network_id": networkId,
+		// 		},
+		// 	},
+		// 	[]VDI{
+		// 		{
+		// 			SrId:      srId,
+		// 			NameLabel: "terraform xenorchestra client testing",
+		// 			Size:      16106127360,
+		// 		},
+		// 		{
+		// 			SrId:      srId,
+		// 			NameLabel: "disk2",
+		// 			Size:      16106127360,
+		// 		},
+		// 	},
+		// )
+		fmt.Println("Creating a vm for the client tests is not implemented yet")
+		os.Exit(-1)
+	}
+
 	if err != nil {
-		return err
+		fmt.Println(fmt.Sprintf("failed to find vm for the client tests with error: %v\n", err))
+		os.Exit(-1)
 	}
 
 	*vm = *vmRes
-
-	return nil
 }

@@ -1,7 +1,6 @@
 package client
 
 import (
-	"fmt"
 	"os"
 	"testing"
 )
@@ -16,39 +15,40 @@ func CreateResourceSet(rs ResourceSet) error {
 	return err
 }
 
-func CreateNetwork() error {
+func CreateNetwork(network *Network) error {
 	c, err := NewClient(GetConfigFromEnv())
 
 	if err != nil {
 		return err
 	}
 
-	_, err = c.CreateNetwork(Network{
+	net, err := c.CreateNetwork(Network{
 		NameLabel: testNetworkName,
 		PoolId:    accTestPool.Id,
 	})
-	return err
+
+	if err != nil {
+		return err
+	}
+	*network = *net
+	return nil
 }
 
 var integrationTestPrefix string = "xenorchestra-client-"
 var accTestPool Pool
 var accDefaultSr StorageRepository
-var testTemplateName string
+var accDefaultNetwork Network
+var testTemplate Template
 var accVm Vm
 
 func TestMain(m *testing.M) {
+
+	FindTemplateForTests(&testTemplate)
 	FindPoolForTests(&accTestPool)
 	FindStorageRepositoryForTests(accTestPool, &accDefaultSr, integrationTestPrefix)
-	FindVmForTests(&accVm, integrationTestPrefix)
-	CreateNetwork()
+	CreateNetwork(&accDefaultNetwork)
+	FindOrCreateVmForTests(&accVm, accDefaultSr.Id, accDefaultNetwork.Id, testTemplate.Id, integrationTestPrefix)
 	CreateResourceSet(testResourceSet)
-
-	var found bool
-	testTemplateName, found = os.LookupEnv("XOA_TEMPLATE")
-	if !found {
-		fmt.Println("The XOA_TEMPLATE environment variable must be set for the tests")
-		os.Exit(-1)
-	}
 
 	code := m.Run()
 

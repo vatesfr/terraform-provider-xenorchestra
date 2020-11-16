@@ -1,7 +1,6 @@
 package client
 
 import (
-	"os"
 	"testing"
 )
 
@@ -13,9 +12,7 @@ func TestGetVIFs(t *testing.T) {
 		t.Fatalf("failed to create client with error: %v", err)
 	}
 
-	vm := findVmForTest(c, t)
-
-	vifs, err := c.GetVIFs(&vm)
+	vifs, err := c.GetVIFs(&accVm)
 
 	for _, vif := range vifs {
 		if vif.Device == "" {
@@ -30,8 +27,8 @@ func TestGetVIFs(t *testing.T) {
 			t.Errorf("expecting `Network` field to be set on VIF")
 		}
 
-		if vif.VmId != vm.Id {
-			t.Errorf("VIF's VmId `%s` should have matched: %v", vif.VmId, vm)
+		if vif.VmId != accVm.Id {
+			t.Errorf("VIF's VmId `%s` should have matched: %v", vif.VmId, accVm)
 		}
 
 		if len(vif.Device) == 0 {
@@ -52,9 +49,7 @@ func TestGetVIF(t *testing.T) {
 		t.Fatalf("failed to create client with error: %v", err)
 	}
 
-	vm := findVmForTest(c, t)
-
-	vifs, err := c.GetVIFs(&vm)
+	vifs, err := c.GetVIFs(&accVm)
 
 	expectedVIF := vifs[0]
 
@@ -71,47 +66,20 @@ func TestGetVIF(t *testing.T) {
 	}
 }
 
-func findVmForTest(c *Client, t *testing.T) Vm {
-
-	vms, err := c.GetVms()
-
-	if err != nil {
-		t.Fatalf("failed to get VMs with error: %v", err)
-	}
-
-	if len(vms) < 1 {
-		t.Fatalf("request returned %d vm results, expected atleast 1", len(vms))
-	}
-	return vms[0]
-}
-
 func TestCreateVIF_DeleteVIF(t *testing.T) {
-	if p := os.Getenv("XOA_POOL"); p != "xenserver-ddelnano" {
-		t.Skip("This test isn't safe to run outside of my personal deployment yet!")
-	}
-
 	c, err := NewClient(GetConfigFromEnv())
 
 	if err != nil {
 		t.Fatalf("failed to create client with error: %v", err)
 	}
 
-	vmName := "XOA"
-	vm, err := c.GetVm(Vm{NameLabel: vmName})
+	vm, err := c.GetVm(accVm)
 
 	if err != nil {
 		t.Fatalf("failed to get VM with error: %v", err)
 	}
 
-	pifs, err := c.GetPIFByDevice("eth1", -1)
-
-	if err != nil {
-		t.Fatalf("failed to get PIF with error: %v", err)
-	}
-
-	pif := pifs[0]
-
-	vif, err := c.CreateVIF(vm, &VIF{Network: pif.Network})
+	vif, err := c.CreateVIF(vm, &VIF{Network: accDefaultNetwork.Id})
 
 	if err != nil {
 		t.Fatalf("failed to create VIF with error: %v", err)
