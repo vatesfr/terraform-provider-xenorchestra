@@ -1,7 +1,6 @@
 package xoa
 
 import (
-	"bytes"
 	"fmt"
 	"log"
 	"net"
@@ -150,7 +149,7 @@ func resourceRecord() *schema.Resource {
 				},
 			},
 			"disk": &schema.Schema{
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Required: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -166,16 +165,24 @@ func resourceRecord() *schema.Resource {
 							Type:     schema.TypeInt,
 							Required: true,
 						},
+						"attached": &schema.Schema{
+							Type:     schema.TypeBool,
+							Default:  true,
+							Optional: true,
+						},
+						"position": &schema.Schema{
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"vdi_id": &schema.Schema{
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"vbd_id": &schema.Schema{
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
-				},
-				Set: func(value interface{}) int {
-					var buf bytes.Buffer
-					disk := value.(map[string]interface{})
-
-					buf.WriteString(fmt.Sprintf("%s-", disk["sr_id"].(string)))
-					buf.WriteString(fmt.Sprintf("%s-", disk["name_label"].(string)))
-					buf.WriteString(fmt.Sprintf("%d-", disk["size"]))
-					return hashcode.String(buf.String())
 				},
 			},
 		},
@@ -199,9 +206,9 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 
 	vdis := []client.VDI{}
 
-	disks := d.Get("disk").(*schema.Set)
+	disks := d.Get("disk").([]interface{})
 
-	for _, disk := range disks.List() {
+	for _, disk := range disks {
 		vdi, _ := disk.(map[string]interface{})
 
 		vdis = append(vdis, client.VDI{
@@ -246,6 +253,15 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
+func sortDiskByPostion(disks []client.Disk) []client.Disk {
+	sort.Slice(disks, func(i, j int) bool {
+		one, _ := strconv.Atoi(disks[i].Position)
+		other, _ := strconv.Atoi(disks[j].Position)
+		return one < other
+	})
+	return disks
+}
+
 func sortNetworksByDevice(networks []*client.VIF) []*client.VIF {
 	sort.Slice(networks, func(i, j int) bool {
 		one, _ := strconv.Atoi(networks[i].Device)
@@ -263,6 +279,37 @@ func sortNetworkMapByDevice(networks []map[string]interface{}) []map[string]inte
 		return one < other
 	})
 	return networks
+}
+
+func sortDiskMapByPostion(networks []map[string]interface{}) []map[string]interface{} {
+
+	sort.Slice(networks, func(i, j int) bool {
+		one, _ := strconv.Atoi(networks[i]["position"].(string))
+		other, _ := strconv.Atoi(networks[j]["position"].(string))
+		return one < other
+	})
+	return networks
+}
+
+func disksToMapList(disks []client.Disk) []map[string]interface{} {
+	result := make([]map[string]interface{}, 0, len(disks))
+	for _, disk := range disks {
+		if disk.NameLabel == "XO CloudConfigDrive" {
+			continue
+		}
+		diskMap := map[string]interface{}{
+			"attached":   disk.Attached,
+			"vbd_id":     disk.Id,
+			"vdi_id":     disk.VDIId,
+			"position":   disk.Position,
+			"name_label": disk.NameLabel,
+			"size":       disk.Size,
+			"sr_id":      disk.SrId,
+		}
+		result = append(result, diskMap)
+	}
+
+	return sortDiskMapByPostion(result)
 }
 
 func vifsToMapList(vifs []client.VIF) []map[string]interface{} {
@@ -299,8 +346,13 @@ func resourceVmRead(d *schema.ResourceData, m interface{}) error {
 	if err != nil {
 		return err
 	}
-	recordToData(*vm, vifs, d)
-	return nil
+
+	disks, err := c.GetDisks(vm)
+
+	if err != nil {
+		return err
+	}
+	return recordToData(*vm, vifs, disks, d)
 }
 
 func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
@@ -367,6 +419,53 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 
+	if d.HasChange("disk") {
+		oDisk, nDisk := d.GetChange("disk")
+
+		oSet := schema.NewSet(diskHash, oDisk.([]interface{}))
+		nSet := schema.NewSet(diskHash, nDisk.([]interface{}))
+
+		removals := expandDisks(oSet.Difference(nSet).List())
+		log.Printf("[DEBUG] Found the following disk removals: %v previous set: %v new set: %v\n", oSet.Difference(nSet).List(), oSet, nSet)
+		for _, removal := range removals {
+
+			updateDisk := shouldUpdateDisk(removal, expandDisks(nSet.List()))
+
+			if updateDisk {
+				continue
+			}
+
+			if err := c.DeleteDisk(*vm, removal); err != nil {
+				return err
+			}
+		}
+
+		additions := sortDiskByPostion(expandDisks(nSet.Difference(oSet).List()))
+		log.Printf("[DEBUG] Found the following disk additions: %v previous set: %v new set: %v\n", nSet.Difference(oSet).List(), oSet, nSet)
+		for _, disk := range additions {
+
+			updateDisk := shouldUpdateDisk(disk, expandDisks(oSet.List()))
+
+			if updateDisk {
+				switch disk.Attached {
+				case true:
+					err = c.ConnectDisk(disk)
+				case false:
+					err = c.DisconnectDisk(disk)
+				}
+
+				if err != nil {
+					return err
+				}
+
+			} else {
+				if _, err := c.CreateDisk(*vm, disk); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
 	return resourceVmRead(d, m)
 }
 
@@ -380,6 +479,29 @@ func resourceVmDelete(d *schema.ResourceData, m interface{}) error {
 	}
 	d.SetId("")
 	return nil
+}
+
+func expandDisks(disks []interface{}) []client.Disk {
+	result := make([]client.Disk, 0, len(disks))
+
+	for _, disk := range disks {
+		data := disk.(map[string]interface{})
+
+		result = append(result, client.Disk{
+			client.VBD{
+				Id:       data["vbd_id"].(string),
+				Attached: data["attached"].(bool),
+			},
+			client.VDI{
+				VDIId:     data["vdi_id"].(string),
+				NameLabel: data["name_label"].(string),
+				SrId:      data["sr_id"].(string),
+				Size:      data["size"].(int),
+			},
+		})
+	}
+
+	return result
 }
 
 func expandNetworks(networks []interface{}) []*client.VIF {
@@ -415,12 +537,18 @@ func RecordImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData
 	if err != nil {
 		return rd, err
 	}
-	recordToData(*vm, vifs, d)
 
-	return rd, nil
+	disks, err := c.GetDisks(vm)
+
+	if err != nil {
+		return rd, err
+	}
+	err = recordToData(*vm, vifs, disks, d)
+
+	return rd, err
 }
 
-func recordToData(resource client.Vm, vifs []client.VIF, d *schema.ResourceData) error {
+func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, d *schema.ResourceData) error {
 	d.SetId(resource.Id)
 	// d.Set("cloud_config", resource.CloudConfig)
 	// err := d.Set("memory_max", resource.Memory.Size)
@@ -442,7 +570,37 @@ func recordToData(resource client.Vm, vifs []client.VIF, d *schema.ResourceData)
 	if err != nil {
 		return err
 	}
+
+	disksMapList := disksToMapList(disks)
+	err = d.Set("disk", disksMapList)
+	if err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func diskHash(value interface{}) int {
+	var srId string
+	var nameLabel string
+	var size int
+	var attached bool
+	switch t := value.(type) {
+	case client.Disk:
+		srId = t.SrId
+		nameLabel = t.NameLabel
+		size = t.Size
+		attached = t.Attached
+	case map[string]interface{}:
+		srId = t["sr_id"].(string)
+		nameLabel = t["name_label"].(string)
+		size = t["size"].(int)
+		attached = t["attached"].(bool)
+	default:
+		panic(fmt.Sprintf("disk cannot be hashed with type %T", t))
+	}
+	v := fmt.Sprintf("%s-%s-%d-%t", nameLabel, srId, size, attached)
+	return hashcode.String(v)
 }
 
 func vifHash(value interface{}) int {
@@ -489,4 +647,21 @@ func shouldUpdateVif(vif client.VIF, vifs []*client.VIF) (bool, bool) {
 	}
 
 	return false, false
+}
+
+func shouldUpdateDisk(d client.Disk, disks []client.Disk) bool {
+	found := false
+	var diskFound client.Disk
+	for _, disk := range disks {
+		if disk.Id == d.Id {
+			found = true
+			diskFound = disk
+		}
+	}
+
+	diskFound.Attached = !diskFound.Attached
+	if found && diskHash(diskFound) == diskHash(d) {
+		return true
+	}
+	return false
 }

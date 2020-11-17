@@ -1,6 +1,6 @@
 .PHONY: import testacc dist
 
-
+TIMEOUT ?= 40m
 ifdef TEST
     TEST := ./... -run $(TEST)
 else
@@ -28,4 +28,4 @@ apply:
 	terraform apply
 
 testacc:
-	TF_ACC=1 $(TF_LOG) go test $(TEST) -v -count 1 -timeout 40m
+	TF_ACC=1 $(TF_LOG) go test $(TEST) -v -count 1 -timeout $(TIMEOUT)

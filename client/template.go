@@ -2,6 +2,8 @@ package client
 
 import (
 	"errors"
+	"fmt"
+	"os"
 )
 
 type Template struct {
@@ -41,4 +43,35 @@ func (c *Client) GetTemplate(template Template) ([]Template, error) {
 	}
 
 	return templates, nil
+}
+
+func FindTemplateForTests(template *Template) {
+	var found bool
+	templateName, found := os.LookupEnv("XOA_TEMPLATE")
+	if !found {
+		fmt.Println("The XOA_TEMPLATE environment variable must be set for the tests")
+		os.Exit(-1)
+	}
+
+	c, err := NewClient(GetConfigFromEnv())
+	if err != nil {
+		fmt.Printf("failed to create client with error: %v", err)
+		os.Exit(-1)
+	}
+
+	templates, err := c.GetTemplate(Template{
+		NameLabel: templateName,
+	})
+
+	if err != nil {
+		fmt.Printf("failed to find templates with error: %v\n", err)
+		os.Exit(-1)
+	}
+
+	l := len(templates)
+	if l != 1 {
+		fmt.Printf("found %d templates when expected to find 1. templates found: %v\n", l, templates)
+		os.Exit(-1)
+	}
+	*template = templates[0]
 }

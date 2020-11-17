@@ -47,5 +47,5 @@ data "xenorchestra_template" "template" {
     name_label = "%s"
     pool_id = "%s"
 }
-`, accTemplateName, poolId)
+`, testTemplate.NameLabel, poolId)
 }

@@ -11,9 +11,9 @@ func TestGetTemplate(t *testing.T) {
 		err          error
 	}{
 		{
-			templateName: testTemplateName,
+			templateName: testTemplate.NameLabel,
 			template: Template{
-				NameLabel: testTemplateName,
+				NameLabel: testTemplate.NameLabel,
 			},
 			err: nil,
 		},

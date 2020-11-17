@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -32,6 +33,7 @@ type Vm struct {
 	Memory             MemoryObject `json:"memory"`
 	PowerState         string       `json:"power_state"`
 	VIFs               []string     `json:"VIFs"`
+	VBDs               []string     `json:"$VBDs"`
 	VirtualizationMode string       `json:"virtualizationMode"`
 	PoolId             string       `json:"$poolId"`
 	Template           string       `json:"template"`
@@ -39,6 +41,7 @@ type Vm struct {
 	HA                 string       `json:"high_availability"`
 	CloudConfig        string       `json:"cloudConfig"`
 	ResourceSet        string       `json:"resourceSet,omitempty"`
+	Tags               []string     `json:"tags"`
 }
 
 func (v Vm) Compare(obj interface{}) bool {
@@ -51,13 +54,20 @@ func (v Vm) Compare(obj interface{}) bool {
 		return true
 	}
 
-	return false
-}
+	tagCount := len(v.Tags)
+	if tagCount > 0 {
+		for _, tag := range v.Tags {
+			if stringInSlice(tag, other.Tags) {
+				tagCount--
+			}
+		}
 
-type VDI struct {
-	SrId      string
-	NameLabel string
-	Size      int
+		if tagCount == 0 {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (c *Client) CreateVm(name_label, name_description, template, cloudConfig, resourceSet string, cpus, memoryMax int, networks []map[string]string, disks []VDI) (*Vm, error) {
@@ -69,12 +79,21 @@ func (c *Client) CreateVm(name_label, name_description, template, cloudConfig, r
 		})
 	}
 	existingDisks := map[string]interface{}{}
+	vdis := []interface{}{}
 
 	for idx, disk := range disks {
-		existingDisks[fmt.Sprintf("%d", idx)] = map[string]interface{}{
+		d := map[string]interface{}{
 			"$SR":        disk.SrId,
 			"name_label": disk.NameLabel,
 			"size":       disk.Size,
+		}
+
+		if idx == 0 {
+			existingDisks[fmt.Sprintf("%d", idx)] = d
+		} else {
+			d["type"] = "user"
+			d["SR"] = disk.SrId
+			vdis = append(vdis, d)
 		}
 	}
 	params := map[string]interface{}{
@@ -88,6 +107,7 @@ func (c *Client) CreateVm(name_label, name_description, template, cloudConfig, r
 		"CPUs":             cpus,
 		"memoryMax":        memoryMax,
 		"existingDisks":    existingDisks,
+		"VDIs":             vdis,
 		"VIFs":             vifs,
 	}
 
@@ -218,4 +238,57 @@ func (c *Client) waitForModifyVm(id string, timeout time.Duration) error {
 	}
 	_, err := stateConf.WaitForState()
 	return err
+}
+
+func FindOrCreateVmForTests(vm *Vm, srId, networkId, templateName, tag string) {
+	c, err := NewClient(GetConfigFromEnv())
+	if err != nil {
+		fmt.Printf("failed to create client with error: %v\n", err)
+		os.Exit(-1)
+	}
+
+	var vmRes *Vm
+	vmRes, err = c.GetVm(Vm{
+		Tags: []string{tag},
+	})
+
+	if _, ok := err.(NotFound); ok {
+		// TODO: Create vm for use during tests (#90)
+		// Create Vm with the right tag and
+		// vmRes, err = c.CreateVm(
+		// 	fmt.Sprintf("%sterraform-testing", tag),
+		// 	"",
+		// 	templateName,
+		// 	"",
+		// 	"",
+		// 	1,
+		// 	2147483648,
+		// 	[]map[string]string{
+		// 		{
+		// 			"network_id": networkId,
+		// 		},
+		// 	},
+		// 	[]VDI{
+		// 		{
+		// 			SrId:      srId,
+		// 			NameLabel: "terraform xenorchestra client testing",
+		// 			Size:      16106127360,
+		// 		},
+		// 		{
+		// 			SrId:      srId,
+		// 			NameLabel: "disk2",
+		// 			Size:      16106127360,
+		// 		},
+		// 	},
+		// )
+		fmt.Println("Creating a vm for the client tests is not implemented yet")
+		os.Exit(-1)
+	}
+
+	if err != nil {
+		fmt.Println(fmt.Sprintf("failed to find vm for the client tests with error: %v\n", err))
+		os.Exit(-1)
+	}
+
+	*vm = *vmRes
 }
