@@ -369,6 +369,9 @@ func TestAccXenorchestraVm_attachDisconnectedDisk(t *testing.T) {
 
 		disks, err := c.GetDisks(vm)
 
+		// Sleep so that the VM has a change to load the PV drivers
+		time.Sleep(120 * time.Second)
+
 		if err != nil {
 			t.Fatalf("failed to retrieve the following vm's disks: %+v with error: %v", vm, err)
 		}
@@ -490,6 +493,9 @@ func TestAccXenorchestraVm_addAndRemoveDisksToVm(t *testing.T) {
 					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
 			},
 			{
+				PreConfig: func() {
+					time.Sleep(20 * time.Second)
+				},
 				Config: testAccVmConfigWithAdditionalDisk(),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
@@ -498,6 +504,9 @@ func TestAccXenorchestraVm_addAndRemoveDisksToVm(t *testing.T) {
 					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
 			},
 			{
+				PreConfig: func() {
+					time.Sleep(20 * time.Second)
+				},
 				Config: testAccVmConfig(),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
@@ -768,7 +777,7 @@ resource "xenorchestra_vm" "bar" {
     disk {
       sr_id = "%s"
       name_label = "disk 1"
-      size = 10000000000
+      size = 10001317888
     }
 }
 `, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id)
@@ -904,7 +913,7 @@ resource "xenorchestra_vm" "bar" {
     disk {
       sr_id = "%s"
       name_label = "disk 1"
-      size = 10000000000
+      size = 10001317888
     }
 }
 `, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id)
@@ -937,7 +946,7 @@ resource "xenorchestra_vm" "bar" {
     disk {
       sr_id = "%s"
       name_label = "disk 1"
-      size = 10000000000
+      size = 10001317888
     }
 }
 `, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id)
@@ -970,7 +979,7 @@ resource "xenorchestra_vm" "bar" {
     disk {
       sr_id = "%s"
       name_label = "disk 1"
-      size = 10000000000
+      size = 10001317888
     }
 }
 `, testTemplate.NameLabel, accTestPool.Id, macAddress, accDefaultSr.Id)
@@ -1008,7 +1017,7 @@ resource "xenorchestra_vm" "bar" {
     disk {
       sr_id = "%s"
       name_label = "disk 1"
-      size = 10000000000
+      size = 10001317888
     }
 }
 `, testTemplate.NameLabel, accTestPool.Id, firstMac, secondMac, accDefaultSr.Id)
@@ -1049,7 +1058,7 @@ resource "xenorchestra_vm" "bar" {
     disk {
       sr_id = "%s"
       name_label = "disk 1"
-      size = 10000000000
+      size = 10001317888
     }
 }
 `, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id)
@@ -1093,7 +1102,7 @@ resource "xenorchestra_vm" "bar" {
     disk {
       sr_id = "%s"
       name_label = "disk 1"
-      size = 10000000000
+      size = 10001317888
     }
 }
 `, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id)
@@ -1129,7 +1138,7 @@ resource "xenorchestra_vm" "bar" {
     disk {
       sr_id = "%s"
       name_label = "disk 1"
-      size = 10000000000
+      size = 10001317888
     }
 }
 `, testTemplate.NameLabel, accTestPool.Id, nameLabel, nameDescription, ha, powerOn, accDefaultSr.Id)
@@ -1153,7 +1162,7 @@ resource "xenorchestra_vm" "bar" {
     disk {
       sr_id = "%s"
       name_label = "disk 1"
-      size = 10000000000
+      size = 10001317888
     }
 }
 `, accDefaultSr.Id)
@@ -1215,7 +1224,7 @@ resource "xenorchestra_vm" "bar" {
     disk {
       sr_id = "%s"
       name_label = "disk 1"
-      size = 10000000000
+      size = 10001317888
     }
 }
 `, accDefaultSr.Id)
