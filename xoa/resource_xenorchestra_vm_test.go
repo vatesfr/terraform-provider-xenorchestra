@@ -751,7 +751,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10000000000
     }
 }
-`, accTemplateName, accTestPool.Id, accDefaultSr.Id)
+`, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id)
 }
 
 func testAccVmConfig() string {
@@ -783,7 +783,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, accTemplateName, accTestPool.Id, accDefaultSr.Id)
+`, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id)
 }
 
 func testAccVmConfigDisconnectedDisk() string {
@@ -816,7 +816,7 @@ resource "xenorchestra_vm" "bar" {
       attached = false
     }
 }
-`, accTemplateName, accTestPool.Id, accDefaultSr.Id)
+`, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithAdditionalDisk() string {
@@ -854,7 +854,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, accTemplateName, accTestPool.Id, accDefaultSr.Id, accDefaultSr.Id)
+`, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id, accDefaultSr.Id)
 }
 
 func testAccVmVifAttachedConfig() string {
@@ -887,7 +887,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10000000000
     }
 }
-`, accTemplateName, accTestPool.Id, accDefaultSr.Id)
+`, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id)
 }
 
 func testAccVmVifDetachedConfig() string {
@@ -920,7 +920,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10000000000
     }
 }
-`, accTemplateName, accTestPool.Id, accDefaultSr.Id)
+`, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithMacAddress(macAddress string) string {
@@ -953,7 +953,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10000000000
     }
 }
-`, accTemplateName, accTestPool.Id, macAddress, accDefaultSr.Id)
+`, testTemplate.NameLabel, accTestPool.Id, macAddress, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithTwoMacAddresses(firstMac, secondMac string) string {
@@ -991,7 +991,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10000000000
     }
 }
-`, accTemplateName, accTestPool.Id, firstMac, secondMac, accDefaultSr.Id)
+`, testTemplate.NameLabel, accTestPool.Id, firstMac, secondMac, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithSecondVIF() string {
@@ -1032,7 +1032,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10000000000
     }
 }
-`, accTemplateName, accTestPool.Id, accDefaultSr.Id)
+`, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithThreeVIFs() string {
@@ -1076,7 +1076,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10000000000
     }
 }
-`, accTemplateName, accTestPool.Id, accDefaultSr.Id)
+`, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id)
 }
 
 // Terraform config that tests changes to a VM that do not require halting
@@ -1112,7 +1112,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10000000000
     }
 }
-`, accTemplateName, accTestPool.Id, nameLabel, nameDescription, ha, powerOn, accDefaultSr.Id)
+`, testTemplate.NameLabel, accTestPool.Id, nameLabel, nameDescription, ha, powerOn, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithResourceSet() string {
@@ -1175,7 +1175,7 @@ resource "xenorchestra_resource_set" "rs" {
       quantity = 12884901888
     }
 }
-`, accTemplateName, accTestPool.Id, accDefaultSr.Id)
+`, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithoutResourceSet() string {
