@@ -59,7 +59,7 @@ func (c *Client) GetNetwork(netReq Network) (*Network, error) {
 	nets := obj.([]Network)
 
 	if len(nets) > 1 {
-		return nil, errors.New(fmt.Sprintf("Your query returned more than one result: %+v. Use `pool_id` or other fieldss to filter the result down to a single network", nets))
+		return nil, errors.New(fmt.Sprintf("Your query returned more than one result: %+v. Use `pool_id` or other fields to filter the result down to a single network", nets))
 	}
 
 	return &nets[0], nil
