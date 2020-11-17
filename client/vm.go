@@ -79,12 +79,21 @@ func (c *Client) CreateVm(name_label, name_description, template, cloudConfig, r
 		})
 	}
 	existingDisks := map[string]interface{}{}
+	vdis := []interface{}{}
 
 	for idx, disk := range disks {
-		existingDisks[fmt.Sprintf("%d", idx)] = map[string]interface{}{
+		d := map[string]interface{}{
 			"$SR":        disk.SrId,
 			"name_label": disk.NameLabel,
 			"size":       disk.Size,
+		}
+
+		if idx == 0 {
+			existingDisks[fmt.Sprintf("%d", idx)] = d
+		} else {
+			d["type"] = "user"
+			d["SR"] = disk.SrId
+			vdis = append(vdis, d)
 		}
 	}
 	params := map[string]interface{}{
@@ -98,6 +107,7 @@ func (c *Client) CreateVm(name_label, name_description, template, cloudConfig, r
 		"CPUs":             cpus,
 		"memoryMax":        memoryMax,
 		"existingDisks":    existingDisks,
+		"VDIs":             vdis,
 		"VIFs":             vifs,
 	}
 
@@ -243,6 +253,7 @@ func FindOrCreateVmForTests(vm *Vm, srId, networkId, templateName, tag string) {
 	})
 
 	if _, ok := err.(NotFound); ok {
+		// TODO: Create vm for use during tests (#90)
 		// Create Vm with the right tag and
 		// vmRes, err = c.CreateVm(
 		// 	fmt.Sprintf("%sterraform-testing", tag),

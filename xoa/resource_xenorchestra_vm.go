@@ -298,11 +298,9 @@ func disksToMapList(disks []client.Disk) []map[string]interface{} {
 			continue
 		}
 		diskMap := map[string]interface{}{
-			"attached": disk.Attached,
-			"vbd_id":   disk.Id,
-			"vdi_id":   disk.VDIId,
-			// "device":     disk.Device,
-			// "pool_id":    disk.PoolId,
+			"attached":   disk.Attached,
+			"vbd_id":     disk.Id,
+			"vdi_id":     disk.VDIId,
 			"position":   disk.Position,
 			"name_label": disk.NameLabel,
 			"size":       disk.Size,
@@ -428,7 +426,7 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		nSet := schema.NewSet(diskHash, nDisk.([]interface{}))
 
 		removals := expandDisks(oSet.Difference(nSet).List())
-		log.Printf("[DEBUG] Found the following network removals: %v previous set: %v new set: %v\n", oSet.Difference(nSet).List(), oSet, nSet)
+		log.Printf("[DEBUG] Found the following disk removals: %v previous set: %v new set: %v\n", oSet.Difference(nSet).List(), oSet, nSet)
 		for _, removal := range removals {
 
 			updateDisk := shouldUpdateDisk(removal, expandDisks(nSet.List()))
@@ -443,7 +441,7 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		}
 
 		additions := sortDiskByPostion(expandDisks(nSet.Difference(oSet).List()))
-		log.Printf("[DEBUG] Found the following network additions: %v previous set: %v new set: %v\n", nSet.Difference(oSet).List(), oSet, nSet)
+		log.Printf("[DEBUG] Found the following disk additions: %v previous set: %v new set: %v\n", nSet.Difference(oSet).List(), oSet, nSet)
 		for _, disk := range additions {
 
 			updateDisk := shouldUpdateDisk(disk, expandDisks(oSet.List()))

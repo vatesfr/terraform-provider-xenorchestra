@@ -373,9 +373,14 @@ func TestAccXenorchestraVm_attachDisconnectedDisk(t *testing.T) {
 			t.Fatalf("failed to retrieve the following vm's disks: %+v with error: %v", vm, err)
 		}
 
-		err = c.DisconnectDisk(disks[0])
-		if err != nil {
-			t.Fatalf("failed to disconnect disk with error: %v", err)
+		for _, disk := range disks {
+			if disk.NameLabel != "disk 2" {
+				continue
+			}
+			err = c.DisconnectDisk(disk)
+			if err != nil {
+				t.Fatalf("failed to disconnect disk with error: %v", err)
+			}
 		}
 	}
 	resource.Test(t, resource.TestCase{
@@ -384,12 +389,13 @@ func TestAccXenorchestraVm_attachDisconnectedDisk(t *testing.T) {
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccVmConfig(),
+				Config: testAccVmConfigWithAdditionalDisk(),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
-					resource.TestCheckResourceAttr(resourceName, "disk.#", "1"),
-					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
+					resource.TestCheckResourceAttr(resourceName, "disk.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "disk.0.attached", "true"),
+					resource.TestCheckResourceAttr(resourceName, "disk.1.attached", "true")),
 			},
 			{
 				PreConfig: disconnectDisk,
@@ -397,18 +403,20 @@ func TestAccXenorchestraVm_attachDisconnectedDisk(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
-					resource.TestCheckResourceAttr(resourceName, "disk.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "disk.0.attached", "false")),
+					resource.TestCheckResourceAttr(resourceName, "disk.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "disk.0.attached", "true"),
+					resource.TestCheckResourceAttr(resourceName, "disk.1.attached", "false")),
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: true,
 			},
 			{
-				Config: testAccVmConfig(),
+				Config: testAccVmConfigWithAdditionalDisk(),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
-					resource.TestCheckResourceAttr(resourceName, "disk.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "disk.0.attached", "true")),
+					resource.TestCheckResourceAttr(resourceName, "disk.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "disk.0.attached", "true"),
+					resource.TestCheckResourceAttr(resourceName, "disk.1.attached", "true")),
 			},
 		},
 	})
