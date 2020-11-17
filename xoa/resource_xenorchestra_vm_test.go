@@ -454,6 +454,26 @@ func TestAccXenorchestraVm_disconnectAttachedDisk(t *testing.T) {
 	})
 }
 
+func TestAccXenorchestraVm_createWithMutipleDisks(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigWithAdditionalDisk(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "disk.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "disk.0.attached", "true"),
+					resource.TestCheckResourceAttr(resourceName, "disk.1.attached", "true")),
+			},
+		},
+	})
+}
+
 func TestAccXenorchestraVm_addAndRemoveDisksToVm(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	resource.Test(t, resource.TestCase{
