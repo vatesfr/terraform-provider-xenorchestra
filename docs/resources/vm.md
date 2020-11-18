@@ -49,7 +49,8 @@ resource "xenorchestra_vm" "bar" {
 * name_label - (Required) The name of VM.
 * name_description - (Optional) The description of the VM.
 * template - (Required) The ID of the VM template to create the new VM from.
-* cloud_config - (Optional) The content of the cloud config to use
+* cloud_config - (Optional) The content of the cloud-init config to use
+* cloud_network_config - (Optional) The content of the cloud-init network configuration for the VM (uses [version 1](https://cloudinit.readthedocs.io/en/latest/topics/network-config-format-v1.html))
 * cpus - (Required) The number of CPUs the VM will have.
 * memory_max - (Required) The amount of memory in bytes the VM will have.
 * high_availabililty - (Optional) The restart priority for the VM. Possible values are `best-effort`, `restart` and empty string (no restarts on failure. Defaults to empty string.
