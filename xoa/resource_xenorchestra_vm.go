@@ -65,6 +65,10 @@ func resourceRecord() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"cloud_network_config": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"auto_poweron": &schema.Schema{
 				Type:     schema.TypeBool,
 				Default:  false,
@@ -223,6 +227,7 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		d.Get("name_description").(string),
 		d.Get("template").(string),
 		d.Get("cloud_config").(string),
+		d.Get("cloud_network_config").(string),
 		d.Get("resource_set").(string),
 		d.Get("cpus").(int),
 		d.Get("memory_max").(int),

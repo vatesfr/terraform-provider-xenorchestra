@@ -70,7 +70,7 @@ func (v Vm) Compare(obj interface{}) bool {
 	return false
 }
 
-func (c *Client) CreateVm(name_label, name_description, template, cloudConfig, resourceSet string, cpus, memoryMax int, networks []map[string]string, disks []VDI) (*Vm, error) {
+func (c *Client) CreateVm(name_label, name_description, template, cloudConfig, cloudNetworkConfig, resourceSet string, cpus, memoryMax int, networks []map[string]string, disks []VDI) (*Vm, error) {
 	vifs := []map[string]string{}
 	for _, network := range networks {
 		vifs = append(vifs, map[string]string{
@@ -117,6 +117,10 @@ func (c *Client) CreateVm(name_label, name_description, template, cloudConfig, r
 
 	if resourceSet != "" {
 		params["resourceSet"] = resourceSet
+	}
+
+	if cloudNetworkConfig != "" {
+		params["networkConfig"] = cloudNetworkConfig
 	}
 	log.Printf("[DEBUG] VM params for vm.create %#v", params)
 	var vmId string
