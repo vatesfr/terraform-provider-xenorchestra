@@ -41,14 +41,6 @@ terraform {
     }
   }
 }
-
-# Configure the XenServer Provider
-provider "xenorchestra" {
-  # Must be ws or wss
-  url      = "ws://hostname-of-server" # Or set XOA_URL environment variable
-  username = "<username>"              # Or set XOA_USER environment variable
-  password = "<password>"              # Or set XOA_PASSWORD environment variable
-}
 ```
 
 2. Ensure the provider is properly installed with a `terraform init`.
