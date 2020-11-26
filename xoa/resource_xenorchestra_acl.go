@@ -11,7 +11,7 @@ func resourceAcl() *schema.Resource {
 		Read:   resourceAclRead,
 		Delete: resourceAclDelete,
 		Importer: &schema.ResourceImporter{
-			State: AclImport,
+			State: schema.ImportStatePassthrough,
 		},
 
 		Schema: map[string]*schema.Schema{
@@ -82,21 +82,16 @@ func resourceAclDelete(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
-func AclImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
-
-	// c := m.(*client.Client)
-
-	// cloud_config, err := c.GetAcl(d.Id())
-
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// d.Set("name", cloud_config.Name)
-	// d.Set("template", cloud_config.Template)
-	return []*schema.ResourceData{d}, nil
-}
-
 func aclToData(acl *client.Acl, d *schema.ResourceData) error {
 	d.SetId(acl.Id)
+	if err := d.Set("subject", acl.Subject); err != nil {
+		return err
+	}
+	if err := d.Set("object", acl.Object); err != nil {
+		return err
+	}
+	if err := d.Set("action", acl.Action); err != nil {
+		return err
+	}
 	return nil
 }

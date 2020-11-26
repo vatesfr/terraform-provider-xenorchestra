@@ -41,12 +41,7 @@ func TestAccXenorchestraAcl_readAfterDelete(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccAclConfig(subject, accDefaultSr.Id, action),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccAclExists(resourceName),
-					resource.TestCheckResourceAttrSet(resourceName, "id"),
-					resource.TestCheckResourceAttrSet(resourceName, "subject"),
-					resource.TestCheckResourceAttr(resourceName, "object", accDefaultSr.Id),
-					resource.TestCheckResourceAttr(resourceName, "action", action)),
+				Check:  aclComposeChecks(resourceName, accDefaultSr.Id, action),
 			},
 			{
 				PreConfig:          removeAcl,
@@ -69,6 +64,45 @@ func TestAccXenorchestraAcl_create(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccAclConfig(subject, accDefaultSr.Id, action),
+				Check:  aclComposeChecks(resourceName, accDefaultSr.Id, action),
+			},
+		},
+	})
+}
+
+func TestAccXenorchestraAcl_import(t *testing.T) {
+	resourceName := "xenorchestra_acl.bar"
+	checkFn := func(s []*terraform.InstanceState) error {
+		attrs := []string{
+			"id",
+			"subject",
+			"object",
+			"action",
+		}
+		for _, attr := range attrs {
+			_, ok := s[0].Attributes[attr]
+
+			if !ok {
+				return fmt.Errorf("attribute %s should be set", attr)
+			}
+		}
+		return nil
+	}
+	subject := "terraform subject"
+	action := "viewer"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraAclDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAclConfig(subject, accDefaultSr.Id, action),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateCheck:  checkFn,
+				ImportStateVerify: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccAclExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -79,44 +113,6 @@ func TestAccXenorchestraAcl_create(t *testing.T) {
 		},
 	})
 }
-
-// func TestAccXenorchestraAcl_import(t *testing.T) {
-// 	resourceName := "xenorchestra_acl.bar"
-// 	// TODO: Need to figure out how to get this to make sure all the attrs
-// 	// are set. Right now it doesn't actually provide much protection
-// 	checkFn := func(s []*terraform.InstanceState) error {
-// 		attrs := []string{"id", "name", "template"}
-// 		for _, attr := range attrs {
-// 			_, ok := s[0].Attributes[attr]
-
-// 			if !ok {
-// 				return fmt.Errorf("attribute %s should be set", attr)
-// 			}
-// 		}
-// 		return nil
-// 	}
-// 	templateName := "testing"
-// 	templateText := "template body"
-// 	resource.Test(t, resource.TestCase{
-// 		PreCheck:     func() { testAccPreCheck(t) },
-// 		Providers:    testAccProviders,
-// 		CheckDestroy: testAccCheckXenorchestraAclDestroy,
-// 		Steps: []resource.TestStep{
-// 			{
-// 				Config: testAccAclConfig(templateName, templateText),
-// 			},
-// 			{
-// 				ResourceName:      resourceName,
-// 				ImportState:       true,
-// 				ImportStateCheck:  checkFn,
-// 				ImportStateVerify: true,
-// 				Check: resource.ComposeAggregateTestCheckFunc(
-// 					testAccAclExists(resourceName),
-// 					resource.TestCheckResourceAttrSet(resourceName, "id")),
-// 			},
-// 		},
-// 	})
-// }
 
 func testAccAclConfig(subject, object, action string) string {
 	return fmt.Sprintf(`
@@ -153,32 +149,6 @@ func testAccAclExists(resourceName string) resource.TestCheckFunc {
 	}
 }
 
-func testAccCheckXenorchestraAclDestroyNow(resourceName string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[resourceName]
-		if !ok {
-			return fmt.Errorf("Not found: %s", resourceName)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No Acl Id is set")
-		}
-
-		c, err := client.NewClient(client.GetConfigFromEnv())
-		if err != nil {
-			return err
-		}
-
-		err = c.DeleteAcl(client.Acl{Id: rs.Primary.ID})
-
-		if err != nil {
-			return err
-		}
-
-		return nil
-	}
-}
-
 func testAccCheckXenorchestraAclDestroy(s *terraform.State) error {
 	c, err := client.NewClient(client.GetConfigFromEnv())
 	if err != nil {
@@ -204,4 +174,14 @@ func testAccCheckXenorchestraAclDestroy(s *terraform.State) error {
 		}
 	}
 	return nil
+}
+
+func aclComposeChecks(resourceName, object, action string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc(
+		testAccAclExists(resourceName),
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttrSet(resourceName, "subject"),
+		resource.TestCheckResourceAttr(resourceName, "object", object),
+		resource.TestCheckResourceAttr(resourceName, "action", action),
+	)
 }
