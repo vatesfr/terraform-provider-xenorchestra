@@ -2,8 +2,15 @@ package xoa
 
 import (
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
+	"github.com/ddelnano/terraform-provider-xenorchestra/xoa/internal"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
+
+var validActionOptions = []string{
+	"admin",
+	"operator",
+	"viewer",
+}
 
 func resourceAcl() *schema.Resource {
 	return &schema.Resource{
@@ -26,9 +33,10 @@ func resourceAcl() *schema.Resource {
 				ForceNew: true,
 			},
 			"action": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: internal.StringInSlice(validActionOptions, false),
 			},
 		},
 	}

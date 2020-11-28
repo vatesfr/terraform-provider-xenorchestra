@@ -53,10 +53,11 @@ func TestAccXenorchestraAcl_readAfterDelete(t *testing.T) {
 	})
 }
 
-func TestAccXenorchestraAcl_create(t *testing.T) {
+func TestAccXenorchestraAcl_createAndRecreateOnUpdate(t *testing.T) {
 	resourceName := "xenorchestra_acl.bar"
 	subject := "terraform subject"
 	action := "viewer"
+	updatedAction := "operator"
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -65,6 +66,10 @@ func TestAccXenorchestraAcl_create(t *testing.T) {
 			{
 				Config: testAccAclConfig(subject, accDefaultSr.Id, action),
 				Check:  aclComposeChecks(resourceName, accDefaultSr.Id, action),
+			},
+			{
+				Config: testAccAclConfig(subject, accDefaultSr.Id, updatedAction),
+				Check:  aclComposeChecks(resourceName, accDefaultSr.Id, updatedAction),
 			},
 		},
 	})
