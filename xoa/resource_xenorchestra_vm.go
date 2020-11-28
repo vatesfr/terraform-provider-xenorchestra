@@ -6,40 +6,18 @@ import (
 	"net"
 	"sort"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
+	"github.com/ddelnano/terraform-provider-xenorchestra/xoa/internal"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
-
-func init() {
-}
 
 var validHaOptions = []string{
 	"",
 	"best-effort",
 	"restart",
-}
-
-func StringInSlice(valid []string, ignoreCase bool) schema.SchemaValidateFunc {
-	return func(i interface{}, k string) (s []string, es []error) {
-		v, ok := i.(string)
-		if !ok {
-			es = append(es, fmt.Errorf("expected type of %s to be string", k))
-			return
-		}
-
-		for _, str := range valid {
-			if v == str || (ignoreCase && strings.ToLower(v) == strings.ToLower(str)) {
-				return
-			}
-		}
-
-		es = append(es, fmt.Errorf("expected %s to be one of %v, got %s", k, valid, v))
-		return
-	}
 }
 
 func resourceRecord() *schema.Resource {
@@ -80,7 +58,7 @@ func resourceRecord() *schema.Resource {
 				Optional: true,
 				// TODO: Replace with validation.StringInSlice when terraform
 				// and the SDK are upgraded.
-				ValidateFunc: StringInSlice(validHaOptions, false),
+				ValidateFunc: internal.StringInSlice(validHaOptions, false),
 			},
 			"template": &schema.Schema{
 				Type:     schema.TypeString,

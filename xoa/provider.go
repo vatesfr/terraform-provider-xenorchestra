@@ -29,6 +29,7 @@ func Provider() terraform.ResourceProvider {
 			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"xenorchestra_acl":          resourceAcl(),
 			"xenorchestra_cloud_config": resourceCloudConfigRecord(),
 			"xenorchestra_vm":           resourceRecord(),
 			"xenorchestra_resource_set": resourceResourceSet(),

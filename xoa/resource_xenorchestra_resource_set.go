@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
+	"github.com/ddelnano/terraform-provider-xenorchestra/xoa/internal"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
@@ -45,7 +46,7 @@ func resourceResourceSet() *schema.Resource {
 						"type": &schema.Schema{
 							Type:         schema.TypeString,
 							Required:     true,
-							ValidateFunc: StringInSlice(validLimitType, false),
+							ValidateFunc: internal.StringInSlice(validLimitType, false),
 						},
 						"quantity": &schema.Schema{
 							Type:     schema.TypeInt,
