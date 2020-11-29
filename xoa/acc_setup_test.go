@@ -22,6 +22,7 @@ func TestMain(m *testing.M) {
 	client.RemoveNetworksWithNamePrefix(accTestPrefix)("")
 	client.RemoveResourceSetsWithNamePrefix(accTestPrefix)("")
 	client.RemoveTagFromAllObjects(accTestPrefix)("")
+	client.RemoveUsersWithPrefix(accTestPrefix)("")
 
 	os.Exit(code)
 }

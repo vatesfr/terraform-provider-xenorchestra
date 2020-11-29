@@ -9,10 +9,12 @@ data "xenorchestra_pool" "pool" {
   name_label = "Your pool"
 }
 
+data "xenorchestra_user" "user" {
+  username = "my-username"
+}
+
 resource "xenorchestra_acl" "acl" {
-  # This must be hard coded until the xenorchestra_user data source is available
-  # See #95 for the status of this.
-  subject = "c561e4ac-caa1-4a37-a74d-388e5bc50c52"
+  subject = data.xenorchestra_user.user.id
   object = data.xenorchestra_pool.pool.id
   action = "operator"
 }

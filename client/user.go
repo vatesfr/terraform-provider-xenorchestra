@@ -2,7 +2,9 @@ package client
 
 import (
 	"errors"
+	"fmt"
 	"log"
+	"strings"
 )
 
 type User struct {
@@ -52,7 +54,7 @@ func (c *Client) CreateUser(user User) (*User, error) {
 	return c.GetUser(User{Id: id})
 }
 
-func (c *Client) GetUser(userReq User) (*User, error) {
+func (c *Client) GetAllUsers() ([]User, error) {
 	params := map[string]interface{}{
 		"dummy": "dummy",
 	}
@@ -60,6 +62,14 @@ func (c *Client) GetUser(userReq User) (*User, error) {
 	err := c.Call("user.getAll", params, &users)
 
 	log.Printf("[DEBUG] Found the following users: %v\n", users)
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
+func (c *Client) GetUser(userReq User) (*User, error) {
+	users, err := c.GetAllUsers()
 	if err != nil {
 		return nil, err
 	}
@@ -93,4 +103,33 @@ func (c *Client) DeleteUser(user User) error {
 		return errors.New("failed to delete user")
 	}
 	return nil
+}
+
+func RemoveUsersWithPrefix(usernamePrefix string) func(string) error {
+	return func(_ string) error {
+		c, err := NewClient(GetConfigFromEnv())
+		if err != nil {
+			return fmt.Errorf("error getting client: %s", err)
+		}
+
+		users, err := c.GetAllUsers()
+
+		if err != nil {
+			return err
+		}
+
+		for _, user := range users {
+
+			if strings.HasPrefix(user.Email, usernamePrefix) {
+
+				log.Printf("[DEBUG] Removing user `%s`\n", user.Email)
+				err = c.DeleteUser(user)
+
+				if err != nil {
+					log.Printf("failed to remove user `%s` during sweep: %v\n", user.Email, err)
+				}
+			}
+		}
+		return nil
+	}
 }
