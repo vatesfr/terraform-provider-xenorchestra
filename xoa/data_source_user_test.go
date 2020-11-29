@@ -10,24 +10,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-func createUser(t *testing.T, username string) func() {
-	return func() {
-		c, err := client.NewClient(client.GetConfigFromEnv())
-
-		if err != nil {
-			t.Fatalf("failed to created client with error: %v", err)
-		}
-
-		_, err = c.CreateUser(client.User{
-			Email: username,
-		})
-
-		if err != nil {
-			t.Fatalf("failed to create user for test with error: %v", err)
-		}
-	}
-}
-
 func TestAccXenorchestraDataSource_user(t *testing.T) {
 	resourceName := "data.xenorchestra_user.user"
 	username := fmt.Sprintf("%s-username", accTestPrefix)
@@ -69,4 +51,22 @@ data "xenorchestra_user" "user" {
     username = "%s"
 }
 `, username)
+}
+
+func createUser(t *testing.T, username string) func() {
+	return func() {
+		c, err := client.NewClient(client.GetConfigFromEnv())
+
+		if err != nil {
+			t.Fatalf("failed to created client with error: %v", err)
+		}
+
+		_, err = c.CreateUser(client.User{
+			Email: username,
+		})
+
+		if err != nil {
+			t.Fatalf("failed to create user for test with error: %v", err)
+		}
+	}
 }
