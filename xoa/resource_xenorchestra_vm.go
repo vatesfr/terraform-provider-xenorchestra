@@ -143,6 +143,10 @@ func resourceRecord() *schema.Resource {
 							Type:     schema.TypeString,
 							Required: true,
 						},
+						"name_description": &schema.Schema{
+							Type:     schema.TypeString,
+							Optional: true,
+						},
 						"size": &schema.Schema{
 							Type:     schema.TypeInt,
 							Required: true,
@@ -194,9 +198,10 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		vdi, _ := disk.(map[string]interface{})
 
 		vdis = append(vdis, client.VDI{
-			SrId:      vdi["sr_id"].(string),
-			NameLabel: vdi["name_label"].(string),
-			Size:      vdi["size"].(int),
+			SrId:            vdi["sr_id"].(string),
+			NameLabel:       vdi["name_label"].(string),
+			NameDescription: vdi["name_description"].(string),
+			Size:            vdi["size"].(int),
 		})
 	}
 
@@ -281,13 +286,14 @@ func disksToMapList(disks []client.Disk) []map[string]interface{} {
 			continue
 		}
 		diskMap := map[string]interface{}{
-			"attached":   disk.Attached,
-			"vbd_id":     disk.Id,
-			"vdi_id":     disk.VDIId,
-			"position":   disk.Position,
-			"name_label": disk.NameLabel,
-			"size":       disk.Size,
-			"sr_id":      disk.SrId,
+			"attached":         disk.Attached,
+			"vbd_id":           disk.Id,
+			"vdi_id":           disk.VDIId,
+			"position":         disk.Position,
+			"name_label":       disk.NameLabel,
+			"name_description": disk.NameDescription,
+			"size":             disk.Size,
+			"sr_id":            disk.SrId,
 		}
 		result = append(result, diskMap)
 	}
@@ -476,10 +482,11 @@ func expandDisks(disks []interface{}) []client.Disk {
 				Attached: data["attached"].(bool),
 			},
 			client.VDI{
-				VDIId:     data["vdi_id"].(string),
-				NameLabel: data["name_label"].(string),
-				SrId:      data["sr_id"].(string),
-				Size:      data["size"].(int),
+				VDIId:           data["vdi_id"].(string),
+				NameLabel:       data["name_label"].(string),
+				NameDescription: data["name_description"].(string),
+				SrId:            data["sr_id"].(string),
+				Size:            data["size"].(int),
 			},
 		})
 	}

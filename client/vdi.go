@@ -11,11 +11,12 @@ type Disk struct {
 }
 
 type VDI struct {
-	VDIId     string   `json:"id"`
-	SrId      string   `json:"$SR"`
-	NameLabel string   `json:"name_label"`
-	Size      int      `json:"size"`
-	VBDs      []string `json:"$VBDs"`
+	VDIId           string   `json:"id"`
+	SrId            string   `json:"$SR"`
+	NameLabel       string   `json:"name_label"`
+	NameDescription string   `json:"name_description"`
+	Size            int      `json:"size"`
+	VBDs            []string `json:"$VBDs"`
 }
 
 func (v VDI) Compare(obj interface{}) bool {

@@ -215,6 +215,25 @@ func TestAccXenorchestraVm_createAndPlanWithNonExistantVm(t *testing.T) {
 	})
 }
 
+func TestAccXenorchestraVm_createWithDiskNameDescription(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	description := "disk description"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigWithDiskNameDescription(description),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "disk.0.name_description", description)),
+			},
+		},
+	})
+}
+
 func TestAccXenorchestraVm_createWithoutCloudConfig(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	resource.Test(t, resource.TestCase{
@@ -833,6 +852,39 @@ resource "xenorchestra_vm" "bar" {
     }
 }
 `, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id)
+}
+
+func testAccVmConfigWithDiskNameDescription(description string) string {
+	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
+data "xenorchestra_template" "template" {
+    name_label = "%s"
+}
+
+data "xenorchestra_network" "network" {
+    // TODO: Replace this with a better solution
+    name_label = "Pool-wide network associated with eth0"
+    pool_id = "%s"
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 4295000000
+    cpus  = 1
+    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    name_label = "Terraform testing"
+    name_description = "description"
+    template = "${data.xenorchestra_template.template.id}"
+    network {
+	network_id = "${data.xenorchestra_network.network.id}"
+    }
+
+    disk {
+      sr_id = "%s"
+      name_label = "disk 1"
+      name_description = "%s"
+      size = 10001317888
+    }
+}
+`, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id, description)
 }
 
 func testAccVmConfigWithNetworkConfig() string {

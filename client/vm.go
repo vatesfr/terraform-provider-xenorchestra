@@ -83,9 +83,10 @@ func (c *Client) CreateVm(name_label, name_description, template, cloudConfig, c
 
 	for idx, disk := range disks {
 		d := map[string]interface{}{
-			"$SR":        disk.SrId,
-			"name_label": disk.NameLabel,
-			"size":       disk.Size,
+			"$SR":              disk.SrId,
+			"name_label":       disk.NameLabel,
+			"name_description": disk.NameDescription,
+			"size":             disk.Size,
 		}
 
 		if idx == 0 {
