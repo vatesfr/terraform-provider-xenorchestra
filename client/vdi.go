@@ -153,3 +153,13 @@ func (c *Client) DisconnectDisk(d Disk) error {
 	}
 	return c.Call("vbd.disconnect", params, &success)
 }
+
+func (c *Client) UpdateVDI(d Disk) error {
+	var success bool
+	params := map[string]interface{}{
+		"id":               d.VDIId,
+		"name_description": d.NameDescription,
+		"name_label":       d.NameLabel,
+	}
+	return c.Call("vdi.set", params, &success)
+}
