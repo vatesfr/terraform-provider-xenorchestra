@@ -61,6 +61,7 @@ resource "xenorchestra_vm" "bar" {
 * disk - (Required) The disk the VM will have access to.
     * sr_id - (Required) The storage repository ID to use.
     * name_label - (Required) The name for the disk.
+    * name_description - (Optional) A description for the disk.
     * size - (Required) The size in bytes of the disk.
 
 ## Attributes Reference
