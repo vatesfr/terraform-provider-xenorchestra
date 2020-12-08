@@ -16,6 +16,7 @@ import (
 
 func Test_diskHash(t *testing.T) {
 	nameLabel := "name label"
+	nameDescription := "name description"
 	attached := true
 	size := 1000
 	srId := "sr id"
@@ -29,16 +30,18 @@ func Test_diskHash(t *testing.T) {
 					Attached: attached,
 				},
 				client.VDI{
-					NameLabel: nameLabel,
-					SrId:      srId,
-					Size:      size,
+					NameLabel:       nameLabel,
+					NameDescription: nameDescription,
+					SrId:            srId,
+					Size:            size,
 				},
 			},
 			mapDisk: map[string]interface{}{
-				"name_label": nameLabel,
-				"attached":   attached,
-				"sr_id":      srId,
-				"size":       size,
+				"name_label":       nameLabel,
+				"name_description": nameDescription,
+				"attached":         attached,
+				"sr_id":            srId,
+				"size":             size,
 			},
 		},
 	}
