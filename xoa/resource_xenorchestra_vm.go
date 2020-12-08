@@ -1,6 +1,7 @@
 package xoa
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -143,6 +144,10 @@ func resourceRecord() *schema.Resource {
 							Type:     schema.TypeString,
 							Required: true,
 						},
+						"name_description": &schema.Schema{
+							Type:     schema.TypeString,
+							Optional: true,
+						},
 						"size": &schema.Schema{
 							Type:     schema.TypeInt,
 							Required: true,
@@ -194,9 +199,10 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		vdi, _ := disk.(map[string]interface{})
 
 		vdis = append(vdis, client.VDI{
-			SrId:      vdi["sr_id"].(string),
-			NameLabel: vdi["name_label"].(string),
-			Size:      vdi["size"].(int),
+			SrId:            vdi["sr_id"].(string),
+			NameLabel:       vdi["name_label"].(string),
+			NameDescription: vdi["name_description"].(string),
+			Size:            vdi["size"].(int),
 		})
 	}
 
@@ -281,13 +287,14 @@ func disksToMapList(disks []client.Disk) []map[string]interface{} {
 			continue
 		}
 		diskMap := map[string]interface{}{
-			"attached":   disk.Attached,
-			"vbd_id":     disk.Id,
-			"vdi_id":     disk.VDIId,
-			"position":   disk.Position,
-			"name_label": disk.NameLabel,
-			"size":       disk.Size,
-			"sr_id":      disk.SrId,
+			"attached":         disk.Attached,
+			"vbd_id":           disk.Id,
+			"vdi_id":           disk.VDIId,
+			"position":         disk.Position,
+			"name_label":       disk.NameLabel,
+			"name_description": disk.NameDescription,
+			"size":             disk.Size,
+			"sr_id":            disk.SrId,
 		}
 		result = append(result, diskMap)
 	}
@@ -412,9 +419,8 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		log.Printf("[DEBUG] Found the following disk removals: %v previous set: %v new set: %v\n", oSet.Difference(nSet).List(), oSet, nSet)
 		for _, removal := range removals {
 
-			updateDisk := shouldUpdateDisk(removal, expandDisks(nSet.List()))
-
-			if updateDisk {
+			actions := getUpdateDiskActions(removal, expandDisks(nSet.List()))
+			if len(actions) != 0 {
 				continue
 			}
 
@@ -427,22 +433,19 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		log.Printf("[DEBUG] Found the following disk additions: %v previous set: %v new set: %v\n", nSet.Difference(oSet).List(), oSet, nSet)
 		for _, disk := range additions {
 
-			updateDisk := shouldUpdateDisk(disk, expandDisks(oSet.List()))
+			actions := getUpdateDiskActions(disk, expandDisks(oSet.List()))
+			log.Printf("[DEBUG] Found '%v' disk update actions\n", actions)
 
-			if updateDisk {
-				switch disk.Attached {
-				case true:
-					err = c.ConnectDisk(disk)
-				case false:
-					err = c.DisconnectDisk(disk)
-				}
-
-				if err != nil {
+			if len(actions) == 0 {
+				if _, err := c.CreateDisk(*vm, disk); err != nil {
 					return err
 				}
+				continue
+			}
 
-			} else {
-				if _, err := c.CreateDisk(*vm, disk); err != nil {
+			for _, action := range actions {
+				log.Printf("[DEBUG] Updating disk with action '%d'\n", action)
+				if err := performDiskUpdateAction(c, action, disk); err != nil {
 					return err
 				}
 			}
@@ -476,10 +479,11 @@ func expandDisks(disks []interface{}) []client.Disk {
 				Attached: data["attached"].(bool),
 			},
 			client.VDI{
-				VDIId:     data["vdi_id"].(string),
-				NameLabel: data["name_label"].(string),
-				SrId:      data["sr_id"].(string),
-				Size:      data["size"].(int),
+				VDIId:           data["vdi_id"].(string),
+				NameLabel:       data["name_label"].(string),
+				NameDescription: data["name_description"].(string),
+				SrId:            data["sr_id"].(string),
+				Size:            data["size"].(int),
 			},
 		})
 	}
@@ -566,23 +570,26 @@ func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, d 
 func diskHash(value interface{}) int {
 	var srId string
 	var nameLabel string
+	var nameDescription string
 	var size int
 	var attached bool
 	switch t := value.(type) {
 	case client.Disk:
 		srId = t.SrId
 		nameLabel = t.NameLabel
+		nameDescription = t.NameDescription
 		size = t.Size
 		attached = t.Attached
 	case map[string]interface{}:
 		srId = t["sr_id"].(string)
 		nameLabel = t["name_label"].(string)
+		nameDescription = t["name_description"].(string)
 		size = t["size"].(int)
 		attached = t["attached"].(bool)
 	default:
 		panic(fmt.Sprintf("disk cannot be hashed with type %T", t))
 	}
-	v := fmt.Sprintf("%s-%s-%d-%t", nameLabel, srId, size, attached)
+	v := fmt.Sprintf("%s-%s-%s-%d-%t", nameLabel, nameDescription, srId, size, attached)
 	return hashcode.String(v)
 }
 
@@ -632,6 +639,41 @@ func shouldUpdateVif(vif client.VIF, vifs []*client.VIF) (bool, bool) {
 	return false, false
 }
 
+type updateDiskActions int
+
+const (
+	diskNameDescriptionUpdate updateDiskActions = iota
+	diskNameLabelUpdate
+	diskAttachmentUpdate
+)
+
+func getUpdateDiskActions(d client.Disk, disks []client.Disk) []updateDiskActions {
+	actions := []updateDiskActions{}
+	var diskFound *client.Disk
+	for _, disk := range disks {
+		if disk.Id == d.Id {
+			diskFound = &disk
+		}
+	}
+
+	if diskFound == nil {
+		return actions
+	}
+
+	if diskFound.NameLabel != d.NameLabel {
+		actions = append(actions, diskNameLabelUpdate)
+	}
+
+	if diskFound.NameDescription != d.NameDescription {
+		actions = append(actions, diskNameDescriptionUpdate)
+	}
+
+	if diskFound.Attached != d.Attached {
+		actions = append(actions, diskAttachmentUpdate)
+	}
+	return actions
+}
+
 func shouldUpdateDisk(d client.Disk, disks []client.Disk) bool {
 	found := false
 	var diskFound client.Disk
@@ -647,4 +689,21 @@ func shouldUpdateDisk(d client.Disk, disks []client.Disk) bool {
 		return true
 	}
 	return false
+}
+
+func performDiskUpdateAction(c *client.Client, action updateDiskActions, d client.Disk) error {
+	switch action {
+	case diskAttachmentUpdate:
+		if d.Attached {
+			return c.ConnectDisk(d)
+		} else {
+			return c.DisconnectDisk(d)
+		}
+	case diskNameDescriptionUpdate:
+		return c.UpdateVDI(d)
+	case diskNameLabelUpdate:
+		return c.UpdateVDI(d)
+	}
+
+	return errors.New(fmt.Sprintf("disk update action '%d' not handled", action))
 }

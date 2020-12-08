@@ -2,6 +2,7 @@ package xoa
 
 import (
 	"fmt"
+	"reflect"
 	"regexp"
 	"strconv"
 	"testing"
@@ -15,6 +16,7 @@ import (
 
 func Test_diskHash(t *testing.T) {
 	nameLabel := "name label"
+	nameDescription := "name description"
 	attached := true
 	size := 1000
 	srId := "sr id"
@@ -28,16 +30,18 @@ func Test_diskHash(t *testing.T) {
 					Attached: attached,
 				},
 				client.VDI{
-					NameLabel: nameLabel,
-					SrId:      srId,
-					Size:      size,
+					NameLabel:       nameLabel,
+					NameDescription: nameDescription,
+					SrId:            srId,
+					Size:            size,
 				},
 			},
 			mapDisk: map[string]interface{}{
-				"name_label": nameLabel,
-				"attached":   attached,
-				"sr_id":      srId,
-				"size":       size,
+				"name_label":       nameLabel,
+				"name_description": nameDescription,
+				"attached":         attached,
+				"sr_id":            srId,
+				"size":             size,
 			},
 		},
 	}
@@ -47,6 +51,86 @@ func Test_diskHash(t *testing.T) {
 		mapDiskHash := diskHash(c.mapDisk)
 		if cDiskHash != mapDiskHash {
 			t.Errorf("expected the hash of %+v to match the disk map: %+v. instead received %d and %d", c.clientDisk, c.mapDisk, cDiskHash, mapDiskHash)
+		}
+	}
+}
+
+func Test_getUpdateDiskActions(t *testing.T) {
+	cases := []struct {
+		disk                client.Disk
+		haystack            []client.Disk
+		expectedDiskActions []updateDiskActions
+	}{
+		{
+			disk: client.Disk{
+				client.VBD{
+					Id:       "id 1",
+					Attached: true,
+				},
+				client.VDI{},
+			},
+			haystack: []client.Disk{
+				{
+					client.VBD{
+						Id:       "id 1",
+						Attached: false,
+					},
+					client.VDI{},
+				},
+			},
+			expectedDiskActions: []updateDiskActions{diskAttachmentUpdate},
+		},
+		{
+			disk: client.Disk{
+				client.VBD{
+					Id:       "id 1",
+					Attached: true,
+				},
+				client.VDI{
+					NameLabel:       "name label",
+					NameDescription: "name description",
+				},
+			},
+			haystack: []client.Disk{
+				{
+					client.VBD{
+						Id:       "id 1",
+						Attached: false,
+					},
+					client.VDI{
+						NameLabel:       "updated name label",
+						NameDescription: "updated name description",
+					},
+				},
+			},
+			expectedDiskActions: []updateDiskActions{diskNameLabelUpdate, diskNameDescriptionUpdate, diskAttachmentUpdate},
+		},
+		{
+			disk: client.Disk{
+				client.VBD{
+					Id:       "does not match",
+					Attached: true,
+				},
+				client.VDI{},
+			},
+			haystack: []client.Disk{
+				{
+					client.VBD{
+						Id:       "id 1",
+						Attached: false,
+					},
+					client.VDI{},
+				},
+			},
+			expectedDiskActions: []updateDiskActions{},
+		},
+	}
+
+	for _, c := range cases {
+		actions := getUpdateDiskActions(c.disk, c.haystack)
+
+		if !reflect.DeepEqual(c.expectedDiskActions, actions) {
+			t.Errorf("expected updateDiskActions '%+v' to match '%+v' when comparing disk: %+v against the following disks: %+v", c.expectedDiskActions, actions, c.disk, c.haystack)
 		}
 	}
 }
@@ -210,6 +294,37 @@ func TestAccXenorchestraVm_createAndPlanWithNonExistantVm(t *testing.T) {
 				Config:             testAccVmConfig(),
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
+}
+
+func TestAccXenorchestraVm_createAndUpdateDiskNameLabelAndNameDescription(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	nameLabel := "disk name label"
+	description := "disk description"
+	updatedNameLabel := "updated disk name label"
+	updatedDescription := "updated description"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigWithDiskNameLabelAndNameDescription(nameLabel, description),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "disk.0.name_label", nameLabel),
+					resource.TestCheckResourceAttr(resourceName, "disk.0.name_description", description)),
+			},
+			{
+				Config: testAccVmConfigWithDiskNameLabelAndNameDescription(updatedNameLabel, updatedDescription),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "disk.0.name_label", updatedNameLabel),
+					resource.TestCheckResourceAttr(resourceName, "disk.0.name_description", updatedDescription)),
 			},
 		},
 	})
@@ -833,6 +948,39 @@ resource "xenorchestra_vm" "bar" {
     }
 }
 `, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id)
+}
+
+func testAccVmConfigWithDiskNameLabelAndNameDescription(nameLabel string, description string) string {
+	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
+data "xenorchestra_template" "template" {
+    name_label = "%s"
+}
+
+data "xenorchestra_network" "network" {
+    // TODO: Replace this with a better solution
+    name_label = "Pool-wide network associated with eth0"
+    pool_id = "%s"
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 4295000000
+    cpus  = 1
+    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    name_label = "Terraform testing"
+    name_description = "description"
+    template = "${data.xenorchestra_template.template.id}"
+    network {
+	network_id = "${data.xenorchestra_network.network.id}"
+    }
+
+    disk {
+      sr_id = "%s"
+      name_label = "%s"
+      name_description = "%s"
+      size = 10001317888
+    }
+}
+`, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id, nameLabel, description)
 }
 
 func testAccVmConfigWithNetworkConfig() string {
