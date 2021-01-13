@@ -315,6 +315,7 @@ func TestAccXenorchestraVm_createAndUpdateDiskNameLabelAndNameDescription(t *tes
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "memory_max", "4295000000"),
 					resource.TestCheckResourceAttr(resourceName, "disk.0.name_label", nameLabel),
 					resource.TestCheckResourceAttr(resourceName, "disk.0.name_description", description)),
 			},

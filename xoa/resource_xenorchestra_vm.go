@@ -538,12 +538,14 @@ func RecordImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData
 func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, d *schema.ResourceData) error {
 	d.SetId(resource.Id)
 	// d.Set("cloud_config", resource.CloudConfig)
-	// err := d.Set("memory_max", resource.Memory.Size)
-	// log.Printf("[DEBUG] Found error when setting memory_max %+v", err)
+	if len(resource.Memory.Static) == 2 {
+		if err := d.Set("memory_max", resource.Memory.Static[1]); err != nil {
+			return err
+		}
+	} else {
+		log.Printf("[WARN] Expected the VM's static memory limits to have two values, %v found instead\n", resource.Memory.Static)
+	}
 
-	// if err != nil {
-	// 	return err
-	// }
 	d.Set("cpus", resource.CPUs.Number)
 	d.Set("name_label", resource.NameLabel)
 	d.Set("name_description", resource.NameDescription)
