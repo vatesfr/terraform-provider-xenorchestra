@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -27,9 +28,10 @@ type Client struct {
 }
 
 type Config struct {
-	Url      string
-	Username string
-	Password string
+	Url                string
+	Username           string
+	Password           string
+	InsecureSkipVerify bool
 }
 
 var dialer = gorillawebsocket.Dialer{
@@ -41,6 +43,7 @@ func GetConfigFromEnv() Config {
 	var url string
 	var username string
 	var password string
+	insecure := false
 	if v := os.Getenv("XOA_URL"); v != "" {
 		url = v
 	}
@@ -50,10 +53,14 @@ func GetConfigFromEnv() Config {
 	if v := os.Getenv("XOA_PASSWORD"); v != "" {
 		password = v
 	}
+	if v := os.Getenv("XOA_INSECURE"); v != "" {
+		insecure = true
+	}
 	return Config{
-		Url:      url,
-		Username: username,
-		Password: password,
+		Url:                url,
+		Username:           username,
+		Password:           password,
+		InsecureSkipVerify: insecure,
 	}
 }
 
@@ -61,6 +68,11 @@ func NewClient(config Config) (*Client, error) {
 	url := config.Url
 	username := config.Username
 	password := config.Password
+	skipVerify := config.InsecureSkipVerify
+
+	if skipVerify {
+		dialer.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	}
 
 	ws, _, err := dialer.Dial(fmt.Sprintf("%s/api/", url), http.Header{})
 

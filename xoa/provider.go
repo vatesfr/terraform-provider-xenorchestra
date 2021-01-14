@@ -27,6 +27,13 @@ func Provider() terraform.ResourceProvider {
 				DefaultFunc: schema.EnvDefaultFunc("XOA_PASSWORD", nil),
 				Description: "Password for xoa api",
 			},
+			"insecure": &schema.Schema{
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
+				DefaultFunc: schema.EnvDefaultFunc("XOA_INSECURE", nil),
+				Description: "Whether SSL should be verified or not",
+			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"xenorchestra_acl":          resourceAcl(),
@@ -51,10 +58,12 @@ func xoaConfigure(d *schema.ResourceData) (interface{}, error) {
 	url := d.Get("url").(string)
 	username := d.Get("username").(string)
 	password := d.Get("password").(string)
+	insecure := d.Get("insecure").(bool)
 	config := client.Config{
-		Url:      url,
-		Username: username,
-		Password: password,
+		Url:                url,
+		Username:           username,
+		Password:           password,
+		InsecureSkipVerify: insecure,
 	}
 	return client.NewClient(config)
 }
