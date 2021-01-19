@@ -42,6 +42,13 @@ type Vm struct {
 	CloudConfig        string       `json:"cloudConfig"`
 	ResourceSet        string       `json:"resourceSet,omitempty"`
 	Tags               []string     `json:"tags"`
+
+	// These fields are used for passing in disk inputs when
+	// creating Vms, however, this is not a real field as far
+	// as the XO api or XAPI is concerned
+	Disks              []Disk              `json:"-"`
+	CloudNetworkConfig string              `json:"-"`
+	Networks           []map[string]string `json:"-"`
 }
 
 func (v Vm) Compare(obj interface{}) bool {
@@ -70,18 +77,11 @@ func (v Vm) Compare(obj interface{}) bool {
 	return false
 }
 
-func (c *Client) CreateVm(name_label, name_description, template, cloudConfig, cloudNetworkConfig, resourceSet string, cpus, memoryMax int, networks []map[string]string, disks []VDI, tags []string) (*Vm, error) {
-	vifs := []map[string]string{}
-	for _, network := range networks {
-		vifs = append(vifs, map[string]string{
-			"network": network["network_id"],
-			"mac":     network["mac_address"],
-		})
-	}
+func (c *Client) CreateVm(vmReq Vm) (*Vm, error) {
 	existingDisks := map[string]interface{}{}
 	vdis := []interface{}{}
 
-	for idx, disk := range disks {
+	for idx, disk := range vmReq.Disks {
 		d := map[string]interface{}{
 			"$SR":              disk.SrId,
 			"name_label":       disk.NameLabel,
@@ -99,28 +99,31 @@ func (c *Client) CreateVm(name_label, name_description, template, cloudConfig, c
 	}
 	params := map[string]interface{}{
 		"bootAfterCreate":  true,
-		"name_label":       name_label,
-		"name_description": name_description,
-		"template":         template,
+		"name_label":       vmReq.NameLabel,
+		"name_description": vmReq.NameDescription,
+		"template":         vmReq.Template,
 		"coreOs":           false,
 		"cpuCap":           nil,
 		"cpuWeight":        nil,
-		"CPUs":             cpus,
-		"memoryMax":        memoryMax,
+		"CPUs":             vmReq.CPUs.Number,
+		"memoryMax":        vmReq.Memory.Static[1],
 		"existingDisks":    existingDisks,
 		"VDIs":             vdis,
-		"VIFs":             vifs,
-		"tags":             tags,
+		"VIFs":             vmReq.Networks,
+		"tags":             vmReq.Tags,
 	}
 
+	cloudConfig := vmReq.CloudConfig
 	if cloudConfig != "" {
 		params["cloudConfig"] = cloudConfig
 	}
 
+	resourceSet := vmReq.ResourceSet
 	if resourceSet != "" {
 		params["resourceSet"] = resourceSet
 	}
 
+	cloudNetworkConfig := vmReq.CloudNetworkConfig
 	if cloudNetworkConfig != "" {
 		params["networkConfig"] = cloudNetworkConfig
 	}

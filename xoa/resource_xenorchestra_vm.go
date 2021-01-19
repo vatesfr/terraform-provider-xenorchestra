@@ -187,23 +187,25 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		net, _ := network.(map[string]interface{})
 
 		network_maps = append(network_maps, map[string]string{
-			"network_id":  net["network_id"].(string),
-			"mac_address": net["mac_address"].(string),
+			"network": net["network_id"].(string),
+			"mac":     net["mac_address"].(string),
 		})
 	}
 
-	vdis := []client.VDI{}
+	ds := []client.Disk{}
 
 	disks := d.Get("disk").([]interface{})
 
 	for _, disk := range disks {
 		vdi, _ := disk.(map[string]interface{})
 
-		vdis = append(vdis, client.VDI{
-			SrId:            vdi["sr_id"].(string),
-			NameLabel:       vdi["name_label"].(string),
-			NameDescription: vdi["name_description"].(string),
-			Size:            vdi["size"].(int),
+		ds = append(ds, client.Disk{
+			VDI: client.VDI{
+				SrId:            vdi["sr_id"].(string),
+				NameLabel:       vdi["name_label"].(string),
+				NameDescription: vdi["name_description"].(string),
+				Size:            vdi["size"].(int),
+			},
 		})
 	}
 
@@ -214,18 +216,25 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		vmTags = append(vmTags, t)
 	}
 
-	vm, err := c.CreateVm(
-		d.Get("name_label").(string),
-		d.Get("name_description").(string),
-		d.Get("template").(string),
-		d.Get("cloud_config").(string),
-		d.Get("cloud_network_config").(string),
-		d.Get("resource_set").(string),
-		d.Get("cpus").(int),
-		d.Get("memory_max").(int),
-		network_maps,
-		vdis,
-		vmTags,
+	vm, err := c.CreateVm(client.Vm{
+		NameLabel:       d.Get("name_label").(string),
+		NameDescription: d.Get("name_description").(string),
+		Template:        d.Get("template").(string),
+		CloudConfig:     d.Get("cloud_config").(string),
+		ResourceSet:     d.Get("resource_set").(string),
+		CPUs: client.CPUs{
+			Number: d.Get("cpus").(int),
+		},
+		CloudNetworkConfig: d.Get("cloud_network_config").(string),
+		Memory: client.MemoryObject{
+			Static: []int{
+				0, d.Get("memory_max").(int),
+			},
+		},
+		Tags:     vmTags,
+		Disks:    ds,
+		Networks: network_maps,
+	},
 	)
 
 	if err != nil {
