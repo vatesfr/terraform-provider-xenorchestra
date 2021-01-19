@@ -172,6 +172,7 @@ func resourceRecord() *schema.Resource {
 					},
 				},
 			},
+			"tags": resourceTags(),
 		},
 	}
 }
@@ -206,6 +207,13 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		})
 	}
 
+	tags := d.Get("tags").([]interface{})
+	vmTags := []string{}
+	for _, tag := range tags {
+		t := tag.(string)
+		vmTags = append(vmTags, t)
+	}
+
 	vm, err := c.CreateVm(
 		d.Get("name_label").(string),
 		d.Get("name_description").(string),
@@ -217,6 +225,7 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		d.Get("memory_max").(int),
 		network_maps,
 		vdis,
+		vmTags,
 	)
 
 	if err != nil {
@@ -342,19 +351,21 @@ func resourceVmRead(d *schema.ResourceData, m interface{}) error {
 	if err != nil {
 		return err
 	}
+
 	return recordToData(*vm, vifs, disks, d)
 }
 
 func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 	c := m.(*client.Client)
 
+	id := d.Id()
 	nameLabel := d.Get("name_label").(string)
 	nameDescription := d.Get("name_description").(string)
 	cpus := d.Get("cpus").(int)
 	autoPowerOn := d.Get("auto_poweron").(bool)
 	ha := d.Get("high_availability").(string)
 	rs := d.Get("resource_set").(string)
-	vm, err := c.UpdateVm(d.Id(), cpus, nameLabel, nameDescription, ha, rs, autoPowerOn)
+	vm, err := c.UpdateVm(id, cpus, nameLabel, nameDescription, ha, rs, autoPowerOn)
 	log.Printf("[DEBUG] Retrieved vm after update: %+v\n", vm)
 
 	if err != nil {
@@ -448,6 +459,26 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 				if err := performDiskUpdateAction(c, action, disk); err != nil {
 					return err
 				}
+			}
+		}
+	}
+
+	if d.HasChange("tags") {
+		o, n := d.GetChange("tags")
+		oTags := New(o)
+		nTags := New(n)
+
+		removals := oTags.Without(nTags)
+		for _, removal := range removals {
+			if err := c.RemoveTag(id, removal); err != nil {
+				return err
+			}
+		}
+
+		additions := nTags.Without(oTags)
+		for _, addition := range additions {
+			if err := c.AddTag(id, addition); err != nil {
+				return err
 			}
 		}
 	}
@@ -553,6 +584,9 @@ func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, d 
 	d.Set("auto_poweron", resource.AutoPoweron)
 	d.Set("resource_set", resource.ResourceSet)
 
+	if err := d.Set("tags", resource.Tags); err != nil {
+		return err
+	}
 	nets := vifsToMapList(vifs)
 	err := d.Set("network", nets)
 
