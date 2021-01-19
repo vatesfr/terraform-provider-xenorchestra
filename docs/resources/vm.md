@@ -33,8 +33,10 @@ resource "xenorchestra_vm" "bar" {
     name_label = "Name"
     name_description = "description"
     template = data.xenorchestra_template.template.id
+
+    # TODO: Add affinity_host example
     network {
-	  network_id = data.xenorchestra_network.net.id
+      network_id = data.xenorchestra_network.net.id
     }
 
     disk {
@@ -60,6 +62,7 @@ resource "xenorchestra_vm" "bar" {
 * memory_max - (Required) The amount of memory in bytes the VM will have.
 * high_availabililty - (Optional) The restart priority for the VM. Possible values are `best-effort`, `restart` and empty string (no restarts on failure. Defaults to empty string.
 * auto_poweron - (Optional) If the VM will automatically turn on. Defaults to `false`.
+* affinity_host - (Optional) The preferred host you would like the VM to run on
 * network - (Required) The network the VM will use
     * network_id - (Required) The ID of the network the VM will be on.
     * mac_address - (Optional) The mac address of the network interaface

@@ -27,6 +27,7 @@ type MemoryObject struct {
 type Vm struct {
 	Type               string       `json:"type,omitempty"`
 	Id                 string       `json:"id,omitempty"`
+	AffinityHost       string       `json:"affinityHost,omitempty"`
 	NameDescription    string       `json:"name_description"`
 	NameLabel          string       `json:"name_label"`
 	CPUs               CPUs         `json:"CPUs"`
@@ -98,6 +99,7 @@ func (c *Client) CreateVm(vmReq Vm) (*Vm, error) {
 		}
 	}
 	params := map[string]interface{}{
+		"affinityHost":     vmReq.AffinityHost,
 		"bootAfterCreate":  true,
 		"name_label":       vmReq.NameLabel,
 		"name_description": vmReq.NameDescription,

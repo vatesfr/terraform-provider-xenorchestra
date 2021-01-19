@@ -361,6 +361,26 @@ func TestAccXenorchestraVm_createWithTags(t *testing.T) {
 	})
 }
 
+func TestAccXenorchestraVm_createWithAffinityHost(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	// TODO: Provide a better way to look this up
+	affinityHost := "f26eb0a5-1d91-4682-ae58-96df405a3af6"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigWithAffinityHost(affinityHost),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "affinity_host", affinityHost)),
+			},
+		},
+	})
+}
+
 func TestAccXenorchestraVm_createWithoutCloudConfig(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	resource.Test(t, resource.TestCase{
@@ -1020,6 +1040,38 @@ resource "xenorchestra_vm" "bar" {
     ]
 }
 `, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id, tag, secondTag)
+}
+
+func testAccVmConfigWithAffinityHost(affinityHost string) string {
+	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
+data "xenorchestra_template" "template" {
+    name_label = "%s"
+}
+
+data "xenorchestra_network" "network" {
+    name_label = "Pool-wide network associated with eth0"
+    pool_id = "%s"
+}
+
+resource "xenorchestra_vm" "bar" {
+    affinity_host = "%s"
+    memory_max = 4295000000
+    cpus  = 1
+    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    name_label = "Terraform testing"
+    name_description = "description"
+    template = "${data.xenorchestra_template.template.id}"
+    network {
+	network_id = "${data.xenorchestra_network.network.id}"
+    }
+
+    disk {
+      sr_id = "%s"
+      name_label = "disk 1"
+      size = 10001317888
+    }
+}
+`, testTemplate.NameLabel, accTestPool.Id, affinityHost, accDefaultSr.Id)
 }
 
 func testAccVmConfig() string {

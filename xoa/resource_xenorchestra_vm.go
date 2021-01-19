@@ -36,6 +36,10 @@ func resourceRecord() *schema.Resource {
 			Update: &duration,
 		},
 		Schema: map[string]*schema.Schema{
+			"affinity_host": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"name_label": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
@@ -217,6 +221,7 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 	}
 
 	vm, err := c.CreateVm(client.Vm{
+		AffinityHost:    d.Get("affinity_host").(string),
 		NameLabel:       d.Get("name_label").(string),
 		NameDescription: d.Get("name_description").(string),
 		Template:        d.Get("template").(string),
@@ -588,6 +593,7 @@ func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, d 
 
 	d.Set("cpus", resource.CPUs.Number)
 	d.Set("name_label", resource.NameLabel)
+	d.Set("affinity_host", resource.AffinityHost)
 	d.Set("name_description", resource.NameDescription)
 	d.Set("high_availability", resource.HA)
 	d.Set("auto_poweron", resource.AutoPoweron)
