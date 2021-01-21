@@ -40,7 +40,6 @@ resource "xenorchestra_vm" "bar" {
 
     # Prefer to run the VM on the primary pool instance
     affinity_host = data.xenorchestra_pool.pool.master
-    # TODO: Add affinity_host example
     network {
       network_id = data.xenorchestra_network.net.id
     }
