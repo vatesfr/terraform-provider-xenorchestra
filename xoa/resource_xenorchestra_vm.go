@@ -374,12 +374,13 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 
 	id := d.Id()
 	nameLabel := d.Get("name_label").(string)
+	affinityHost := d.Get("affinity_host").(string)
 	nameDescription := d.Get("name_description").(string)
 	cpus := d.Get("cpus").(int)
 	autoPowerOn := d.Get("auto_poweron").(bool)
 	ha := d.Get("high_availability").(string)
 	rs := d.Get("resource_set").(string)
-	vm, err := c.UpdateVm(id, cpus, nameLabel, nameDescription, ha, rs, autoPowerOn)
+	vm, err := c.UpdateVm(id, cpus, nameLabel, nameDescription, ha, rs, autoPowerOn, affinityHost)
 	log.Printf("[DEBUG] Retrieved vm after update: %+v\n", vm)
 
 	if err != nil {

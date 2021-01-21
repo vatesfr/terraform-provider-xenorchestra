@@ -5,6 +5,10 @@ Creates a Xen Orchestra vm resource.
 ## Example Usage
 
 ```hcl
+data "xenorchestra_pool" "pool" {
+    name_label = "pool name"
+}
+
 data "xenorchestra_template" "template" {
     name_label = "Puppet agent - Bionic 18.04 - 1"
 }
@@ -34,6 +38,8 @@ resource "xenorchestra_vm" "bar" {
     name_description = "description"
     template = data.xenorchestra_template.template.id
 
+    # Prefer to run the VM on the primary pool instance
+    affinity_host = data.xenorchestra_pool.pool.master
     # TODO: Add affinity_host example
     network {
       network_id = data.xenorchestra_network.net.id
@@ -62,7 +68,7 @@ resource "xenorchestra_vm" "bar" {
 * memory_max - (Required) The amount of memory in bytes the VM will have.
 * high_availabililty - (Optional) The restart priority for the VM. Possible values are `best-effort`, `restart` and empty string (no restarts on failure. Defaults to empty string.
 * auto_poweron - (Optional) If the VM will automatically turn on. Defaults to `false`.
-* affinity_host - (Optional) The preferred host you would like the VM to run on
+* affinity_host - (Optional) The preferred host you would like the VM to run on. If changed on an existing VM it will require a reboot for the VM to be rescheduled.
 * network - (Required) The network the VM will use
     * network_id - (Required) The ID of the network the VM will be on.
     * mac_address - (Optional) The mac address of the network interaface

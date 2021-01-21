@@ -150,7 +150,7 @@ func (c *Client) CreateVm(vmReq Vm) (*Vm, error) {
 	)
 }
 
-func (c *Client) UpdateVm(id string, cpus int, nameLabel, nameDescription, ha, rs string, autoPowerOn bool) (*Vm, error) {
+func (c *Client) UpdateVm(id string, cpus int, nameLabel, nameDescription, ha, rs string, autoPowerOn bool, affinityHost string) (*Vm, error) {
 
 	var resourceSet interface{} = rs
 	if rs == "" {
@@ -158,6 +158,7 @@ func (c *Client) UpdateVm(id string, cpus int, nameLabel, nameDescription, ha, r
 	}
 	params := map[string]interface{}{
 		"id":                id,
+		"affinityHost":      affinityHost,
 		"name_label":        nameLabel,
 		"name_description":  nameDescription,
 		"auto_poweron":      autoPowerOn,
@@ -167,7 +168,7 @@ func (c *Client) UpdateVm(id string, cpus int, nameLabel, nameDescription, ha, r
 		// "CPUs":             cpus,
 		// "memoryMax": memoryMax,
 		// TODO: These need more investigation before they are implemented
-		// pv_args, cpuMask cpuWeight cpuCap affinityHost vga videoram coresPerSocket hasVendorDevice expNestedHvm resourceSet share startDelay nicType hvmBootFirmware virtualizationMode
+		// pv_args, cpuMask cpuWeight cpuCap vga videoram coresPerSocket hasVendorDevice expNestedHvm share startDelay nicType hvmBootFirmware virtualizationMode
 	}
 	log.Printf("[DEBUG] VM params for vm.set: %#v", params)
 	var success bool
