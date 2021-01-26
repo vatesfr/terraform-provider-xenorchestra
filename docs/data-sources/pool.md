@@ -20,6 +20,7 @@ data "xenorchestra_sr" "local_storage" {
 ## Attributes Reference
 * id - Id of the pool.
 * description - The description of the pool.
+* master - The id of the primary instance in the pool.
 * cpus - CPU information about the pool.
     * cores - Number of cores in the pool.
     * sockets - Number of sockets in the pool.

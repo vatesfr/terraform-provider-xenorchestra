@@ -27,6 +27,7 @@ type MemoryObject struct {
 type Vm struct {
 	Type               string       `json:"type,omitempty"`
 	Id                 string       `json:"id,omitempty"`
+	AffinityHost       string       `json:"affinityHost,omitempty"`
 	NameDescription    string       `json:"name_description"`
 	NameLabel          string       `json:"name_label"`
 	CPUs               CPUs         `json:"CPUs"`
@@ -42,6 +43,13 @@ type Vm struct {
 	CloudConfig        string       `json:"cloudConfig"`
 	ResourceSet        string       `json:"resourceSet,omitempty"`
 	Tags               []string     `json:"tags"`
+
+	// These fields are used for passing in disk inputs when
+	// creating Vms, however, this is not a real field as far
+	// as the XO api or XAPI is concerned
+	Disks              []Disk              `json:"-"`
+	CloudNetworkConfig string              `json:"-"`
+	Networks           []map[string]string `json:"-"`
 }
 
 func (v Vm) Compare(obj interface{}) bool {
@@ -70,18 +78,11 @@ func (v Vm) Compare(obj interface{}) bool {
 	return false
 }
 
-func (c *Client) CreateVm(name_label, name_description, template, cloudConfig, cloudNetworkConfig, resourceSet string, cpus, memoryMax int, networks []map[string]string, disks []VDI, tags []string) (*Vm, error) {
-	vifs := []map[string]string{}
-	for _, network := range networks {
-		vifs = append(vifs, map[string]string{
-			"network": network["network_id"],
-			"mac":     network["mac_address"],
-		})
-	}
+func (c *Client) CreateVm(vmReq Vm) (*Vm, error) {
 	existingDisks := map[string]interface{}{}
 	vdis := []interface{}{}
 
-	for idx, disk := range disks {
+	for idx, disk := range vmReq.Disks {
 		d := map[string]interface{}{
 			"$SR":              disk.SrId,
 			"name_label":       disk.NameLabel,
@@ -98,29 +99,33 @@ func (c *Client) CreateVm(name_label, name_description, template, cloudConfig, c
 		}
 	}
 	params := map[string]interface{}{
+		"affinityHost":     vmReq.AffinityHost,
 		"bootAfterCreate":  true,
-		"name_label":       name_label,
-		"name_description": name_description,
-		"template":         template,
+		"name_label":       vmReq.NameLabel,
+		"name_description": vmReq.NameDescription,
+		"template":         vmReq.Template,
 		"coreOs":           false,
 		"cpuCap":           nil,
 		"cpuWeight":        nil,
-		"CPUs":             cpus,
-		"memoryMax":        memoryMax,
+		"CPUs":             vmReq.CPUs.Number,
+		"memoryMax":        vmReq.Memory.Static[1],
 		"existingDisks":    existingDisks,
 		"VDIs":             vdis,
-		"VIFs":             vifs,
-		"tags":             tags,
+		"VIFs":             vmReq.Networks,
+		"tags":             vmReq.Tags,
 	}
 
+	cloudConfig := vmReq.CloudConfig
 	if cloudConfig != "" {
 		params["cloudConfig"] = cloudConfig
 	}
 
+	resourceSet := vmReq.ResourceSet
 	if resourceSet != "" {
 		params["resourceSet"] = resourceSet
 	}
 
+	cloudNetworkConfig := vmReq.CloudNetworkConfig
 	if cloudNetworkConfig != "" {
 		params["networkConfig"] = cloudNetworkConfig
 	}
@@ -145,7 +150,7 @@ func (c *Client) CreateVm(name_label, name_description, template, cloudConfig, c
 	)
 }
 
-func (c *Client) UpdateVm(id string, cpus int, nameLabel, nameDescription, ha, rs string, autoPowerOn bool) (*Vm, error) {
+func (c *Client) UpdateVm(id string, cpus int, nameLabel, nameDescription, ha, rs string, autoPowerOn bool, affinityHost string) (*Vm, error) {
 
 	var resourceSet interface{} = rs
 	if rs == "" {
@@ -153,6 +158,7 @@ func (c *Client) UpdateVm(id string, cpus int, nameLabel, nameDescription, ha, r
 	}
 	params := map[string]interface{}{
 		"id":                id,
+		"affinityHost":      affinityHost,
 		"name_label":        nameLabel,
 		"name_description":  nameDescription,
 		"auto_poweron":      autoPowerOn,
@@ -162,7 +168,7 @@ func (c *Client) UpdateVm(id string, cpus int, nameLabel, nameDescription, ha, r
 		// "CPUs":             cpus,
 		// "memoryMax": memoryMax,
 		// TODO: These need more investigation before they are implemented
-		// pv_args, cpuMask cpuWeight cpuCap affinityHost vga videoram coresPerSocket hasVendorDevice expNestedHvm resourceSet share startDelay nicType hvmBootFirmware virtualizationMode
+		// pv_args, cpuMask cpuWeight cpuCap vga videoram coresPerSocket hasVendorDevice expNestedHvm share startDelay nicType hvmBootFirmware virtualizationMode
 	}
 	log.Printf("[DEBUG] VM params for vm.set: %#v", params)
 	var success bool

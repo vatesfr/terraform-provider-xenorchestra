@@ -361,6 +361,25 @@ func TestAccXenorchestraVm_createWithTags(t *testing.T) {
 	})
 }
 
+func TestAccXenorchestraVm_createWithAffinityHost(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	affinityHost := accTestPool.Master
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigWithAffinityHost(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "affinity_host", affinityHost)),
+			},
+		},
+	})
+}
+
 func TestAccXenorchestraVm_createWithoutCloudConfig(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	resource.Test(t, resource.TestCase{
@@ -833,6 +852,7 @@ func TestAccXenorchestraVm_updatesWithoutReboot(t *testing.T) {
 	updatedNameDesc := "Terraform Updated description"
 	updatedHa := "restart"
 	updatedPowerOn := true
+	affinityHost := accTestPool.Master
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -848,12 +868,13 @@ func TestAccXenorchestraVm_updatesWithoutReboot(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "high_availability", origHa)),
 			},
 			{
-				Config: testAccVmConfigUpdateAttrsHaltIrrelevant(updatedNameLabel, updatedNameDesc, updatedHa, updatedPowerOn),
+				Config: testAccVmConfigUpdateAttrsHaltIrrelevantWithAffinityHost(updatedNameLabel, updatedNameDesc, updatedHa, updatedPowerOn),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttr(resourceName, "name_label", updatedNameLabel),
 					resource.TestCheckResourceAttr(resourceName, "name_description", updatedNameDesc),
+					resource.TestCheckResourceAttr(resourceName, "affinity_host", affinityHost),
 					resource.TestCheckResourceAttr(resourceName, "auto_poweron", strconv.FormatBool(updatedPowerOn)),
 					resource.TestCheckResourceAttr(resourceName, "high_availability", updatedHa)),
 			},
@@ -925,7 +946,6 @@ data "xenorchestra_template" "template" {
 }
 
 data "xenorchestra_network" "network" {
-    // TODO: Replace this with a better solution
     name_label = "Pool-wide network associated with eth0"
     pool_id = "%[2]s"
 }
@@ -956,7 +976,6 @@ data "xenorchestra_template" "template" {
 }
 
 data "xenorchestra_network" "network" {
-    // TODO: Replace this with a better solution
     name_label = "Pool-wide network associated with eth0"
     pool_id = "%s"
 }
@@ -992,7 +1011,6 @@ data "xenorchestra_template" "template" {
 }
 
 data "xenorchestra_network" "network" {
-    // TODO: Replace this with a better solution
     name_label = "Pool-wide network associated with eth0"
     pool_id = "%s"
 }
@@ -1022,6 +1040,42 @@ resource "xenorchestra_vm" "bar" {
 `, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id, tag, secondTag)
 }
 
+func testAccVmConfigWithAffinityHost() string {
+	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
+data "xenorchestra_template" "template" {
+    name_label = "%s"
+}
+
+data "xenorchestra_pool" "pool" {
+    name_label = "%s"
+}
+
+data "xenorchestra_network" "network" {
+    name_label = "Pool-wide network associated with eth0"
+    pool_id = "${data.xenorchestra_pool.pool.id}"
+}
+
+resource "xenorchestra_vm" "bar" {
+    affinity_host = "${data.xenorchestra_pool.pool.master}"
+    memory_max = 4295000000
+    cpus  = 1
+    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    name_label = "Terraform testing"
+    name_description = "description"
+    template = "${data.xenorchestra_template.template.id}"
+    network {
+	network_id = "${data.xenorchestra_network.network.id}"
+    }
+
+    disk {
+      sr_id = "%s"
+      name_label = "disk 1"
+      size = 10001317888
+    }
+}
+`, testTemplate.NameLabel, accTestPool.NameLabel, accDefaultSr.Id)
+}
+
 func testAccVmConfig() string {
 	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
@@ -1029,7 +1083,6 @@ data "xenorchestra_template" "template" {
 }
 
 data "xenorchestra_network" "network" {
-    // TODO: Replace this with a better solution
     name_label = "Pool-wide network associated with eth0"
     pool_id = "%s"
 }
@@ -1061,7 +1114,6 @@ data "xenorchestra_template" "template" {
 }
 
 data "xenorchestra_network" "network" {
-    // TODO: Replace this with a better solution
     name_label = "Pool-wide network associated with eth0"
     pool_id = "%s"
 }
@@ -1094,7 +1146,6 @@ data "xenorchestra_template" "template" {
 }
 
 data "xenorchestra_network" "network" {
-    // TODO: Replace this with a better solution
     name_label = "Pool-wide network associated with eth0"
     pool_id = "%s"
 }
@@ -1135,7 +1186,6 @@ data "xenorchestra_template" "template" {
 }
 
 data "xenorchestra_network" "network" {
-    // TODO: Replace this with a better solution
     name_label = "Pool-wide network associated with eth0"
     pool_id = "%s"
 }
@@ -1168,7 +1218,6 @@ data "xenorchestra_template" "template" {
 }
 
 data "xenorchestra_network" "network" {
-    // TODO: Replace this with a better solution
     name_label = "Pool-wide network associated with eth0"
     pool_id = "%s"
 }
@@ -1206,7 +1255,6 @@ data "xenorchestra_template" "template" {
 }
 
 data "xenorchestra_network" "network" {
-    // TODO: Replace this with a better solution
     name_label = "Pool-wide network associated with eth0"
     pool_id = "%s"
 }
@@ -1239,7 +1287,6 @@ data "xenorchestra_template" "template" {
 }
 
 data "xenorchestra_network" "network" {
-    // TODO: Replace this with a better solution
     name_label = "Pool-wide network associated with eth0"
     pool_id = "%s"
 }
@@ -1272,7 +1319,6 @@ data "xenorchestra_template" "template" {
 }
 
 data "xenorchestra_network" "network" {
-    // TODO: Replace this with a better solution
     name_label = "Pool-wide network associated with eth0"
     pool_id = "%s"
 }
@@ -1305,7 +1351,6 @@ data "xenorchestra_template" "template" {
 }
 
 data "xenorchestra_network" "network" {
-    // TODO: Replace this with a better solution
     name_label = "Pool-wide network associated with eth0"
     pool_id = "%s"
 }
@@ -1343,13 +1388,11 @@ data "xenorchestra_template" "template" {
 }
 
 data "xenorchestra_network" "network" {
-    // TODO: Replace this with a better solution
     name_label = "Pool-wide network associated with eth0"
     pool_id = "%s"
 }
 
 data "xenorchestra_network" "network2" {
-    // TODO: Replace this with a better solution
     name_label = "Pool-wide network associated with eth1"
     pool_id = "%[2]s"
 }
@@ -1384,13 +1427,11 @@ data "xenorchestra_template" "template" {
 }
 
 data "xenorchestra_network" "network" {
-    // TODO: Replace this with a better solution
     name_label = "Pool-wide network associated with eth0"
     pool_id = "%s"
 }
 
 data "xenorchestra_network" "network2" {
-    // TODO: Replace this with a better solution
     name_label = "Pool-wide network associated with eth1"
     pool_id = "%[2]s"
 }
@@ -1430,7 +1471,6 @@ data "xenorchestra_template" "template" {
 }
 
 data "xenorchestra_network" "network" {
-    // TODO: Replace this with a better solution
     name_label = "Pool-wide network associated with eth0"
     pool_id = "%s"
 }
@@ -1455,6 +1495,44 @@ resource "xenorchestra_vm" "bar" {
     }
 }
 `, testTemplate.NameLabel, accTestPool.Id, nameLabel, nameDescription, ha, powerOn, accDefaultSr.Id)
+}
+
+func testAccVmConfigUpdateAttrsHaltIrrelevantWithAffinityHost(nameLabel, nameDescription, ha string, powerOn bool) string {
+	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
+data "xenorchestra_template" "template" {
+    name_label = "%s"
+}
+
+data "xenorchestra_pool" "pool" {
+    name_label = "%s"
+}
+
+data "xenorchestra_network" "network" {
+    name_label = "Pool-wide network associated with eth0"
+    pool_id = data.xenorchestra_pool.pool.id
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 4295000000
+    cpus  = 1
+    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    name_label = "%s"
+    name_description = "%s"
+    affinity_host = "${data.xenorchestra_pool.pool.master}"
+    template = "${data.xenorchestra_template.template.id}"
+    high_availability = "%s"
+    auto_poweron = "%t"
+    network {
+	network_id = "${data.xenorchestra_network.network.id}"
+    }
+
+    disk {
+      sr_id = "%s"
+      name_label = "disk 1"
+      size = 10001317888
+    }
+}
+`, testTemplate.NameLabel, accTestPool.NameLabel, nameLabel, nameDescription, ha, powerOn, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithResourceSet() string {
@@ -1488,7 +1566,6 @@ data "xenorchestra_template" "template" {
 }
 
 data "xenorchestra_network" "network" {
-    // TODO: Replace this with a better solution
     name_label = "Pool-wide network associated with eth0"
     pool_id = "%s"
 }

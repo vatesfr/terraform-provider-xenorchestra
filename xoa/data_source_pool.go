@@ -21,6 +21,10 @@ func dataSourceXoaPool() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"master": &schema.Schema{
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"cpus": &schema.Schema{
 				Type:     schema.TypeMap,
 				Computed: true,
@@ -59,9 +63,15 @@ func dataSourcePoolRead(d *schema.ResourceData, m interface{}) error {
 		"sockets": fmt.Sprintf("%d", pool.Cpus.Sockets),
 		"cores":   fmt.Sprintf("%d", pool.Cpus.Cores),
 	}
-	d.Set("description", pool.Description)
+	if err := d.Set("description", pool.Description); err != nil {
+		return err
+	}
 	err = d.Set("cpus", cpus)
 	if err != nil {
+		return err
+	}
+
+	if err := d.Set("master", pool.Master); err != nil {
 		return err
 	}
 	return nil

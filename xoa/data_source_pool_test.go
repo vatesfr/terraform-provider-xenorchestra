@@ -20,7 +20,7 @@ func TestAccXenorchestraDataSource_pool(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckXenorchestraDataSourcePool(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
-					// resource.TestCheckResourceAttrSet(resourceName, "description"),
+					resource.TestCheckResourceAttrSet(resourceName, "master"),
 					resource.TestCheckResourceAttr(resourceName, "cpus.%", "2"),
 					resource.TestCheckResourceAttrSet(resourceName, "cpus.sockets"),
 					resource.TestCheckResourceAttrSet(resourceName, "cpus.cores"),
