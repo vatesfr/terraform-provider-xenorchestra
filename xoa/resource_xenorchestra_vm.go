@@ -66,9 +66,20 @@ func resourceRecord() *schema.Resource {
 				ValidateFunc: internal.StringInSlice(validHaOptions, false),
 			},
 			"template": &schema.Schema{
+				Optional: true,
 				Type:     schema.TypeString,
-				Required: true,
 				ForceNew: true,
+				ExactlyOneOf: []string{
+					"template_name",
+				},
+			},
+			"template_name": &schema.Schema{
+				Optional: true,
+				Type:     schema.TypeString,
+				ForceNew: true,
+				ExactlyOneOf: []string{
+					"template",
+				},
 			},
 			"cloud_config": &schema.Schema{
 				Type:     schema.TypeString,
@@ -183,6 +194,12 @@ func resourceRecord() *schema.Resource {
 
 func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 	c := m.(*client.Client)
+
+	// template_name is only used for importing resources where the
+	// existing template ID cannot be found.
+	if _, ok := d.GetOk("template_name"); ok {
+		return errors.New("Cannot use template_name on create")
+	}
 
 	network_maps := []map[string]string{}
 	networks := d.Get("network").([]interface{})

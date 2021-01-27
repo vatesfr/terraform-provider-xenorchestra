@@ -536,6 +536,53 @@ func TestAccXenorchestraVm_attachDisconnectedVif(t *testing.T) {
 	})
 }
 
+func TestAccXenorchestraVm_createWithTemplateNameFails(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigWithTemplateName(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckNoResourceAttr(resourceName, "template"),
+					resource.TestCheckResourceAttr(resourceName, "template_name", testTemplate.Id)),
+				ExpectError: regexp.MustCompile("Cannot use template_name on create"),
+			},
+		},
+	})
+}
+
+func TestAccXenorchestraVm_createWithTemplateAndPlanWithTemplateName(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfig(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckNoResourceAttr(resourceName, "template_name"),
+					resource.TestCheckResourceAttr(resourceName, "template", testTemplate.Id)),
+			},
+			{
+				Config: testAccVmConfigWithTemplateName(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckNoResourceAttr(resourceName, "template"),
+					resource.TestCheckResourceAttr(resourceName, "template_name", testTemplate.Id)),
+			},
+		},
+	})
+}
+
 func TestAccXenorchestraVm_attachDisconnectedDisk(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	disconnectDisk := func() {
@@ -703,6 +750,86 @@ func TestAccXenorchestraVm_addAndRemoveDisksToVm(t *testing.T) {
 	})
 }
 
+func TestAccXenorchestraVm_importWithTemplateName(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	checkFn := func(s []*terraform.InstanceState) error {
+		attrs := []string{"id", "name_label"}
+		for _, attr := range attrs {
+			_, ok := s[0].Attributes[attr]
+
+			if !ok {
+				return fmt.Errorf("attribute %s should be set", attr)
+			}
+		}
+		return nil
+	}
+	// var vm *client.Vm
+	// waiting := make(chan bool)
+	// createVm := func() {
+	// 	var err error
+	// 	c, err := client.NewClient(client.GetConfigFromEnv())
+	// 	if err != nil {
+	// 		t.Fatalf("failed to create client with error: %v", err)
+	// 	}
+
+	// 	vm, err = c.CreateVm(client.Vm{
+	// 		NameLabel: "Terraform testing",
+	// 		Template:  testTemplate.Id,
+	// 		CPUs: client.CPUs{
+	// 			Number: 1,
+	// 		},
+	// 		Memory: client.MemoryObject{
+	// 			Static: []int{0, 4294970000},
+	// 		},
+	// 		Disks: []client.Disk{
+	// 			client.Disk{
+	// 				VDI: client.VDI{
+	// 					SrId:      accDefaultSr.Id,
+	// 					NameLabel: "testing",
+	// 					Size:      10000000,
+	// 				},
+	// 			},
+	// 		},
+	// 	})
+
+	// 	if err != nil {
+	// 		t.Fatalf("failed to create vm with error: %v", err)
+	// 	}
+
+	// 	waiting <- false
+
+	// }
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: func() string {
+					return testAccCloudConfigConfig("vm-template", "template")
+				}(),
+			},
+			{
+				ResourceName: resourceName,
+				// PreConfig: func() {
+				// 	<-waiting
+				// },
+				ImportState:      true,
+				ImportStateCheck: checkFn,
+				ImportStateId:    "dae5c615-dea1-ccaf-a5e4-0eb74f6c2e62",
+				// TODO: Need to store all the
+				// schema.Schema structs in the statefile that
+				// currently exist before this will pass.
+				ImportStateVerify: true,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "template_name")),
+			},
+		},
+	})
+}
+
 func TestAccXenorchestraVm_import(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	checkFn := func(s []*terraform.InstanceState) error {
@@ -743,7 +870,6 @@ func TestAccXenorchestraVm_import(t *testing.T) {
 	})
 }
 
-// TODO: Add unit tests
 func testAccCheckXenorchestraVmDestroy(s *terraform.State) error {
 	c, err := client.NewClient(client.GetConfigFromEnv())
 	if err != nil {
@@ -1105,6 +1231,38 @@ resource "xenorchestra_vm" "bar" {
     }
 }
 `, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id)
+}
+
+func testAccVmConfigWithTemplateName() string {
+	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
+data "xenorchestra_template" "template" {
+    name_label = "%s"
+}
+
+data "xenorchestra_network" "network" {
+    name_label = "Pool-wide network associated with eth0"
+    pool_id = "%s"
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 4295000000
+    cpus  = 1
+    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    name_label = "Terraform testing"
+    name_description = "description"
+    template_name = "${data.xenorchestra_template.template.name_label}"
+    network {
+	network_id = "${data.xenorchestra_network.network.id}"
+    }
+
+    disk {
+      sr_id = "%s"
+      name_label = "disk 1"
+      size = 10001317888
+    }
+}
+`, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id)
+
 }
 
 func testAccVmConfigWithDiskNameLabelAndNameDescription(nameLabel string, description string) string {
