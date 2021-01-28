@@ -123,6 +123,15 @@ func resourceRecord() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 							Computed: true,
+							StateFunc: func(val interface{}) string {
+								unformattedMac := val.(string)
+								mac, err := net.ParseMAC(unformattedMac)
+								if err != nil {
+									panic(fmt.Sprintf("Mac address `%s` was not parsable. This should never happened because Terraform's validation should happen before this is stored into state", unformattedMac))
+								}
+								return mac.String()
+
+							},
 							ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
 								mac_address := val.(string)
 								if _, err := net.ParseMAC(mac_address); err != nil {
@@ -188,11 +197,11 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 	networks := d.Get("network").([]interface{})
 
 	for _, network := range networks {
-		net, _ := network.(map[string]interface{})
+		netMap, _ := network.(map[string]interface{})
 
 		network_maps = append(network_maps, map[string]string{
-			"network": net["network_id"].(string),
-			"mac":     net["mac_address"].(string),
+			"network": netMap["network_id"].(string),
+			"mac":     getFormattedMac(netMap["mac_address"].(string)),
 		})
 	}
 
@@ -545,7 +554,7 @@ func expandNetworks(networks []interface{}) []*client.VIF {
 		attached := data["attached"].(bool)
 		device := data["device"].(string)
 		networkId := data["network_id"].(string)
-		macAddress := data["mac_address"].(string)
+		macAddress := getFormattedMac(data["mac_address"].(string))
 		vifs = append(vifs, &client.VIF{
 			Attached:   attached,
 			Device:     device,
@@ -758,4 +767,16 @@ func performDiskUpdateAction(c *client.Client, action updateDiskActions, d clien
 	}
 
 	return errors.New(fmt.Sprintf("disk update action '%d' not handled", action))
+}
+
+func getFormattedMac(macAddress string) string {
+	if macAddress == "" {
+		return macAddress
+	}
+	mac, err := net.ParseMAC(macAddress)
+
+	if err != nil {
+		panic(fmt.Sprintf("Mac address `%s` was not parsable. This is a bug in the provider and this value should have been properly formatted", macAddress))
+	}
+	return mac.String()
 }

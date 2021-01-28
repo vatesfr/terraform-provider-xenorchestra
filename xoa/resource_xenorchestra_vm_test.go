@@ -421,6 +421,7 @@ func TestAccXenorchestraVm_createAndUpdateWithMacAddress(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	macAddress := "00:0a:83:b1:c0:83"
 	otherMacAddress := "00:0a:83:b1:c0:00"
+	macWithDashes := "00-0a-83-b1-c0-01"
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -438,6 +439,9 @@ func TestAccXenorchestraVm_createAndUpdateWithMacAddress(t *testing.T) {
 					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
 			},
 			{
+				PreConfig: func() {
+					time.Sleep(60 * time.Second)
+				},
 				Config: testAccVmConfigWithMacAddress(otherMacAddress),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
@@ -445,6 +449,18 @@ func TestAccXenorchestraVm_createAndUpdateWithMacAddress(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "network.#", "1"),
 					internal.TestCheckTypeSetElemNestedAttrs(resourceName, "network.*", map[string]string{
 						"mac_address": otherMacAddress,
+					}),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
+			},
+			{
+				Config: testAccVmConfigWithMacAddress(macWithDashes),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "network.#", "1"),
+					internal.TestCheckTypeSetElemNestedAttrs(resourceName, "network.*", map[string]string{
+						// All mac addresses should be formatted to use colons
+						"mac_address": getFormattedMac(macWithDashes),
 					}),
 					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
 			},
@@ -1338,7 +1354,7 @@ resource "xenorchestra_vm" "bar" {
     disk {
       sr_id = "%s"
       name_label = "disk 1"
-      size = 10001317888
+      size = 10737418240
     }
 }
 `, testTemplate.NameLabel, accTestPool.Id, macAddress, accDefaultSr.Id)
