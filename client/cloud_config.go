@@ -1,9 +1,29 @@
 package client
 
+import (
+	"fmt"
+	"log"
+	"strings"
+)
+
 type CloudConfig struct {
 	Name     string `json:"name"`
 	Template string `json:"template"`
 	Id       string `json:"id"`
+}
+
+func (c CloudConfig) Compare(obj interface{}) bool {
+	other := obj.(CloudConfig)
+
+	if other.Id == c.Id {
+		return true
+	}
+
+	if other.Name == c.Name {
+		return true
+	}
+
+	return false
 }
 
 type CloudConfigResponse struct {
@@ -21,19 +41,50 @@ func (c *Client) GetCloudConfig(id string) (*CloudConfig, error) {
 		return nil, err
 	}
 
-	var configResult CloudConfig
-	found := false
+	cloudConfig := CloudConfig{Id: id}
 	for _, config := range getAllResp.Result {
-		if config.Id == id {
-			configResult = config
-			found = true
+		if cloudConfig.Compare(config) {
+			return &config, nil
 		}
 	}
 
-	if !found {
-		return nil, nil
+	return nil, NotFound{Query: cloudConfig}
+}
+
+func (c *Client) GetCloudConfigByName(name string) ([]CloudConfig, error) {
+	params := map[string]interface{}{
+		"name": name,
 	}
-	return &configResult, nil
+	var getAllResp CloudConfigResponse
+	err := c.Call("cloudConfig.getAll", params, &getAllResp.Result)
+
+	if err != nil {
+		return nil, err
+	}
+
+	cloudConfigs := []CloudConfig{}
+	cloudConfig := CloudConfig{Name: name}
+	for _, config := range getAllResp.Result {
+		if cloudConfig.Compare(config) {
+			cloudConfigs = append(cloudConfigs, config)
+		}
+	}
+
+	if len(cloudConfigs) == 0 {
+		return nil, NotFound{Query: CloudConfig{Name: name}}
+	}
+	return cloudConfigs, nil
+}
+
+func (c *Client) GetAllCloudConfigs() ([]CloudConfig, error) {
+	var getAllResp CloudConfigResponse
+	params := map[string]interface{}{}
+	err := c.Call("cloudConfig.getAll", params, &getAllResp.Result)
+
+	if err != nil {
+		return nil, err
+	}
+	return getAllResp.Result, nil
 }
 
 func (c *Client) CreateCloudConfig(name, template string) (*CloudConfig, error) {
@@ -78,4 +129,33 @@ func (c *Client) DeleteCloudConfig(id string) error {
 	}
 
 	return nil
+}
+
+func RemoveCloudConfigsWithPrefix(cloudConfigPrefix string) func(string) error {
+	return func(_ string) error {
+		c, err := NewClient(GetConfigFromEnv())
+		if err != nil {
+			return fmt.Errorf("error getting client: %s", err)
+		}
+
+		cloudConfigs, err := c.GetAllCloudConfigs()
+
+		if err != nil {
+			return err
+		}
+
+		for _, cloudConfig := range cloudConfigs {
+
+			if strings.HasPrefix(cloudConfig.Name, cloudConfigPrefix) {
+
+				log.Printf("[DEBUG] Removing cloud config `%s`\n", cloudConfig.Name)
+				err = c.DeleteCloudConfig(cloudConfig.Id)
+
+				if err != nil {
+					log.Printf("failed to remove cloud config `%s` during sweep: %v\n", cloudConfig.Name, err)
+				}
+			}
+		}
+		return nil
+	}
 }

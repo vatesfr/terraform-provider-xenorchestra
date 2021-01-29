@@ -42,6 +42,7 @@ func Provider() terraform.ResourceProvider {
 			"xenorchestra_resource_set": resourceResourceSet(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
+			"xenorchestra_cloud_config": dataSourceXoaCloudConfig(),
 			"xenorchestra_network":      dataSourceXoaNetwork(),
 			"xenorchestra_pif":          dataSourceXoaPIF(),
 			"xenorchestra_pool":         dataSourceXoaPool(),
