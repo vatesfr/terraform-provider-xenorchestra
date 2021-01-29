@@ -1000,7 +1000,7 @@ resource "xenorchestra_vm" "bar" {
     disk {
       sr_id = "%s"
       name_label = "disk 1"
-      size = 10737418240
+      size = 10001317888
     }
 }
 `, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id)
@@ -1375,7 +1375,7 @@ resource "xenorchestra_vm" "bar" {
     disk {
       sr_id = "%s"
       name_label = "disk 1"
-      size = 10737418240
+      size = 10001317888
     }
 }
 `, testTemplate.NameLabel, accTestPool.Id, macAddress, accDefaultSr.Id)
