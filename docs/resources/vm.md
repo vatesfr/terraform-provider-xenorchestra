@@ -70,7 +70,7 @@ resource "xenorchestra_vm" "bar" {
 * affinity_host - (Optional) The preferred host you would like the VM to run on. If changed on an existing VM it will require a reboot for the VM to be rescheduled.
 * network - (Required) The network the VM will use
     * network_id - (Required) The ID of the network the VM will be on.
-    * mac_address - (Optional) The mac address of the network interaface
+    * mac_address - (Optional) The mac address of the network interface. This must be parsable by go's [net.ParseMAC function](https://golang.org/pkg/net/#ParseMAC). All mac addresses are stored in Terraform's state with [HardwareAddr's string representation](https://golang.org/pkg/net/#HardwareAddr.String) i.e. 00:00:5e:00:53:01
 * disk - (Required) The disk the VM will have access to.
     * sr_id - (Required) The storage repository ID to use.
     * name_label - (Required) The name for the disk.
