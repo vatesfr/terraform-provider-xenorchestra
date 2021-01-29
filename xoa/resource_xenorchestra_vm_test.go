@@ -463,9 +463,6 @@ func TestAccXenorchestraVm_createAndUpdateWithMacAddress(t *testing.T) {
 					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
 			},
 			{
-				PreConfig: func() {
-					time.Sleep(60 * time.Second)
-				},
 				Config: testAccVmConfigWithMacAddress(otherMacAddress),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
@@ -1003,7 +1000,7 @@ resource "xenorchestra_vm" "bar" {
     disk {
       sr_id = "%s"
       name_label = "disk 1"
-      size = 10001317888
+      size = 10737418240
     }
 }
 `, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id)
