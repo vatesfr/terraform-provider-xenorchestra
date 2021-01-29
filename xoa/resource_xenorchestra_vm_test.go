@@ -417,6 +417,30 @@ func TestAccXenorchestraVm_createWithCloudInitNetworkConfig(t *testing.T) {
 	})
 }
 
+func TestAccXenorchestraVm_createWithDashedMacAddress(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	macWithDashes := "00-0a-83-b1-c0-01"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigWithMacAddress(macWithDashes),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "network.#", "1"),
+					internal.TestCheckTypeSetElemNestedAttrs(resourceName, "network.*", map[string]string{
+						// All mac addresses should be formatted to use colons
+						"mac_address": getFormattedMac(macWithDashes),
+					}),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
+			},
+		},
+	})
+}
+
 func TestAccXenorchestraVm_createAndUpdateWithMacAddress(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	macAddress := "00:0a:83:b1:c0:83"
