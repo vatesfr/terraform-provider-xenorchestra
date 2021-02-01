@@ -31,32 +31,24 @@ type CloudConfigResponse struct {
 }
 
 func (c *Client) GetCloudConfig(id string) (*CloudConfig, error) {
-	params := map[string]interface{}{
-		"id": id,
-	}
-	var getAllResp CloudConfigResponse
-	err := c.Call("cloudConfig.getAll", params, &getAllResp.Result)
+	cloudConfigs, err := c.GetAllCloudConfigs()
 
 	if err != nil {
 		return nil, err
 	}
 
 	cloudConfig := CloudConfig{Id: id}
-	for _, config := range getAllResp.Result {
+	for _, config := range cloudConfigs {
 		if cloudConfig.Compare(config) {
 			return &config, nil
 		}
 	}
 
-	return nil, NotFound{Query: cloudConfig}
+	return nil, nil
 }
 
 func (c *Client) GetCloudConfigByName(name string) ([]CloudConfig, error) {
-	params := map[string]interface{}{
-		"name": name,
-	}
-	var getAllResp CloudConfigResponse
-	err := c.Call("cloudConfig.getAll", params, &getAllResp.Result)
+	allCloudConfigs, err := c.GetAllCloudConfigs()
 
 	if err != nil {
 		return nil, err
@@ -64,7 +56,7 @@ func (c *Client) GetCloudConfigByName(name string) ([]CloudConfig, error) {
 
 	cloudConfigs := []CloudConfig{}
 	cloudConfig := CloudConfig{Name: name}
-	for _, config := range getAllResp.Result {
+	for _, config := range allCloudConfigs {
 		if cloudConfig.Compare(config) {
 			cloudConfigs = append(cloudConfigs, config)
 		}
@@ -101,15 +93,14 @@ func (c *Client) CreateCloudConfig(name, template string) (*CloudConfig, error) 
 
 	// Since the Id isn't returned in the reponse loop over all cloud configs
 	// and find the one we just created
-	var getAllResp CloudConfigResponse
-	err = c.Call("cloudConfig.getAll", params, &getAllResp.Result)
+	cloudConfigs, err := c.GetAllCloudConfigs()
 
 	if err != nil {
 		return nil, err
 	}
 
 	var found CloudConfig
-	for _, config := range getAllResp.Result {
+	for _, config := range cloudConfigs {
 		if config.Name == name && config.Template == template {
 			found = config
 		}
