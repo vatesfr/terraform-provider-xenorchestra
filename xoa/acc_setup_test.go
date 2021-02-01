@@ -23,6 +23,7 @@ func TestMain(m *testing.M) {
 	client.RemoveResourceSetsWithNamePrefix(accTestPrefix)("")
 	client.RemoveTagFromAllObjects(accTestPrefix)("")
 	client.RemoveUsersWithPrefix(accTestPrefix)("")
+	client.RemoveCloudConfigsWithPrefix(accTestPrefix)("")
 
 	os.Exit(code)
 }
