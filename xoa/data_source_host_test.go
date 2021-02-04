@@ -20,7 +20,7 @@ func TestAccXenorchestraDataSource_host(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckXenorchestraDataSourceHost(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
-					resource.TestCheckResourceAttr(resourceName, "name_label", accTestPool.NameLabel)),
+					resource.TestCheckResourceAttr(resourceName, "name_label", accTestHost.NameLabel)),
 			},
 		},
 	},
@@ -47,5 +47,5 @@ func testAccXenorchestraDataSourceHostConfig() string {
 data "xenorchestra_host" "host1" {
     name_label = "%s"
 }
-`, accTestPool.NameLabel)
+`, accTestHost.NameLabel)
 }

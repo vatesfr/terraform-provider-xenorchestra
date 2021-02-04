@@ -43,7 +43,7 @@ func TestGetHostByName(t *testing.T) {
 		t.Errorf("failed to create client with error: %v", err)
 	}
 
-	nameLabel := accTestPool.NameLabel
+	nameLabel := accTestHost.NameLabel
 	hosts, err := c.GetHostByName(nameLabel)
 
 	host := hosts[0]
