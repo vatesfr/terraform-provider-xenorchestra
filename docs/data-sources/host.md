@@ -19,5 +19,9 @@ resource "xenorchestra_vm" "node" {
 ## Argument Reference
 * name_label - (Required) The name of the host you want to look up.
 
+~> **NOTE:** If there are multiple hosts with the same name
+Terraform will fail. Ensure that your names are unique when
+using the data source.
+
 ## Attributes Reference
 * id - Id of the host.

@@ -38,20 +38,17 @@ func TestHostCompare(t *testing.T) {
 
 func TestGetHostByName(t *testing.T) {
 	c, err := NewClient(GetConfigFromEnv())
-
 	if err != nil {
-		t.Errorf("failed to create client with error: %v", err)
+		t.Fatalf("failed to create client with error: %v", err)
 	}
 
 	nameLabel := accTestHost.NameLabel
 	hosts, err := c.GetHostByName(nameLabel)
-
-	host := hosts[0]
-
 	if err != nil {
-		t.Errorf("failed to get host with error: %v", err)
+		t.Fatalf("failed to get host with error: %v", err)
 	}
 
+	host := hosts[0]
 	if host.NameLabel != nameLabel {
 		t.Errorf("expected host to have name `%s` received `%s` instead.", nameLabel, host.NameLabel)
 	}
