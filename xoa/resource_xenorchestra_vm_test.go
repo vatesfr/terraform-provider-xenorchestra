@@ -14,6 +14,62 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
+func Test_extractPrimaryIpFromNetworks(t *testing.T) {
+	ipv4 := "169.254.169.254"
+	secondIpv4 := "169.254.255.254"
+	ipv6 := "2001:0db8:85a3:0000:0000:8a2e:0370:7334"
+	secondIpv6 := "2001:0db8:85a3:0000:0000:8a2e:0370:7000"
+	tests := []struct {
+		networks map[string]string
+		expected []map[string][]string
+	}{
+		{
+			networks: map[string]string{
+				"0/ip":     ipv4,
+				"0/ipv4/0": ipv4,
+				"0/ipv4/1": secondIpv4,
+				"0/ipv6/0": ipv6,
+				"0/ipv6/1": secondIpv6,
+				"1/ip":     ipv4,
+				"1/ipv4/0": ipv4,
+				"1/ipv4/1": secondIpv4,
+				"1/ipv6/0": ipv6,
+				"1/ipv6/1": secondIpv6,
+			},
+			expected: []map[string][]string{
+				map[string][]string{
+					"ip":   []string{ipv4},
+					"ipv4": []string{ipv4, secondIpv4},
+					"ipv6": []string{ipv6, secondIpv6},
+				},
+				map[string][]string{
+					"ip":   []string{ipv4},
+					"ipv4": []string{ipv4, secondIpv4},
+					"ipv6": []string{ipv6, secondIpv6},
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		expected := test.expected
+		nets := test.networks
+		actual := extractIpsFromNetworks(nets)
+
+		if len(expected) != len(actual) {
+			t.Errorf("expected '%+v' to have the same length as: %+v", expected, actual)
+		}
+
+		for _, device := range []int{0, 1} {
+			for _, key := range []string{"ip", "ipv4", "ipv6"} {
+				if !reflect.DeepEqual(expected[device][key], actual[device][key]) {
+					t.Errorf("expected '%+v' to be equal to: %+v", expected[device][key], actual[device][key])
+				}
+			}
+		}
+	}
+}
+
 func Test_diskHash(t *testing.T) {
 	nameLabel := "name label"
 	nameDescription := "name description"
@@ -294,6 +350,26 @@ func TestAccXenorchestraVm_createAndPlanWithNonExistantVm(t *testing.T) {
 				Config:             testAccVmConfig(),
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
+}
+
+func TestAccXenorchestraVm_createWhenWaitingForIp(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigWaitForIp(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "wait_for_ip", "true"),
+					resource.TestCheckResourceAttrSet(resourceName, "primary_ip_address"),
+				),
 			},
 		},
 	})
@@ -1126,6 +1202,38 @@ data "xenorchestra_network" "network" {
 
 resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
+    cpus  = 1
+    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    name_label = "Terraform testing"
+    name_description = "description"
+    template = "${data.xenorchestra_template.template.id}"
+    network {
+	network_id = "${data.xenorchestra_network.network.id}"
+    }
+
+    disk {
+      sr_id = "%s"
+      name_label = "disk 1"
+      size = 10001317888
+    }
+}
+`, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id)
+}
+
+func testAccVmConfigWaitForIp() string {
+	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
+data "xenorchestra_template" "template" {
+    name_label = "%s"
+}
+
+data "xenorchestra_network" "network" {
+    name_label = "Pool-wide network associated with eth0"
+    pool_id = "%s"
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 4295000000
+    wait_for_ip = true
     cpus  = 1
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
     name_label = "Terraform testing"

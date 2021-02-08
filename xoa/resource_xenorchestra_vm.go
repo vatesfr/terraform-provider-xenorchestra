@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"regexp"
 	"sort"
 	"strconv"
 	"time"
@@ -99,6 +100,15 @@ func resourceRecord() *schema.Resource {
 			},
 			"resource_set": &schema.Schema{
 				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"primary_ip_address": &schema.Schema{
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"wait_for_ip": &schema.Schema{
+				Type:     schema.TypeBool,
+				Default:  false,
 				Optional: true,
 			},
 			"network": &schema.Schema{
@@ -245,9 +255,9 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 				0, d.Get("memory_max").(int),
 			},
 		},
-		Tags:     vmTags,
-		Disks:    ds,
-		Networks: network_maps,
+		Tags:    vmTags,
+		Disks:   ds,
+		VIFsMap: network_maps,
 	},
 	)
 
@@ -270,6 +280,20 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 
 	if err != nil {
 		return err
+	}
+	log.Printf("[DEBUG] Found the following ip addresses: %v\n", vm.Addresses)
+	if len(vm.Addresses) != 0 {
+		networkIps := extractIpsFromNetworks(vm.Addresses)
+		log.Printf("[DEBUG] Extracted to the following: %v\n", networkIps)
+		for _, proto := range []string{"ip", "ipv4", "ipv6"} {
+			if len(networkIps[0][proto]) != 0 {
+				primary := networkIps[0][proto][0]
+				if err := d.Set("primary_ip_address", primary); err != nil {
+					return err
+				}
+			}
+
+		}
 	}
 	return nil
 }
@@ -625,6 +649,21 @@ func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, d 
 		return err
 	}
 
+	log.Printf("[DEBUG] Found the following ip addresses: %v\n", resource.Addresses)
+	if len(resource.Addresses) != 0 {
+		networkIps := extractIpsFromNetworks(resource.Addresses)
+		log.Printf("[DEBUG] Extracted to the following: %v\n", networkIps)
+		for _, proto := range []string{"ip", "ipv4", "ipv6"} {
+			if len(networkIps[0][proto]) != 0 {
+				primary := networkIps[0][proto][0]
+				if err := d.Set("primary_ip_address", primary); err != nil {
+					return err
+				}
+			}
+
+		}
+	}
+
 	return nil
 }
 
@@ -779,4 +818,49 @@ func getFormattedMac(macAddress string) string {
 		panic(fmt.Sprintf("Mac address `%s` was not parsable. This is a bug in the provider and this value should have been properly formatted", macAddress))
 	}
 	return mac.String()
+}
+
+type guestNetwork map[string][]string
+
+// Returns <min(n)>/ip || <min(n)>/ipv4/<min(m)> || <min(n)>/ipv6/<min(m)>
+func extractIpsFromNetworks(networks map[string]string) []guestNetwork {
+	IP_REGEX := `^(\d+)\/(ip(?:v4|v6)?)(?:\/(\d+))?$`
+	reg := regexp.MustCompile(IP_REGEX)
+
+	keys := make([]string, len(networks))
+	for k := range networks {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+	last := keys[len(keys)-1]
+
+	matches := reg.FindStringSubmatch(last)
+	if matches == nil || len(matches) != 4 {
+		panic("this should never happen")
+	}
+	cap, _ := strconv.Atoi(matches[1])
+	devices := make([]guestNetwork, 0, cap)
+	for _, key := range keys {
+		matches := reg.FindStringSubmatch(key)
+
+		if matches == nil || len(matches) != 4 {
+			continue
+		}
+		deviceStr, proto := matches[1], matches[2]
+
+		deviceNum, _ := strconv.Atoi(deviceStr)
+		for len(devices) <= deviceNum {
+			devices = append(devices, map[string][]string{})
+		}
+
+		// This will panic. Need to use for loop like above
+		ipList := devices[deviceNum][proto]
+		if ipList == nil {
+			devices[deviceNum][proto] = []string{}
+		}
+
+		devices[deviceNum][proto] = append(devices[deviceNum][proto], networks[key])
+	}
+	return devices
 }
