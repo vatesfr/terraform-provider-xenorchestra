@@ -44,7 +44,7 @@ func testAccCheckXenorchestraDataSourceHost(n string) resource.TestCheckFunc {
 
 func testAccXenorchestraDataSourceHostConfig() string {
 	return fmt.Sprintf(`
-data "xenorchestra_host" "host1" {
+data "xenorchestra_host" "host" {
     name_label = "%s"
 }
 `, accTestHost.NameLabel)

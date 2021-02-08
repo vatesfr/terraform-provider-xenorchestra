@@ -17,7 +17,7 @@ var testTemplate client.Template
 func TestMain(m *testing.M) {
 	client.FindTemplateForTests(&testTemplate)
 	client.FindPoolForTests(&accTestPool)
-	client.FindHostForTests(&accTestHost)
+	client.FindHostForTests(accTestPool.Master, &accTestHost)
 	client.FindStorageRepositoryForTests(accTestPool, &accDefaultSr, accTestPrefix)
 	code := m.Run()
 

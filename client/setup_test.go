@@ -46,7 +46,7 @@ func TestMain(m *testing.M) {
 
 	FindTemplateForTests(&testTemplate)
 	FindPoolForTests(&accTestPool)
-	FindHostForTests(&accTestHost)
+	FindHostForTests(accTestPool.Master, &accTestHost)
 	FindStorageRepositoryForTests(accTestPool, &accDefaultSr, integrationTestPrefix)
 	CreateNetwork(&accDefaultNetwork)
 	FindOrCreateVmForTests(&accVm, accDefaultSr.Id, accDefaultNetwork.Id, testTemplate.Id, integrationTestPrefix)
