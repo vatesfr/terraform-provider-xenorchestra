@@ -141,6 +141,8 @@ func (c *Client) GetAllObjectsOfType(obj XoObject, response interface{}) error {
 		xoApiType = "PIF"
 	case Pool:
 		xoApiType = "pool"
+	case Host:
+		xoApiType = "host"
 	case StorageRepository:
 		xoApiType = "SR"
 	case Vm:
