@@ -51,6 +51,7 @@ type Vm struct {
 	Disks              []Disk              `json:"-"`
 	CloudNetworkConfig string              `json:"-"`
 	VIFsMap            []map[string]string `json:"-"`
+	WaitForIps         bool                `json:"-"`
 }
 
 func (v Vm) Compare(obj interface{}) bool {
@@ -138,8 +139,7 @@ func (c *Client) CreateVm(vmReq Vm) (*Vm, error) {
 		return nil, err
 	}
 
-	waitForIp := true
-	err = c.waitForModifyVm(vmId, waitForIp, 5*time.Minute)
+	err = c.waitForModifyVm(vmId, vmReq.WaitForIps, 5*time.Minute)
 
 	if err != nil {
 		return nil, err

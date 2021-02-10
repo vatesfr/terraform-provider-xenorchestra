@@ -106,6 +106,20 @@ func resourceRecord() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"ipv4_addresses": &schema.Schema{
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
+			"ipv6_addresses": &schema.Schema{
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
 			"wait_for_ip": &schema.Schema{
 				Type:     schema.TypeBool,
 				Default:  false,
@@ -255,9 +269,10 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 				0, d.Get("memory_max").(int),
 			},
 		},
-		Tags:    vmTags,
-		Disks:   ds,
-		VIFsMap: network_maps,
+		Tags:       vmTags,
+		Disks:      ds,
+		VIFsMap:    network_maps,
+		WaitForIps: d.Get("wait_for_ip").(bool),
 	},
 	)
 
@@ -265,37 +280,19 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	d.SetId(vm.Id)
-	d.Set("cloud_config", d.Get("cloud_config").(string))
-	d.Set("memory_max", d.Get("memory_max").(int))
-	d.Set("resource_set", d.Get("resource_set").(string))
-
 	vifs, err := c.GetVIFs(vm)
 
 	if err != nil {
 		return err
 	}
 
-	err = d.Set("network", vifsToMapList(vifs))
+	vmDisks, err := c.GetDisks(vm)
 
 	if err != nil {
 		return err
 	}
-	log.Printf("[DEBUG] Found the following ip addresses: %v\n", vm.Addresses)
-	if len(vm.Addresses) != 0 {
-		networkIps := extractIpsFromNetworks(vm.Addresses)
-		log.Printf("[DEBUG] Extracted to the following: %v\n", networkIps)
-		for _, proto := range []string{"ip", "ipv4", "ipv6"} {
-			if len(networkIps[0][proto]) != 0 {
-				primary := networkIps[0][proto][0]
-				if err := d.Set("primary_ip_address", primary); err != nil {
-					return err
-				}
-			}
 
-		}
-	}
-	return nil
+	return recordToData(*vm, vifs, vmDisks, d)
 }
 
 func sortDiskByPostion(disks []client.Disk) []client.Disk {
@@ -653,12 +650,10 @@ func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, d 
 	if len(resource.Addresses) != 0 {
 		networkIps := extractIpsFromNetworks(resource.Addresses)
 		log.Printf("[DEBUG] Extracted to the following: %v\n", networkIps)
-		for _, proto := range []string{"ip", "ipv4", "ipv6"} {
-			if len(networkIps[0][proto]) != 0 {
-				primary := networkIps[0][proto][0]
-				if err := d.Set("primary_ip_address", primary); err != nil {
-					return err
-				}
+		for _, proto := range []string{"ipv4", "ipv6"} {
+			ips := networkIps[0][proto]
+			if err := d.Set(fmt.Sprintf("%s_addresses", proto), ips); err != nil {
+				return err
 			}
 
 		}
