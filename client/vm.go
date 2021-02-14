@@ -262,7 +262,7 @@ func (c *Client) waitForModifyVm(id string, waitForIp bool, timeout time.Duratio
 			}
 
 			l := len(vm.Addresses)
-			if l == 0 {
+			if l == 0 || vm.PowerState != "Running" {
 				return vm, "Waiting", nil
 			}
 
