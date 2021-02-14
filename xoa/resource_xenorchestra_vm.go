@@ -102,10 +102,6 @@ func resourceRecord() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"primary_ip_address": &schema.Schema{
-				Type:     schema.TypeString,
-				Computed: true,
-			},
 			"ipv4_addresses": &schema.Schema{
 				Type:     schema.TypeList,
 				Computed: true,
@@ -163,6 +159,20 @@ func resourceRecord() *schema.Resource {
 								}
 								return
 
+							},
+						},
+						"ipv4_addresses": &schema.Schema{
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+						},
+						"ipv6_addresses": &schema.Schema{
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
 							},
 						},
 					},
@@ -651,9 +661,12 @@ func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, d 
 		networkIps := extractIpsFromNetworks(resource.Addresses)
 		log.Printf("[DEBUG] Extracted to the following: %v\n", networkIps)
 		for _, proto := range []string{"ipv4", "ipv6"} {
-			ips := networkIps[0][proto]
-			if err := d.Set(fmt.Sprintf("%s_addresses", proto), ips); err != nil {
-				return err
+			ips := []string{}
+			for i := range networkIps {
+				ips = append(ips, networkIps[i][proto]...)
+				if err := d.Set(fmt.Sprintf("%s_addresses", proto), ips); err != nil {
+					return err
+				}
 			}
 
 		}
