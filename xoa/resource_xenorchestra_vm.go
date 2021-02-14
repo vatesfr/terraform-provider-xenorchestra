@@ -365,14 +365,24 @@ func disksToMapList(disks []client.Disk) []map[string]interface{} {
 	return sortDiskMapByPostion(result)
 }
 
-func vifsToMapList(vifs []client.VIF) []map[string]interface{} {
+func vifsToMapList(vifs []client.VIF, guestNets []guestNetwork) []map[string]interface{} {
 	result := make([]map[string]interface{}, 0, len(vifs))
 	for _, vif := range vifs {
+		ipv6Addrs := []string{}
+		ipv4Addrs := []string{}
+		device, _ := strconv.Atoi(vif.Device)
+		log.Printf("[DEBUG] Trying to find ip addresses for device '%d' in guest networks: %v\n", device, guestNets)
+		if len(guestNets) > device {
+			ipv4Addrs = guestNets[device]["ipv4"]
+			ipv6Addrs = guestNets[device]["ipv6"]
+		}
 		vifMap := map[string]interface{}{
-			"attached":    vif.Attached,
-			"device":      vif.Device,
-			"mac_address": vif.MacAddress,
-			"network_id":  vif.Network,
+			"attached":       vif.Attached,
+			"device":         vif.Device,
+			"mac_address":    vif.MacAddress,
+			"network_id":     vif.Network,
+			"ipv4_addresses": ipv4Addrs,
+			"ipv6_addresses": ipv6Addrs,
 		}
 		result = append(result, vifMap)
 	}
@@ -643,7 +653,10 @@ func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, d 
 	if err := d.Set("tags", resource.Tags); err != nil {
 		return err
 	}
-	nets := vifsToMapList(vifs)
+
+	log.Printf("[DEBUG] Found the following ip addresses: %v\n", resource.Addresses)
+	networkIps := extractIpsFromNetworks(resource.Addresses)
+	nets := vifsToMapList(vifs, networkIps)
 	err := d.Set("network", nets)
 
 	if err != nil {
@@ -656,10 +669,7 @@ func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, d 
 		return err
 	}
 
-	log.Printf("[DEBUG] Found the following ip addresses: %v\n", resource.Addresses)
-	if len(resource.Addresses) != 0 {
-		networkIps := extractIpsFromNetworks(resource.Addresses)
-		log.Printf("[DEBUG] Extracted to the following: %v\n", networkIps)
+	if len(networkIps) > 0 {
 		for _, proto := range []string{"ipv4", "ipv6"} {
 			ips := []string{}
 			for i := range networkIps {
@@ -832,6 +842,11 @@ type guestNetwork map[string][]string
 
 // Returns <min(n)>/ip || <min(n)>/ipv4/<min(m)> || <min(n)>/ipv6/<min(m)>
 func extractIpsFromNetworks(networks map[string]string) []guestNetwork {
+
+	if len(networks) < 1 {
+		return []guestNetwork{}
+	}
+
 	IP_REGEX := `^(\d+)\/(ip(?:v4|v6)?)(?:\/(\d+))?$`
 	reg := regexp.MustCompile(IP_REGEX)
 
@@ -870,5 +885,6 @@ func extractIpsFromNetworks(networks map[string]string) []guestNetwork {
 
 		devices[deviceNum][proto] = append(devices[deviceNum][proto], networks[key])
 	}
+	log.Printf("[DEBUG] Extracted the following network interface ips: %v\n", devices)
 	return devices
 }

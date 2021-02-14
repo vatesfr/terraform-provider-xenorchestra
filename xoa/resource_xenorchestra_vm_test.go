@@ -24,6 +24,10 @@ func Test_extractPrimaryIpFromNetworks(t *testing.T) {
 		expected []map[string][]string
 	}{
 		{
+			networks: map[string]string{},
+			expected: []map[string][]string{},
+		},
+		{
 			networks: map[string]string{
 				"0/ip":     ipv4,
 				"0/ipv4/0": ipv4,
@@ -60,7 +64,7 @@ func Test_extractPrimaryIpFromNetworks(t *testing.T) {
 			t.Errorf("expected '%+v' to have the same length as: %+v", expected, actual)
 		}
 
-		for _, device := range []int{0, 1} {
+		for device := 0; device < len(expected); device++ {
 			for _, key := range []string{"ip", "ipv4", "ipv6"} {
 				if !reflect.DeepEqual(expected[device][key], actual[device][key]) {
 					t.Errorf("expected '%+v' to be equal to: %+v", expected[device][key], actual[device][key])
@@ -368,8 +372,10 @@ func TestAccXenorchestraVm_createWhenWaitingForIp(t *testing.T) {
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttr(resourceName, "wait_for_ip", "true"),
-					resource.TestCheckResourceAttrSet(resourceName, "ipv6_addresses.#"),
+					resource.TestCheckResourceAttr(resourceName, "ipv6_addresses.#", "1"),
 					resource.TestCheckResourceAttrSet(resourceName, "ipv6_addresses.0"),
+					resource.TestCheckResourceAttr(resourceName, "network.0.ipv6_addresses.#", "1"),
+					resource.TestCheckResourceAttrSet(resourceName, "network.0.ipv6_addresses.0"),
 				),
 			},
 		},
