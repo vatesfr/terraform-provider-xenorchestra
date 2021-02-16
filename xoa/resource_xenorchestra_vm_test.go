@@ -14,7 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-func Test_extractPrimaryIpFromNetworks(t *testing.T) {
+func Test_extractIpsFromNetworks(t *testing.T) {
 	ipv4 := "169.254.169.254"
 	secondIpv4 := "169.254.255.254"
 	ipv6 := "2001:0db8:85a3:0000:0000:8a2e:0370:7334"

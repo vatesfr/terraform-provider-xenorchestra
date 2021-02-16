@@ -840,7 +840,24 @@ func getFormattedMac(macAddress string) string {
 
 type guestNetwork map[string][]string
 
-// Returns <min(n)>/ip || <min(n)>/ipv4/<min(m)> || <min(n)>/ipv6/<min(m)>
+// Transforms Xen's guest-tools network information into a slice
+// of maps where each element represents a network interface.
+// Each map will contain the following keys: ip, ipv4 and ipv6. The values
+// will be a slice of ip addresses.
+// []map[string][]string{
+//   {
+//     "ip":   []string{"interface 1's IPs",
+//     "ipv4": []string{"interface 1's IPs",
+//     "ipv6": []string{"ip1", "ip2"}
+//   },
+//   {
+//     "ip":   []string{"interface 2's IPs",
+//     "ipv4": []string{"interface 2's IPs",
+//     "ipv6": []string{"ip1", "ip2"}
+//   },
+// }
+//
+//
 func extractIpsFromNetworks(networks map[string]string) []guestNetwork {
 
 	if len(networks) < 1 {
