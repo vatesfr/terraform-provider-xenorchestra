@@ -20,7 +20,7 @@ data "xenorchestra_network" "net" {
 resource "xenorchestra_cloud_config" "bar" {
   name = "cloud config name"
   template = <<EOF
-#cloud-init
+#cloud-config
 
 runcmd:
  - [ ls, -l, / ]
