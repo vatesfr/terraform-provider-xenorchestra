@@ -90,7 +90,7 @@ For `network` blocks the following attributes are exported:
 * `ipv4_addresses` - This is only accessible if guest-tools is installed in the VM and if `wait_for_ip` is set to true. This will contain a list of the ipv4 addresses for the specific network interface. See the example below for more details.
 * `ipv6_addresses` - This is only accessible if guest-tools is installed in the VM and if `wait_for_ip` is set to true. This will contain a list of the ipv6 addresses for the specific network interface. See the example below for more details.
 
-```
+```hcl
 resource "xenorchestra_vm" "vm" {
   ...
 
