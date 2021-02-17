@@ -4,11 +4,14 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 )
 
 type Host struct {
-	Id        string `json:"id"`
-	NameLabel string `json:"name_label"`
+	Id        string   `json:"id"`
+	NameLabel string   `json:"name_label"`
+	Tags      []string `json:"tags"`
+	Pool      string   `json:"$pool"`
 }
 
 func (h Host) Compare(obj interface{}) bool {
@@ -16,7 +19,9 @@ func (h Host) Compare(obj interface{}) bool {
 	if otherHost.Id == h.Id {
 		return true
 	}
-
+	if h.Pool == otherHost.Pool {
+		return true
+	}
 	if otherHost.NameLabel != "" && h.NameLabel == otherHost.NameLabel {
 		return true
 	}
@@ -64,4 +69,19 @@ func FindHostForTests(hostId string, host *Host) {
 	}
 
 	*host = queriedHost
+}
+
+func (c *Client) GetHostsByPoolName(pool string) (hosts map[string]string, err error) {
+	hosts = make(map[string]string, 0)
+	obj, err := c.FindFromGetAllObjects(Host{Pool: pool})
+
+	if err != nil {
+		return
+	}
+	slice := obj.([]Host)
+	for _, v := range slice {
+		hosts[v.NameLabel[:strings.Index(v.NameLabel, ".")]] = v.Id
+	}
+
+	return hosts, nil
 }
