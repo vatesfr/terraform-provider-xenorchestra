@@ -20,7 +20,7 @@ func TestAccXenorchestraDataSource_hosts(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckXenorchestraDataSourceHosts(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
-					resource.TestCheckResourceAttr(resourceName, "pool", accTestHost.Pool)),
+					resource.TestCheckResourceAttr(resourceName, "pool", accTestPool.Id)),
 			},
 		},
 	},
