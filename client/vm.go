@@ -279,7 +279,7 @@ func (c *Client) waitForModifyVm(id string, waitForIp bool, timeout time.Duratio
 	}
 }
 
-func FindOrCreateVmForTests(vm *Vm, srId, networkId, templateName, tag string) {
+func FindOrCreateVmForTests(vm *Vm, srId, templateName, tag string) {
 	c, err := NewClient(GetConfigFromEnv())
 	if err != nil {
 		fmt.Printf("failed to create client with error: %v\n", err)
@@ -287,41 +287,59 @@ func FindOrCreateVmForTests(vm *Vm, srId, networkId, templateName, tag string) {
 	}
 
 	var vmRes *Vm
+	var net *Network
 	vmRes, err = c.GetVm(Vm{
 		Tags: []string{tag},
 	})
 
 	if _, ok := err.(NotFound); ok {
-		// TODO: Create vm for use during tests (#90)
-		// Create Vm with the right tag and
-		// vmRes, err = c.CreateVm(
-		// 	fmt.Sprintf("%sterraform-testing", tag),
-		// 	"",
-		// 	templateName,
-		// 	"",
-		// 	"",
-		// 	1,
-		// 	2147483648,
-		// 	[]map[string]string{
-		// 		{
-		// 			"network_id": networkId,
-		// 		},
-		// 	},
-		// 	[]VDI{
-		// 		{
-		// 			SrId:      srId,
-		// 			NameLabel: "terraform xenorchestra client testing",
-		// 			Size:      16106127360,
-		// 		},
-		// 		{
-		// 			SrId:      srId,
-		// 			NameLabel: "disk2",
-		// 			Size:      16106127360,
-		// 		},
-		// 	},
-		// )
-		fmt.Println("Creating a vm for the client tests is not implemented yet")
-		os.Exit(-1)
+		net, err = c.GetNetwork(Network{
+			// TODO: Change this to something that is more stable
+			NameLabel: "Pool-wide network associated with eth0",
+			PoolId:    accTestPool.Id,
+		})
+
+		if err != nil {
+			fmt.Println("Failed to get network to create a Vm for the tests")
+			os.Exit(-1)
+		}
+
+		vmRes, err = c.CreateVm(
+			Vm{
+				NameLabel: fmt.Sprintf("Terraform testing - %d", time.Now().Unix()),
+				Tags:      []string{tag},
+				Template:  templateName,
+				CPUs: CPUs{
+					Number: 1,
+				},
+				Memory: MemoryObject{
+					Static: []int{
+						0, 2147483648,
+					},
+				},
+				VIFsMap: []map[string]string{
+					{
+						"network": net.Id,
+					},
+				},
+				Disks: []Disk{
+					Disk{
+						VDI: VDI{
+							SrId:      srId,
+							NameLabel: "terraform xenorchestra client testing",
+							Size:      16106127360,
+						},
+					},
+					Disk{
+						VDI: VDI{
+							SrId:      srId,
+							NameLabel: "disk2",
+							Size:      16106127360,
+						},
+					},
+				},
+			},
+		)
 	}
 
 	if err != nil {
