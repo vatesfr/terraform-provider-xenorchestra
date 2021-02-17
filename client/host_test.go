@@ -54,3 +54,26 @@ func TestGetHostByName(t *testing.T) {
 	}
 
 }
+
+func TestGetHostsByPoolName(t *testing.T) {
+	c, err := NewClient(GetConfigFromEnv())
+	if err != nil {
+		t.Fatalf("failed to create client with error: %v", err)
+	}
+
+	poolName := accTestHost.Pool
+	hosts, err := c.GetHostsByPoolName(poolName)
+	if err != nil {
+		t.Fatalf("failed to get host with error: %v", err)
+	}
+	if hosts["pool"] != poolName {
+		t.Errorf("expected pool to have name `%s` received `%s` instead.", poolName, hosts["pool"])
+	}
+	if hosts["master"] == "" {
+		t.Errorf("filed to find master in pool `%s`.", poolName)
+	}
+
+	if len(hosts["hosts"]) == 0 {
+		t.Errorf("failed to find any host for pool `%s`.", poolName)
+	}
+}
