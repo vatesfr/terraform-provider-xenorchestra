@@ -279,7 +279,7 @@ func (c *Client) waitForModifyVm(id string, waitForIp bool, timeout time.Duratio
 	}
 }
 
-func FindOrCreateVmForTests(vm *Vm, srId, templateName, tag string) {
+func FindOrCreateVmForTests(vm *Vm, poolId, srId, templateName, tag string) {
 	c, err := NewClient(GetConfigFromEnv())
 	if err != nil {
 		fmt.Printf("failed to create client with error: %v\n", err)
@@ -296,7 +296,7 @@ func FindOrCreateVmForTests(vm *Vm, srId, templateName, tag string) {
 		net, err = c.GetNetwork(Network{
 			// TODO: Change this to something that is more stable
 			NameLabel: "Pool-wide network associated with eth0",
-			PoolId:    accTestPool.Id,
+			PoolId:    poolId,
 		})
 
 		if err != nil {
