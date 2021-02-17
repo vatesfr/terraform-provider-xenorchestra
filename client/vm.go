@@ -25,31 +25,33 @@ type MemoryObject struct {
 }
 
 type Vm struct {
-	Type               string       `json:"type,omitempty"`
-	Id                 string       `json:"id,omitempty"`
-	AffinityHost       string       `json:"affinityHost,omitempty"`
-	NameDescription    string       `json:"name_description"`
-	NameLabel          string       `json:"name_label"`
-	CPUs               CPUs         `json:"CPUs"`
-	Memory             MemoryObject `json:"memory"`
-	PowerState         string       `json:"power_state"`
-	VIFs               []string     `json:"VIFs"`
-	VBDs               []string     `json:"$VBDs"`
-	VirtualizationMode string       `json:"virtualizationMode"`
-	PoolId             string       `json:"$poolId"`
-	Template           string       `json:"template"`
-	AutoPoweron        bool         `json:"auto_poweron"`
-	HA                 string       `json:"high_availability"`
-	CloudConfig        string       `json:"cloudConfig"`
-	ResourceSet        string       `json:"resourceSet,omitempty"`
-	Tags               []string     `json:"tags"`
+	Addresses          map[string]string `json:"addresses,omitempty"`
+	Type               string            `json:"type,omitempty"`
+	Id                 string            `json:"id,omitempty"`
+	AffinityHost       string            `json:"affinityHost,omitempty"`
+	NameDescription    string            `json:"name_description"`
+	NameLabel          string            `json:"name_label"`
+	CPUs               CPUs              `json:"CPUs"`
+	Memory             MemoryObject      `json:"memory"`
+	PowerState         string            `json:"power_state"`
+	VIFs               []string          `json:"VIFs"`
+	VBDs               []string          `json:"$VBDs"`
+	VirtualizationMode string            `json:"virtualizationMode"`
+	PoolId             string            `json:"$poolId"`
+	Template           string            `json:"template"`
+	AutoPoweron        bool              `json:"auto_poweron"`
+	HA                 string            `json:"high_availability"`
+	CloudConfig        string            `json:"cloudConfig"`
+	ResourceSet        string            `json:"resourceSet,omitempty"`
+	Tags               []string          `json:"tags"`
 
 	// These fields are used for passing in disk inputs when
 	// creating Vms, however, this is not a real field as far
 	// as the XO api or XAPI is concerned
 	Disks              []Disk              `json:"-"`
 	CloudNetworkConfig string              `json:"-"`
-	Networks           []map[string]string `json:"-"`
+	VIFsMap            []map[string]string `json:"-"`
+	WaitForIps         bool                `json:"-"`
 }
 
 func (v Vm) Compare(obj interface{}) bool {
@@ -111,7 +113,7 @@ func (c *Client) CreateVm(vmReq Vm) (*Vm, error) {
 		"memoryMax":        vmReq.Memory.Static[1],
 		"existingDisks":    existingDisks,
 		"VDIs":             vdis,
-		"VIFs":             vmReq.Networks,
+		"VIFs":             vmReq.VIFsMap,
 		"tags":             vmReq.Tags,
 	}
 
@@ -137,7 +139,7 @@ func (c *Client) CreateVm(vmReq Vm) (*Vm, error) {
 		return nil, err
 	}
 
-	err = c.waitForModifyVm(vmId, 5*time.Minute)
+	err = c.waitForModifyVm(vmId, vmReq.WaitForIps, 5*time.Minute)
 
 	if err != nil {
 		return nil, err
@@ -232,24 +234,49 @@ func (c *Client) GetVms() ([]Vm, error) {
 	return vms, nil
 }
 
-func (c *Client) waitForModifyVm(id string, timeout time.Duration) error {
-	refreshFn := func() (result interface{}, state string, err error) {
-		vm, err := c.GetVm(Vm{Id: id})
+func (c *Client) waitForModifyVm(id string, waitForIp bool, timeout time.Duration) error {
+	if !waitForIp {
+		refreshFn := func() (result interface{}, state string, err error) {
+			vm, err := c.GetVm(Vm{Id: id})
 
-		if err != nil {
-			return vm, "", err
+			if err != nil {
+				return vm, "", err
+			}
+
+			return vm, vm.PowerState, nil
 		}
+		stateConf := &resource.StateChangeConf{
+			Pending: []string{"Halted", "Stopped"},
+			Refresh: refreshFn,
+			Target:  []string{"Running"},
+			Timeout: timeout,
+		}
+		_, err := stateConf.WaitForState()
+		return err
+	} else {
+		refreshFn := func() (result interface{}, state string, err error) {
+			vm, err := c.GetVm(Vm{Id: id})
 
-		return vm, vm.PowerState, nil
+			if err != nil {
+				return vm, "", err
+			}
+
+			l := len(vm.Addresses)
+			if l == 0 || vm.PowerState != "Running" {
+				return vm, "Waiting", nil
+			}
+
+			return vm, "Ready", nil
+		}
+		stateConf := &resource.StateChangeConf{
+			Pending: []string{"Waiting"},
+			Refresh: refreshFn,
+			Target:  []string{"Ready"},
+			Timeout: timeout,
+		}
+		_, err := stateConf.WaitForState()
+		return err
 	}
-	stateConf := &resource.StateChangeConf{
-		Pending: []string{"Halted", "Stopped"},
-		Refresh: refreshFn,
-		Target:  []string{"Running"},
-		Timeout: timeout,
-	}
-	_, err := stateConf.WaitForState()
-	return err
 }
 
 func FindOrCreateVmForTests(vm *Vm, srId, networkId, templateName, tag string) {

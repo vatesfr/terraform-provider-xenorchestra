@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"regexp"
 	"sort"
 	"strconv"
 	"time"
@@ -101,6 +102,25 @@ func resourceRecord() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"ipv4_addresses": &schema.Schema{
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
+			"ipv6_addresses": &schema.Schema{
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
+			"wait_for_ip": &schema.Schema{
+				Type:     schema.TypeBool,
+				Default:  false,
+				Optional: true,
+			},
 			"network": &schema.Schema{
 				Type:     schema.TypeList,
 				Required: true,
@@ -139,6 +159,20 @@ func resourceRecord() *schema.Resource {
 								}
 								return
 
+							},
+						},
+						"ipv4_addresses": &schema.Schema{
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+						},
+						"ipv6_addresses": &schema.Schema{
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
 							},
 						},
 					},
@@ -245,9 +279,10 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 				0, d.Get("memory_max").(int),
 			},
 		},
-		Tags:     vmTags,
-		Disks:    ds,
-		Networks: network_maps,
+		Tags:       vmTags,
+		Disks:      ds,
+		VIFsMap:    network_maps,
+		WaitForIps: d.Get("wait_for_ip").(bool),
 	},
 	)
 
@@ -255,23 +290,19 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	d.SetId(vm.Id)
-	d.Set("cloud_config", d.Get("cloud_config").(string))
-	d.Set("memory_max", d.Get("memory_max").(int))
-	d.Set("resource_set", d.Get("resource_set").(string))
-
 	vifs, err := c.GetVIFs(vm)
 
 	if err != nil {
 		return err
 	}
 
-	err = d.Set("network", vifsToMapList(vifs))
+	vmDisks, err := c.GetDisks(vm)
 
 	if err != nil {
 		return err
 	}
-	return nil
+
+	return recordToData(*vm, vifs, vmDisks, d)
 }
 
 func sortDiskByPostion(disks []client.Disk) []client.Disk {
@@ -334,14 +365,24 @@ func disksToMapList(disks []client.Disk) []map[string]interface{} {
 	return sortDiskMapByPostion(result)
 }
 
-func vifsToMapList(vifs []client.VIF) []map[string]interface{} {
+func vifsToMapList(vifs []client.VIF, guestNets []guestNetwork) []map[string]interface{} {
 	result := make([]map[string]interface{}, 0, len(vifs))
 	for _, vif := range vifs {
+		ipv6Addrs := []string{}
+		ipv4Addrs := []string{}
+		device, _ := strconv.Atoi(vif.Device)
+		log.Printf("[DEBUG] Trying to find ip addresses for device '%d' in guest networks: %v\n", device, guestNets)
+		if len(guestNets) > device {
+			ipv4Addrs = guestNets[device]["ipv4"]
+			ipv6Addrs = guestNets[device]["ipv6"]
+		}
 		vifMap := map[string]interface{}{
-			"attached":    vif.Attached,
-			"device":      vif.Device,
-			"mac_address": vif.MacAddress,
-			"network_id":  vif.Network,
+			"attached":       vif.Attached,
+			"device":         vif.Device,
+			"mac_address":    vif.MacAddress,
+			"network_id":     vif.Network,
+			"ipv4_addresses": ipv4Addrs,
+			"ipv6_addresses": ipv6Addrs,
 		}
 		result = append(result, vifMap)
 	}
@@ -612,7 +653,10 @@ func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, d 
 	if err := d.Set("tags", resource.Tags); err != nil {
 		return err
 	}
-	nets := vifsToMapList(vifs)
+
+	log.Printf("[DEBUG] Found the following ip addresses: %v\n", resource.Addresses)
+	networkIps := extractIpsFromNetworks(resource.Addresses)
+	nets := vifsToMapList(vifs, networkIps)
 	err := d.Set("network", nets)
 
 	if err != nil {
@@ -623,6 +667,26 @@ func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, d 
 	err = d.Set("disk", disksMapList)
 	if err != nil {
 		return err
+	}
+
+	if len(networkIps) > 0 {
+		for _, proto := range []string{"ipv4", "ipv6"} {
+			ips := []string{}
+			for i := range networkIps {
+				ips = append(ips, networkIps[i][proto]...)
+				if err := d.Set(fmt.Sprintf("%s_addresses", proto), ips); err != nil {
+					return err
+				}
+			}
+
+		}
+	} else {
+		if err := d.Set("ipv4_addresses", []string{}); err != nil {
+			return err
+		}
+		if err := d.Set("ipv6_addresses", []string{}); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -779,4 +843,72 @@ func getFormattedMac(macAddress string) string {
 		panic(fmt.Sprintf("Mac address `%s` was not parsable. This is a bug in the provider and this value should have been properly formatted", macAddress))
 	}
 	return mac.String()
+}
+
+type guestNetwork map[string][]string
+
+// Transforms Xen's guest-tools network information into a slice
+// of maps where each element represents a network interface.
+// Each map will contain the following keys: ip, ipv4 and ipv6. The values
+// will be a slice of ip addresses.
+// []map[string][]string{
+//   {
+//     "ip":   []string{"interface 1's IPs",
+//     "ipv4": []string{"interface 1's IPs",
+//     "ipv6": []string{"ip1", "ip2"}
+//   },
+//   {
+//     "ip":   []string{"interface 2's IPs",
+//     "ipv4": []string{"interface 2's IPs",
+//     "ipv6": []string{"ip1", "ip2"}
+//   },
+// }
+//
+//
+func extractIpsFromNetworks(networks map[string]string) []guestNetwork {
+
+	if len(networks) < 1 {
+		return []guestNetwork{}
+	}
+
+	IP_REGEX := `^(\d+)\/(ip(?:v4|v6)?)(?:\/(\d+))?$`
+	reg := regexp.MustCompile(IP_REGEX)
+
+	keys := make([]string, len(networks))
+	for k := range networks {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+	last := keys[len(keys)-1]
+
+	matches := reg.FindStringSubmatch(last)
+	if matches == nil || len(matches) != 4 {
+		panic("this should never happen")
+	}
+	cap, _ := strconv.Atoi(matches[1])
+	devices := make([]guestNetwork, 0, cap)
+	for _, key := range keys {
+		matches := reg.FindStringSubmatch(key)
+
+		if matches == nil || len(matches) != 4 {
+			continue
+		}
+		deviceStr, proto := matches[1], matches[2]
+
+		deviceNum, _ := strconv.Atoi(deviceStr)
+		for len(devices) <= deviceNum {
+			devices = append(devices, map[string][]string{})
+		}
+
+		// This will panic. Need to use for loop like above
+		ipList := devices[deviceNum][proto]
+		if ipList == nil {
+			devices[deviceNum][proto] = []string{}
+		}
+
+		devices[deviceNum][proto] = append(devices[deviceNum][proto], networks[key])
+	}
+	log.Printf("[DEBUG] Extracted the following network interface ips: %v\n", devices)
+	return devices
 }
