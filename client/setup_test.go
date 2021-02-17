@@ -36,6 +36,7 @@ func CreateNetwork(network *Network) error {
 
 var integrationTestPrefix string = "xenorchestra-client-"
 var accTestPool Pool
+var accTestHost Host
 var accDefaultSr StorageRepository
 var accDefaultNetwork Network
 var testTemplate Template
@@ -45,6 +46,7 @@ func TestMain(m *testing.M) {
 
 	FindTemplateForTests(&testTemplate)
 	FindPoolForTests(&accTestPool)
+	FindHostForTests(accTestPool.Master, &accTestHost)
 	FindStorageRepositoryForTests(accTestPool, &accDefaultSr, integrationTestPrefix)
 	CreateNetwork(&accDefaultNetwork)
 	FindOrCreateVmForTests(&accVm, accDefaultSr.Id, accDefaultNetwork.Id, testTemplate.Id, integrationTestPrefix)

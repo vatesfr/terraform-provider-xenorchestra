@@ -1,7 +1,5 @@
 # Terraform Provider for Xen Orchestra
 
-## Status
-
 This is a terraform provider for [Xen Orchestra](https://github.com/vatesfr/xen-orchestra).
 
 ## Docs

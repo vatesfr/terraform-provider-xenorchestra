@@ -8,7 +8,7 @@ Creates a Xen Orchestra cloud config resource.
 resource "xenorchestra_cloud_config" "demo" {
   name = "cloud config name"
   template = <<EOF
-#cloud-init
+#cloud-config
 
 runcmd:
  - [ ls, -l, / ]
