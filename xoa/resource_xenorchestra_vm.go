@@ -680,6 +680,13 @@ func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, d 
 			}
 
 		}
+	} else {
+		if err := d.Set("ipv4_addresses", []string{}); err != nil {
+			return err
+		}
+		if err := d.Set("ipv6_addresses", []string{}); err != nil {
+			return err
+		}
 	}
 
 	return nil
