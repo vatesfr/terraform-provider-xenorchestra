@@ -144,8 +144,12 @@ func (c *Client) GetAllObjectsOfType(obj XoObject, response interface{}) error {
 	case Host:
 		hostObject := obj.(Host)
 		filter["type"] = "host"
-		filter["$pool"] = hostObject.Pool
-		filter["tags"] = hostObject.Tags
+		if hostObject.Pool != "" {
+			filter["$pool"] = hostObject.Pool
+		}
+		if len(hostObject.Tags) > 0 {
+			filter["tags"] = hostObject.Tags
+		}
 	case StorageRepository:
 		filter["type"] = "SR"
 	case Vm:
