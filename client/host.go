@@ -9,10 +9,10 @@ import (
 )
 
 type Host struct {
-	Id        string   `json:"id"`
-	NameLabel string   `json:"name_label"`
-	Tags      []string `json:"tags,omitempty"`
-	Pool      string   `json:"$pool"`
+	Id        string        `json:"id"`
+	NameLabel string        `json:"name_label"`
+	Tags      []interface{} `json:"tags,omitempty"`
+	Pool      string        `json:"$pool"`
 }
 
 func (h Host) Compare(obj interface{}) bool {
@@ -72,35 +72,30 @@ func FindHostForTests(hostId string, host *Host) {
 	*host = queriedHost
 }
 
-func (c *Client) GetHostsByPoolName(pool string) (hosts []map[string]interface{}, err error) {
+func (c *Client) GetHostsByPoolName(pool string, tags ...interface{}) (hosts []map[string]interface{}, err error) {
 	hosts = make([]map[string]interface{}, 0)
-	obj, err := c.FindFromGetAllObjects(Host{Pool: pool})
+	obj, err := c.FindFromGetAllObjects(Host{Pool: pool, Tags: tags})
 
 	if err != nil {
 		return
 	}
 	slice := obj.([]Host)
 	for _, v := range slice {
-		hosts = append(hosts, convertStructToMap(v))
+		hosts = append(hosts, convertToMap(v))
 	}
 	return hosts, nil
 }
 
-func convertStructToMap(st interface{}) map[string]interface{} {
-
+func convertToMap(st interface{}) map[string]interface{} {
 	reqRules := make(map[string]interface{})
-
 	v := reflect.ValueOf(st)
 	t := reflect.TypeOf(st)
-
 	for i := 0; i < v.NumField(); i++ {
 		key := strings.ToLower(t.Field(i).Name)
 		typ := v.FieldByName(t.Field(i).Name).Kind().String()
 		structTag := t.Field(i).Tag.Get("json")
 		jsonName := strings.TrimSpace(strings.Split(structTag, ",")[0])
 		value := v.FieldByName(t.Field(i).Name)
-
-		// if jsonName is not empty use it for the key
 		if jsonName != "" && jsonName != "-" {
 			key = jsonName
 		}
@@ -114,13 +109,9 @@ func convertStructToMap(st interface{}) map[string]interface{} {
 			if value.Len() > 0 {
 				reqRules[key] = fmt.Sprintf("%s", value)
 			}
-		} else if typ == "int" {
-			reqRules[key] = value.String()
 		} else {
 			reqRules[key] = value.String()
 		}
-
 	}
-
 	return reqRules
 }
