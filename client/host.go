@@ -4,13 +4,14 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"reflect"
 	"strings"
 )
 
 type Host struct {
 	Id        string   `json:"id"`
 	NameLabel string   `json:"name_label"`
-	Tags      []string `json:"tags"`
+	Tags      []string `json:"tags,omitempty"`
 	Pool      string   `json:"$pool"`
 }
 
@@ -71,8 +72,8 @@ func FindHostForTests(hostId string, host *Host) {
 	*host = queriedHost
 }
 
-func (c *Client) GetHostsByPoolName(pool string) (hosts map[string]string, err error) {
-	hosts = make(map[string]string, 0)
+func (c *Client) GetHostsByPoolName(pool string) (hosts []map[string]interface{}, err error) {
+	hosts = make([]map[string]interface{}, 0)
 	obj, err := c.FindFromGetAllObjects(Host{Pool: pool})
 
 	if err != nil {
@@ -80,8 +81,46 @@ func (c *Client) GetHostsByPoolName(pool string) (hosts map[string]string, err e
 	}
 	slice := obj.([]Host)
 	for _, v := range slice {
-		hosts[v.NameLabel[:strings.Index(v.NameLabel, ".")]] = v.Id
+		hosts = append(hosts, convertStructToMap(v))
+	}
+	return hosts, nil
+}
+
+func convertStructToMap(st interface{}) map[string]interface{} {
+
+	reqRules := make(map[string]interface{})
+
+	v := reflect.ValueOf(st)
+	t := reflect.TypeOf(st)
+
+	for i := 0; i < v.NumField(); i++ {
+		key := strings.ToLower(t.Field(i).Name)
+		typ := v.FieldByName(t.Field(i).Name).Kind().String()
+		structTag := t.Field(i).Tag.Get("json")
+		jsonName := strings.TrimSpace(strings.Split(structTag, ",")[0])
+		value := v.FieldByName(t.Field(i).Name)
+
+		// if jsonName is not empty use it for the key
+		if jsonName != "" && jsonName != "-" {
+			key = jsonName
+		}
+		if typ == "string" {
+			if !(value.String() == "" && strings.Contains(structTag, "omitempty")) {
+				fmt.Println(key, value)
+				fmt.Println(key, value.String())
+				reqRules[key] = value.String()
+			}
+		} else if typ == "slice" {
+			if value.Len() > 0 {
+				reqRules[key] = fmt.Sprintf("%s", value)
+			}
+		} else if typ == "int" {
+			reqRules[key] = value.String()
+		} else {
+			reqRules[key] = value.String()
+		}
+
 	}
 
-	return hosts, nil
+	return reqRules
 }
