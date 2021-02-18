@@ -50,6 +50,8 @@ func dataSourceXoaHosts() *schema.Resource {
 func dataSourceHostsRead(d *schema.ResourceData, m interface{}) error {
 	c := m.(*client.Client)
 	poolLabel := d.Get("pool").(string)
+	tags := d.Get("tags").([]interface{})
+
 	err := d.Set("pool", poolLabel)
 	if err != nil {
 		return err
@@ -58,7 +60,7 @@ func dataSourceHostsRead(d *schema.ResourceData, m interface{}) error {
 	if err != nil {
 		return err
 	}
-	hosts, err := c.GetHostsByPoolName(pool[0].Id)
+	hosts, err := c.GetHostsByPoolName(pool[0].Id, tags...)
 	if err != nil {
 		return err
 	}
