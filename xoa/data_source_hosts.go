@@ -15,15 +15,33 @@ func dataSourceXoaHosts() *schema.Resource {
 				Computed: true,
 			},
 			"hosts": &schema.Schema{
-				Type:     schema.TypeMap,
+				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Schema{
-					Type: schema.TypeString,
+					Type: schema.TypeMap,
+					Elem: &schema.Schema{
+						Type: schema.TypeString,
+					},
 				},
 			},
 			"pool": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
+			},
+			"tags": &schema.Schema{
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
+			"sort_by": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"sort_order": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 		},
 	}
@@ -44,6 +62,7 @@ func dataSourceHostsRead(d *schema.ResourceData, m interface{}) error {
 	if err != nil {
 		return err
 	}
+	log.Printf("[DEBUG] found the following hosts: %s", hosts)
 
 	if _, ok := err.(client.NotFound); ok {
 		d.SetId("")

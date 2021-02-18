@@ -66,14 +66,13 @@ func TestGetHostsByPoolName(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to get host with error: %v", err)
 	}
-	if hosts["pool"] != poolName {
-		t.Errorf("expected pool to have name `%s` received `%s` instead.", poolName, hosts["pool"])
-	}
-	if hosts["master"] == "" {
-		t.Errorf("filed to find master in pool `%s`.", poolName)
-	}
-
-	if len(hosts["hosts"]) == 0 {
+	if len(hosts) == 0 {
 		t.Errorf("failed to find any host for pool `%s`.", poolName)
+	}
+	for _, host := range hosts {
+		if host["pool"] != poolName {
+			t.Errorf("expected pool to have name `%s` received `%s` instead.", poolName, hosts[0]["pool"])
+		}
+
 	}
 }
