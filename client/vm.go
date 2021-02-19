@@ -294,7 +294,10 @@ func FindOrCreateVmForTests(vm *Vm, poolId, srId, templateName, tag string) {
 
 	if _, ok := err.(NotFound); ok {
 		net, err = c.GetNetwork(Network{
-			// TODO: Change this to something that is more stable
+			// We assume that a eth0 pool wide network exists
+			// since trying to discern what the appropriate network
+			// is from our current set of test inputs is challenging.
+			// If this proves problematic then it can be reconsidered.
 			NameLabel: "Pool-wide network associated with eth0",
 			PoolId:    poolId,
 		})
