@@ -32,7 +32,7 @@ func validateDisk(disk Disk) bool {
 		return false
 	}
 
-	if disk.PoolId == "" {
+	if disk.VBD.PoolId == "" {
 		return false
 	}
 

@@ -22,6 +22,7 @@ The following environment variables must be set:
 - XOA_PASSWORD - the password of the associated user
 - XOA_POOL - The XO pool you want to target when running the tests. VMs, storage repositories and other resources will be created / launched on this pool
 - XOA_TEMPLATE - A VM template that has an existing OS **already installed**
+- XOA_ISO - The name of an ISO that exists on the same pool as `XOA_POOL`
 
 I typically keep these in a ~/.xoa file and run the following before running the test suite
 

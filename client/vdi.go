@@ -17,6 +17,8 @@ type VDI struct {
 	NameDescription string   `json:"name_description"`
 	Size            int      `json:"size"`
 	VBDs            []string `json:"$VBDs"`
+	PoolId          string   `json:"$poolId"`
+	Tags            []string `json:"tags,omitempty"`
 }
 
 func (v VDI) Compare(obj interface{}) bool {
@@ -24,6 +26,25 @@ func (v VDI) Compare(obj interface{}) bool {
 
 	if v.VDIId != "" && other.VDIId == v.VDIId {
 		return true
+	}
+
+	labelsMatch := false
+	if v.NameLabel == other.NameLabel {
+		labelsMatch = true
+	}
+
+	if v.PoolId == "" && labelsMatch {
+		return true
+	} else if v.PoolId == other.PoolId && labelsMatch {
+		return true
+	}
+
+	if len(v.Tags) > 0 {
+		for _, tag := range v.Tags {
+			if !stringInSlice(tag, other.Tags) {
+				return false
+			}
+		}
 	}
 
 	return false
@@ -82,6 +103,22 @@ func (c *Client) GetDisks(vm *Vm) ([]Disk, error) {
 
 		vdis = append(vdis, Disk{disk, vdi})
 	}
+	return vdis, nil
+}
+
+func (c *Client) GetVDIs(vdiReq VDI) ([]VDI, error) {
+	obj, err := c.FindFromGetAllObjects(vdiReq)
+
+	if err != nil {
+		return nil, err
+	}
+
+	vdis, ok := obj.([]VDI)
+
+	if !ok {
+		return nil, errors.New(fmt.Sprintf("failed to coerce %+v into VDI", obj))
+	}
+
 	return vdis, nil
 }
 

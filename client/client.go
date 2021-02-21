@@ -202,7 +202,7 @@ func (c *Client) FindFromGetAllObjects(obj XoObject) (interface{}, error) {
 		return objs, NotFound{Query: obj}
 	}
 
-	log.Printf("[DEBUG] Found the following objects from xo.getAllObjects: %+v\n", objs)
+	log.Printf("[DEBUG] Found the following objects for type '%v' from xo.getAllObjects: %+v\n", t, objs)
 
 	return objs.Interface(), nil
 }
