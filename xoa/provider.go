@@ -51,6 +51,7 @@ func Provider() terraform.ResourceProvider {
 			"xenorchestra_resource_set": dataSourceXoaResourceSet(),
 			"xenorchestra_sr":           dataSourceXoaStorageRepository(),
 			"xenorchestra_user":         dataSourceXoaUser(),
+			"xenorchestra_vdi":          dataSourceXoaVDI(),
 		},
 		ConfigureFunc: xoaConfigure,
 	}
