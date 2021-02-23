@@ -44,8 +44,8 @@ var accVm Vm
 
 func TestMain(m *testing.M) {
 
-	FindTemplateForTests(&testTemplate)
 	FindPoolForTests(&accTestPool)
+	FindTemplateForTests(&testTemplate, accTestPool.Id)
 	FindHostForTests(accTestPool.Master, &accTestHost)
 	FindStorageRepositoryForTests(accTestPool, &accDefaultSr, integrationTestPrefix)
 	CreateNetwork(&accDefaultNetwork)

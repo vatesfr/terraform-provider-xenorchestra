@@ -45,7 +45,7 @@ func (c *Client) GetTemplate(template Template) ([]Template, error) {
 	return templates, nil
 }
 
-func FindTemplateForTests(template *Template) {
+func FindTemplateForTests(template *Template, poolId string) {
 	var found bool
 	templateName, found := os.LookupEnv("XOA_TEMPLATE")
 	if !found {
@@ -61,6 +61,7 @@ func FindTemplateForTests(template *Template) {
 
 	templates, err := c.GetTemplate(Template{
 		NameLabel: templateName,
+		PoolId:    poolId,
 	})
 
 	if err != nil {

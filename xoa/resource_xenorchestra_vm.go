@@ -121,6 +121,18 @@ func resourceRecord() *schema.Resource {
 				Default:  false,
 				Optional: true,
 			},
+			"cdrom": &schema.Schema{
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"id": &schema.Schema{
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
+			},
 			"network": &schema.Schema{
 				Type:     schema.TypeList,
 				Required: true,
@@ -263,6 +275,12 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		vmTags = append(vmTags, t)
 	}
 
+	cds := []string{}
+	for _, cd := range d.Get("cdrom").([]interface{}) {
+		cdMap := cd.(map[string]interface{})
+		cds = append(cds, cdMap["id"].(string))
+	}
+
 	vm, err := c.CreateVm(client.Vm{
 		AffinityHost:    d.Get("affinity_host").(string),
 		NameLabel:       d.Get("name_label").(string),
@@ -279,8 +297,12 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 				0, d.Get("memory_max").(int),
 			},
 		},
-		Tags:       vmTags,
-		Disks:      ds,
+		Tags: vmTags,
+		VDIs: ds,
+		Installation: client.Installation{
+			Method:     "cdrom",
+			Repository: cds[0],
+		},
 		VIFsMap:    network_maps,
 		WaitForIps: d.Get("wait_for_ip").(bool),
 	},

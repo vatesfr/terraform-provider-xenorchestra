@@ -52,6 +52,13 @@ type Vm struct {
 	CloudNetworkConfig string              `json:"-"`
 	VIFsMap            []map[string]string `json:"-"`
 	WaitForIps         bool                `json:"-"`
+	VDIs               []Disk              `json:"-"`
+	Installation       Installation        `json:"-"`
+}
+
+type Installation struct {
+	Method     string `json:"-"`
+	Repository string `json:"-"`
 }
 
 func (v Vm) Compare(obj interface{}) bool {
@@ -84,6 +91,17 @@ func (c *Client) CreateVm(vmReq Vm) (*Vm, error) {
 	existingDisks := map[string]interface{}{}
 	vdis := []interface{}{}
 
+	for _, vdi := range vmReq.VDIs {
+		v := map[string]interface{}{
+			"size":             vdi.Size,
+			"SR":               vdi.SrId,
+			"type":             "system",
+			"name_label":       vdi.NameLabel,
+			"name_description": vdi.NameDescription,
+		}
+		vdis = append(vdis, v)
+	}
+
 	for idx, disk := range vmReq.Disks {
 		d := map[string]interface{}{
 			"$SR":              disk.SrId,
@@ -111,10 +129,14 @@ func (c *Client) CreateVm(vmReq Vm) (*Vm, error) {
 		"cpuWeight":        nil,
 		"CPUs":             vmReq.CPUs.Number,
 		"memoryMax":        vmReq.Memory.Static[1],
-		"existingDisks":    existingDisks,
-		"VDIs":             vdis,
-		"VIFs":             vmReq.VIFsMap,
-		"tags":             vmReq.Tags,
+		// "existingDisks":    existingDisks,
+		"installation": map[string]string{
+			"method":     "cdrom",
+			"repository": vmReq.Installation.Repository,
+		},
+		"VDIs": vdis,
+		"VIFs": vmReq.VIFsMap,
+		"tags": vmReq.Tags,
 	}
 
 	cloudConfig := vmReq.CloudConfig

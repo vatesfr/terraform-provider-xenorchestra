@@ -19,8 +19,8 @@ func TestMain(m *testing.M) {
 	_, runSetup := os.LookupEnv("TF_ACC")
 
 	if runSetup {
-		client.FindTemplateForTests(&testTemplate)
 		client.FindPoolForTests(&accTestPool)
+		client.FindTemplateForTests(&testTemplate, accTestPool.Id)
 		client.FindHostForTests(accTestPool.Master, &accTestHost)
 		client.FindStorageRepositoryForTests(accTestPool, &accDefaultSr, accTestPrefix)
 		testIsoName = os.Getenv("XOA_ISO")

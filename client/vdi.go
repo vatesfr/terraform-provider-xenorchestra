@@ -140,7 +140,7 @@ func (c *Client) GetParentVDI(vbd VBD) (VDI, error) {
 	}
 
 	if len(disks) != 1 {
-		return VDI{}, errors.New(fmt.Sprintf("expected Vm VDI to only contain a single VBD, instead found %d", len(disks)))
+		return VDI{}, errors.New(fmt.Sprintf("expected Vm VDI '%s' to only contain a single VBD, instead found %d: %+v", vbd.VDI, len(disks), disks))
 	}
 	return disks[0], nil
 }
