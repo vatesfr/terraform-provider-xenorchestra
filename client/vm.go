@@ -105,6 +105,7 @@ func (c *Client) CreateVm(vmReq Vm) (*Vm, error) {
 	}
 
 	installation := vmReq.Installation
+	// TODO: Align this with https://github.com/vatesfr/xen-orchestra/blob/637afdb540f1c74d4c380bd438a4c567bbd6dc23/packages/xo-web/src/xo-app/new-vm/index.js#L276
 	if !useExistingDisks && installation.Method != "cdrom" {
 		return nil, errors.New("cannot create a VM from a diskless template without an ISO")
 	}
