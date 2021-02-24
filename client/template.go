@@ -6,15 +6,33 @@ import (
 	"os"
 )
 
+type TemplateDisk struct {
+	Bootable bool   `json:"bootable"`
+	Device   string `json:"device"`
+	Size     int    `json:"size"`
+	Type     string `json:"type"`
+	SR       string `json:"SR"`
+}
+
+type TemplateInfo struct {
+	Arch  string         `json:"arch"`
+	Disks []TemplateDisk `json:"disks"`
+}
+
 type Template struct {
-	Id        string `json:"id"`
-	Uuid      string `json:"uuid"`
-	NameLabel string `json:"name_label"`
-	PoolId    string `json:"$poolId"`
+	Id           string       `json:"id"`
+	Uuid         string       `json:"uuid"`
+	NameLabel    string       `json:"name_label"`
+	PoolId       string       `json:"$poolId"`
+	TemplateInfo TemplateInfo `json:"template_info"`
 }
 
 func (t Template) Compare(obj interface{}) bool {
 	other := obj.(Template)
+
+	if t.Id == other.Id {
+		return true
+	}
 
 	labelsMatch := false
 	if t.NameLabel == other.NameLabel {

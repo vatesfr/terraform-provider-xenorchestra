@@ -280,6 +280,13 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		cdMap := cd.(map[string]interface{})
 		cds = append(cds, cdMap["id"].(string))
 	}
+	installation := client.Installation{}
+	if len(cds) > 0 {
+		installation = client.Installation{
+			Method:     "cdrom",
+			Repository: cds[0],
+		}
+	}
 
 	vm, err := c.CreateVm(client.Vm{
 		AffinityHost:    d.Get("affinity_host").(string),
@@ -297,14 +304,11 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 				0, d.Get("memory_max").(int),
 			},
 		},
-		Tags: vmTags,
-		VDIs: ds,
-		Installation: client.Installation{
-			Method:     "cdrom",
-			Repository: cds[0],
-		},
-		VIFsMap:    network_maps,
-		WaitForIps: d.Get("wait_for_ip").(bool),
+		Tags:         vmTags,
+		Disks:        ds,
+		Installation: installation,
+		VIFsMap:      network_maps,
+		WaitForIps:   d.Get("wait_for_ip").(bool),
 	},
 	)
 

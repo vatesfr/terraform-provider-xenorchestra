@@ -52,7 +52,6 @@ type Vm struct {
 	CloudNetworkConfig string              `json:"-"`
 	VIFsMap            []map[string]string `json:"-"`
 	WaitForIps         bool                `json:"-"`
-	VDIs               []Disk              `json:"-"`
 	Installation       Installation        `json:"-"`
 }
 
@@ -88,36 +87,55 @@ func (v Vm) Compare(obj interface{}) bool {
 }
 
 func (c *Client) CreateVm(vmReq Vm) (*Vm, error) {
+	tmpl, err := c.GetTemplate(Template{
+		Id: vmReq.Template,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(tmpl) != 1 {
+		return nil, errors.New(fmt.Sprintf("cannot create VM when multiple templates are returned: %v", tmpl))
+	}
+
+	useExistingDisks := false
+	if len(tmpl[0].TemplateInfo.Disks) == 0 {
+		useExistingDisks = true
+	}
+
+	installation := vmReq.Installation
+	if !useExistingDisks && installation.Method != "cdrom" {
+		return nil, errors.New("cannot create a VM from a diskless template without an ISO")
+	}
+
 	existingDisks := map[string]interface{}{}
 	vdis := []interface{}{}
+	disks := vmReq.Disks
 
-	for _, vdi := range vmReq.VDIs {
-		v := map[string]interface{}{
-			"size":             vdi.Size,
-			"SR":               vdi.SrId,
-			"type":             "system",
-			"name_label":       vdi.NameLabel,
-			"name_description": vdi.NameDescription,
-		}
-		vdis = append(vdis, v)
+	firstDisk := createVdiMap(disks[0])
+	// Treat the first disk differently. This covers the
+	// case where we are using a template with an already
+	// installed OS or a diskless template.
+	if useExistingDisks {
+		existingDisks["0"] = firstDisk
+	} else {
+		firstDisk["type"] = "system"
+		vdis = append(vdis, firstDisk)
 	}
 
-	for idx, disk := range vmReq.Disks {
-		d := map[string]interface{}{
-			"$SR":              disk.SrId,
-			"name_label":       disk.NameLabel,
-			"name_description": disk.NameDescription,
-			"size":             disk.Size,
-		}
+	for i := 1; i < len(disks); i++ {
+		d := createVdiMap(disks[i])
 
-		if idx == 0 {
-			existingDisks[fmt.Sprintf("%d", idx)] = d
-		} else {
+		// TODO: Why the difference here and does it matter?
+		if useExistingDisks {
 			d["type"] = "user"
-			d["SR"] = disk.SrId
-			vdis = append(vdis, d)
+		} else {
+			d["type"] = "system"
 		}
+		vdis = append(vdis, d)
 	}
+
 	params := map[string]interface{}{
 		"affinityHost":     vmReq.AffinityHost,
 		"bootAfterCreate":  true,
@@ -129,14 +147,17 @@ func (c *Client) CreateVm(vmReq Vm) (*Vm, error) {
 		"cpuWeight":        nil,
 		"CPUs":             vmReq.CPUs.Number,
 		"memoryMax":        vmReq.Memory.Static[1],
-		// "existingDisks":    existingDisks,
-		"installation": map[string]string{
-			"method":     "cdrom",
-			"repository": vmReq.Installation.Repository,
-		},
-		"VDIs": vdis,
-		"VIFs": vmReq.VIFsMap,
-		"tags": vmReq.Tags,
+		"existingDisks":    existingDisks,
+		"VDIs":             vdis,
+		"VIFs":             vmReq.VIFsMap,
+		"tags":             vmReq.Tags,
+	}
+
+	if installation.Method != "" {
+		params["installation"] = map[string]string{
+			"method":     installation.Method,
+			"repository": installation.Repository,
+		}
 	}
 
 	cloudConfig := vmReq.CloudConfig
@@ -155,7 +176,7 @@ func (c *Client) CreateVm(vmReq Vm) (*Vm, error) {
 	}
 	log.Printf("[DEBUG] VM params for vm.create %#v", params)
 	var vmId string
-	err := c.Call("vm.create", params, &vmId)
+	err = c.Call("vm.create", params, &vmId)
 
 	if err != nil {
 		return nil, err
@@ -172,6 +193,16 @@ func (c *Client) CreateVm(vmReq Vm) (*Vm, error) {
 			Id: vmId,
 		},
 	)
+}
+
+func createVdiMap(disk Disk) map[string]interface{} {
+	return map[string]interface{}{
+		"$SR":              disk.SrId,
+		"SR":               disk.SrId,
+		"name_label":       disk.NameLabel,
+		"name_description": disk.NameDescription,
+		"size":             disk.Size,
+	}
 }
 
 func (c *Client) UpdateVm(id string, cpus int, nameLabel, nameDescription, ha, rs string, autoPowerOn bool, affinityHost string) (*Vm, error) {
