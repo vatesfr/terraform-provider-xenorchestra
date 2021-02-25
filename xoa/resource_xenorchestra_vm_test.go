@@ -1180,7 +1180,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accTestPool.Id, testIsoName, accTestPool.Id, accTestPool.Id, accDefaultSr.Id)
+`, disklessTestTemplate.NameLabel, accTestPool.Id, testIsoName, accTestPool.Id, accTestPool.Id, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithTags(tag, secondTag string) string {

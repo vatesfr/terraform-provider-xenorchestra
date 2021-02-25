@@ -13,6 +13,7 @@ var accTestPool client.Pool
 var accTestHost client.Host
 var accDefaultSr client.StorageRepository
 var testTemplate client.Template
+var disklessTestTemplate client.Template
 var testIsoName string
 
 func TestMain(m *testing.M) {
@@ -20,7 +21,8 @@ func TestMain(m *testing.M) {
 
 	if runSetup {
 		client.FindPoolForTests(&accTestPool)
-		client.FindTemplateForTests(&testTemplate, accTestPool.Id)
+		client.FindTemplateForTests(&testTemplate, accTestPool.Id, "XOA_TEMPLATE")
+		client.FindTemplateForTests(&disklessTestTemplate, accTestPool.Id, "XOA_DISKLESS_TEMPLATE")
 		client.FindHostForTests(accTestPool.Master, &accTestHost)
 		client.FindStorageRepositoryForTests(accTestPool, &accDefaultSr, accTestPrefix)
 		testIsoName = os.Getenv("XOA_ISO")

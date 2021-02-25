@@ -63,9 +63,9 @@ func (c *Client) GetTemplate(template Template) ([]Template, error) {
 	return templates, nil
 }
 
-func FindTemplateForTests(template *Template, poolId string) {
+func FindTemplateForTests(template *Template, poolId, templateEnvVar string) {
 	var found bool
-	templateName, found := os.LookupEnv("XOA_TEMPLATE")
+	templateName, found := os.LookupEnv(templateEnvVar)
 	if !found {
 		fmt.Println("The XOA_TEMPLATE environment variable must be set for the tests")
 		os.Exit(-1)
