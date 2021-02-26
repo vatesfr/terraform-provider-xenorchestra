@@ -35,8 +35,16 @@ func TestGetTemplate(t *testing.T) {
 		templateName := test.templateName
 		templates, err := c.GetTemplate(Template{NameLabel: templateName})
 
-		if test.err != err {
-			t.Fatalf("failed to get template `%s` expected err: %v received: %v", templateName, test.err, err)
+		failureMsg := "failed to get template `%s` expected err: %v received: %v"
+		if test.err == nil {
+			if test.err != err {
+				t.Fatalf(failureMsg, templateName, test.err, err)
+			}
+
+		} else {
+			if test.err.Error() != err.Error() {
+				t.Fatalf(failureMsg, templateName, test.err, err)
+			}
 		}
 
 		if _, ok := test.err.(NotFound); ok {
