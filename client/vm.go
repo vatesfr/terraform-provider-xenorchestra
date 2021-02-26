@@ -99,13 +99,8 @@ func (c *Client) CreateVm(vmReq Vm) (*Vm, error) {
 		return nil, errors.New(fmt.Sprintf("cannot create VM when multiple templates are returned: %v", tmpl))
 	}
 
-	useExistingDisks := false
-	if len(tmpl[0].TemplateInfo.Disks) == 0 {
-		useExistingDisks = true
-	}
-
+	useExistingDisks := tmpl[0].isDiskTemplate()
 	installation := vmReq.Installation
-	// TODO: Align this with https://github.com/vatesfr/xen-orchestra/blob/637afdb540f1c74d4c380bd438a4c567bbd6dc23/packages/xo-web/src/xo-app/new-vm/index.js#L276
 	if !useExistingDisks && installation.Method != "cdrom" {
 		return nil, errors.New("cannot create a VM from a diskless template without an ISO")
 	}
@@ -121,20 +116,11 @@ func (c *Client) CreateVm(vmReq Vm) (*Vm, error) {
 	if useExistingDisks {
 		existingDisks["0"] = firstDisk
 	} else {
-		firstDisk["type"] = "system"
 		vdis = append(vdis, firstDisk)
 	}
 
 	for i := 1; i < len(disks); i++ {
-		d := createVdiMap(disks[i])
-
-		// TODO: Why the difference here and does it matter?
-		if useExistingDisks {
-			d["type"] = "user"
-		} else {
-			d["type"] = "system"
-		}
-		vdis = append(vdis, d)
+		vdis = append(vdis, createVdiMap(disks[i]))
 	}
 
 	params := map[string]interface{}{
@@ -203,6 +189,7 @@ func createVdiMap(disk Disk) map[string]interface{} {
 		"name_label":       disk.NameLabel,
 		"name_description": disk.NameDescription,
 		"size":             disk.Size,
+		"type":             "user",
 	}
 }
 

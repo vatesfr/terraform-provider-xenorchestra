@@ -47,6 +47,14 @@ func (t Template) Compare(obj interface{}) bool {
 	return false
 }
 
+func (t Template) isDiskTemplate() bool {
+	if len(t.TemplateInfo.Disks) == 0 && t.NameLabel != "Other install media" {
+		return true
+	}
+
+	return false
+}
+
 func (c *Client) GetTemplate(template Template) ([]Template, error) {
 	obj, err := c.FindFromGetAllObjects(template)
 	var templates []Template
