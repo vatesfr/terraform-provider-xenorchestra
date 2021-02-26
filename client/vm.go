@@ -275,6 +275,18 @@ func (c *Client) GetVms() ([]Vm, error) {
 	return vms, nil
 }
 
+func (c *Client) EjectVmCd(vm *Vm) error {
+	params := map[string]interface{}{
+		"id": vm.Id,
+	}
+	var result bool
+	err := c.Call("vm.ejectCd", params, &result)
+	if err != nil || !result {
+		return err
+	}
+	return nil
+}
+
 func (c *Client) waitForModifyVm(id string, waitForIp bool, timeout time.Duration) error {
 	if !waitForIp {
 		refreshFn := func() (result interface{}, state string, err error) {

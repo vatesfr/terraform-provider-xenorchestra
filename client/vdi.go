@@ -75,8 +75,8 @@ func (v VBD) Compare(obj interface{}) bool {
 	return false
 }
 
-func (c *Client) GetDisks(vm *Vm) ([]Disk, error) {
-	obj, err := c.FindFromGetAllObjects(VBD{VmId: vm.Id, IsCdDrive: false})
+func (c *Client) getDisksFromVBDs(vbd VBD) ([]Disk, error) {
+	obj, err := c.FindFromGetAllObjects(vbd)
 
 	if _, ok := err.(NotFound); ok {
 		return []Disk{}, nil
@@ -102,6 +102,29 @@ func (c *Client) GetDisks(vm *Vm) ([]Disk, error) {
 		vdis = append(vdis, Disk{disk, vdi})
 	}
 	return vdis, nil
+}
+
+func (c *Client) GetDisks(vm *Vm) ([]Disk, error) {
+	return c.getDisksFromVBDs(VBD{
+		VmId:      vm.Id,
+		IsCdDrive: false,
+	})
+}
+
+func (c *Client) GetCdroms(vm *Vm) ([]Disk, error) {
+	cds, err := c.getDisksFromVBDs(VBD{
+		VmId:      vm.Id,
+		IsCdDrive: true,
+	})
+
+	// Not every Vm will have CDs. Rather than pass
+	// this to the caller, catch it and return empty
+	// CDs.
+	if _, ok := err.(NotFound); ok {
+		return []Disk{}, nil
+	}
+
+	return cds, err
 }
 
 func (c *Client) GetVDIs(vdiReq VDI) ([]VDI, error) {
@@ -197,4 +220,21 @@ func (c *Client) UpdateVDI(d Disk) error {
 		"name_label":       d.NameLabel,
 	}
 	return c.Call("vdi.set", params, &success)
+}
+
+func (c *Client) EjectCd(id string) error {
+	var success bool
+	params := map[string]interface{}{
+		"id": id,
+	}
+	return c.Call("vm.ejectCd", params, &success)
+}
+
+func (c *Client) InsertCd(vmId, cdId string) error {
+	var success bool
+	params := map[string]interface{}{
+		"id":    vmId,
+		"cd_id": cdId,
+	}
+	return c.Call("vm.insertCd", params, &success)
 }

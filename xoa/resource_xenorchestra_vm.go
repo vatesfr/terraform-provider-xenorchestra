@@ -132,6 +132,10 @@ func resourceRecord() *schema.Resource {
 						},
 					},
 				},
+				// This should be increased but I don't understand
+				// the use cases for multiple ISOs just yet. For now
+				// limit it to a single ISO
+				MaxItems: 1,
 			},
 			"network": &schema.Schema{
 				Type:     schema.TypeList,
@@ -328,7 +332,12 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	return recordToData(*vm, vifs, vmDisks, d)
+	cdroms, err := c.GetCdroms(vm)
+	if err != nil {
+		return err
+	}
+
+	return recordToData(*vm, vifs, vmDisks, cdroms, d)
 }
 
 func sortDiskByPostion(disks []client.Disk) []client.Disk {
@@ -391,6 +400,18 @@ func disksToMapList(disks []client.Disk) []map[string]interface{} {
 	return sortDiskMapByPostion(result)
 }
 
+func cdromsToMapList(disks []client.Disk) []map[string]interface{} {
+	result := make([]map[string]interface{}, 0, len(disks))
+	for _, disk := range disks {
+		diskMap := map[string]interface{}{
+			"id": disk.VDIId,
+		}
+		result = append(result, diskMap)
+	}
+
+	return result
+}
+
 func vifsToMapList(vifs []client.VIF, guestNets []guestNetwork) []map[string]interface{} {
 	result := make([]map[string]interface{}, 0, len(vifs))
 	for _, vif := range vifs {
@@ -442,7 +463,12 @@ func resourceVmRead(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	return recordToData(*vm, vifs, disks, d)
+	cdroms, err := c.GetCdroms(vm)
+	if err != nil {
+		return err
+	}
+
+	return recordToData(*vm, vifs, disks, cdroms, d)
 }
 
 func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
@@ -507,6 +533,28 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 				if vifErr != nil {
 					return vifErr
 				}
+			}
+		}
+	}
+
+	if d.HasChange("cdrom") {
+		oCds, nCds := d.GetChange("cdrom")
+
+		for range oCds.([]interface{}) {
+			err := c.EjectCd(id)
+
+			if err != nil {
+				return err
+			}
+		}
+
+		for _, cd := range nCds.([]interface{}) {
+			cdMap := cd.(map[string]interface{})
+			cdId := cdMap["id"].(string)
+			err := c.InsertCd(id, cdId)
+
+			if err != nil {
+				return err
 			}
 		}
 	}
@@ -652,12 +700,18 @@ func RecordImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData
 	if err != nil {
 		return rd, err
 	}
-	err = recordToData(*vm, vifs, disks, d)
+
+	cdroms, err := c.GetCdroms(vm)
+	if err != nil {
+		return rd, err
+	}
+
+	err = recordToData(*vm, vifs, disks, cdroms, d)
 
 	return rd, err
 }
 
-func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, d *schema.ResourceData) error {
+func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, cdroms []client.Disk, d *schema.ResourceData) error {
 	d.SetId(resource.Id)
 	// d.Set("cloud_config", resource.CloudConfig)
 	if len(resource.Memory.Static) == 2 {
@@ -691,6 +745,12 @@ func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, d 
 
 	disksMapList := disksToMapList(disks)
 	err = d.Set("disk", disksMapList)
+	if err != nil {
+		return err
+	}
+
+	cdsMapList := cdromsToMapList(cdroms)
+	err = d.Set("cdrom", cdsMapList)
 	if err != nil {
 		return err
 	}
