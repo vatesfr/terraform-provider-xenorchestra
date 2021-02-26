@@ -33,8 +33,6 @@ func (v VDI) Compare(obj interface{}) bool {
 		labelsMatch = true
 	}
 
-	// if v.PoolId == "" && labelsMatch {
-	// 	return true
 	if v.PoolId == other.PoolId && labelsMatch {
 		return true
 	}
