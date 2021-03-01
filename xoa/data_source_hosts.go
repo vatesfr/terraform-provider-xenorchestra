@@ -52,10 +52,6 @@ func dataSourceHostsRead(d *schema.ResourceData, m interface{}) error {
 	poolLabel := d.Get("pool").(string)
 	tags := d.Get("tags").([]interface{})
 
-	err := d.Set("pool", poolLabel)
-	if err != nil {
-		return err
-	}
 	pool, err := c.GetPoolByName(poolLabel)
 	if err != nil {
 		return err
