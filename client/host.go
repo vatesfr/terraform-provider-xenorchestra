@@ -4,8 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"reflect"
-	"strings"
 )
 
 type Host struct {
@@ -72,46 +70,13 @@ func FindHostForTests(hostId string, host *Host) {
 	*host = queriedHost
 }
 
-func (c *Client) GetHostsByPoolName(host Host) (hosts []map[string]interface{}, err error) {
-	hosts = make([]map[string]interface{}, 0)
+func (c *Client) GetHostsByPoolName(host Host) (hosts []Host, err error) {
 	obj, err := c.FindFromGetAllObjects(host)
 
 	if err != nil {
 		return
 	}
 	slice := obj.([]Host)
-	for _, v := range slice {
-		hosts = append(hosts, convertToMap(v))
-	}
-	return hosts, nil
-}
 
-func convertToMap(st interface{}) map[string]interface{} {
-	reqRules := make(map[string]interface{})
-	v := reflect.ValueOf(st)
-	t := reflect.TypeOf(st)
-	for i := 0; i < v.NumField(); i++ {
-		key := strings.ToLower(t.Field(i).Name)
-		typ := v.FieldByName(t.Field(i).Name).Kind().String()
-		structTag := t.Field(i).Tag.Get("json")
-		jsonName := strings.TrimSpace(strings.Split(structTag, ",")[0])
-		value := v.FieldByName(t.Field(i).Name)
-		if jsonName != "" && jsonName != "-" {
-			key = jsonName
-		}
-		if typ == "string" {
-			if !(value.String() == "" && strings.Contains(structTag, "omitempty")) {
-				fmt.Println(key, value)
-				fmt.Println(key, value.String())
-				reqRules[key] = value.String()
-			}
-		} else if typ == "slice" {
-			if value.Len() > 0 {
-				reqRules[key] = fmt.Sprintf("%s", value)
-			}
-		} else {
-			reqRules[key] = value.String()
-		}
-	}
-	return reqRules
+	return slice, nil
 }

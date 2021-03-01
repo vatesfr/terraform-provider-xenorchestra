@@ -10,13 +10,8 @@ import (
 
 func dataSourceXoaHost() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceHostRead,
-		Schema: map[string]*schema.Schema{
-			"name_label": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-			},
-		},
+		Read:   dataSourceHostRead,
+		Schema: resourceHostSchema(),
 	}
 }
 
