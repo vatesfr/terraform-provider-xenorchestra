@@ -68,7 +68,7 @@ func dataSourceHostsRead(d *schema.ResourceData, m interface{}) error {
 	}
 	err = d.Set("hosts", hosts)
 	if err != nil {
-		log.Print("[DEBUG] failed setting hosts")
+		log.Printf("[DEBUG] failed setting hosts: %s", err.Error())
 		return err
 	}
 	err = d.Set("master", pool[0].Master)
