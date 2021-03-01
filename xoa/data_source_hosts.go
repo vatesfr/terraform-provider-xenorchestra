@@ -28,13 +28,7 @@ func dataSourceXoaHosts() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"tags": &schema.Schema{
-				Type:     schema.TypeList,
-				Optional: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
-				},
-			},
+			"tags": resourceTags(),
 			"sort_by": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
