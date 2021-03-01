@@ -72,9 +72,9 @@ func FindHostForTests(hostId string, host *Host) {
 	*host = queriedHost
 }
 
-func (c *Client) GetHostsByPoolName(pool string, tags ...interface{}) (hosts []map[string]interface{}, err error) {
+func (c *Client) GetHostsByPoolName(host Host) (hosts []map[string]interface{}, err error) {
 	hosts = make([]map[string]interface{}, 0)
-	obj, err := c.FindFromGetAllObjects(Host{Pool: pool, Tags: tags})
+	obj, err := c.FindFromGetAllObjects(host)
 
 	if err != nil {
 		return
