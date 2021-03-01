@@ -75,7 +75,7 @@ func dataSourceHostsRead(d *schema.ResourceData, m interface{}) error {
 	d.SetId(pool[0].Master)
 
 	if err != nil {
-		log.Print("[DEBUG] failed setting master id")
+		log.Printf("[DEBUG] failed setting master id: %s", err.Error())
 		return err
 	}
 	return nil
