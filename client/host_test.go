@@ -71,8 +71,7 @@ func TestGetHostsByPoolName(t *testing.T) {
 	}
 	for _, host := range hosts {
 		if host["pool"] != poolName {
-			t.Errorf("expected pool to have name `%s` received `%s` instead.", poolName, hosts[0]["pool"])
+			t.Errorf("expected pool to have name `%s` received `%s` instead.", poolName, host["pool"])
 		}
-
 	}
 }
