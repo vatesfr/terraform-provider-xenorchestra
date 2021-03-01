@@ -70,16 +70,16 @@ func dataSourceHostsRead(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
-func hostsToMapList(vifs []client.Host) []map[string]interface{} {
-	result := make([]map[string]interface{}, 0, len(vifs))
-	for _, vif := range vifs {
-		vifMap := map[string]interface{}{
-			"id":         vif.Id,
-			"name_label": vif.NameLabel,
-			"pool":       vif.Pool,
-			"tags":       vif.Tags,
+func hostsToMapList(hosts []client.Host) []map[string]interface{} {
+	result := make([]map[string]interface{}, 0, len(hosts))
+	for _, host := range hosts {
+		hostMap := map[string]interface{}{
+			"id":         host.Id,
+			"name_label": host.NameLabel,
+			"pool":       host.Pool,
+			"tags":       host.Tags,
 		}
-		result = append(result, vifMap)
+		result = append(result, hostMap)
 	}
 
 	return result
