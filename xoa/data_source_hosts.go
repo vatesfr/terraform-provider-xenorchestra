@@ -17,12 +17,7 @@ func dataSourceXoaHosts() *schema.Resource {
 			"hosts": &schema.Schema{
 				Type:     schema.TypeList,
 				Computed: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeMap,
-					Elem: &schema.Schema{
-						Type: schema.TypeString,
-					},
-				},
+				Elem:     resourceHost(),
 			},
 			"pool": &schema.Schema{
 				Type:     schema.TypeString,
@@ -60,7 +55,7 @@ func dataSourceHostsRead(d *schema.ResourceData, m interface{}) error {
 		d.SetId("")
 		return nil
 	}
-	err = d.Set("hosts", hosts)
+	err = d.Set("hosts", hostsToMapList(hosts))
 	if err != nil {
 		log.Printf("[DEBUG] failed setting hosts: %s", err.Error())
 		return err
@@ -73,4 +68,19 @@ func dataSourceHostsRead(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 	return nil
+}
+
+func hostsToMapList(vifs []client.Host) []map[string]interface{} {
+	result := make([]map[string]interface{}, 0, len(vifs))
+	for _, vif := range vifs {
+		vifMap := map[string]interface{}{
+			"id":         vif.Id,
+			"name_label": vif.NameLabel,
+			"pool":       vif.Pool,
+			"tags":       vif.Tags,
+		}
+		result = append(result, vifMap)
+	}
+
+	return result
 }
