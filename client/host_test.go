@@ -62,7 +62,7 @@ func TestGetHostsByPoolName(t *testing.T) {
 	}
 
 	poolName := accTestHost.Pool
-	hosts, err := c.GetHostsByPoolName(poolName)
+	hosts, err := c.GetHostsByPoolName(Host{Pool: poolName})
 	if err != nil {
 		t.Fatalf("failed to get host with error: %v", err)
 	}
