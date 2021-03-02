@@ -52,6 +52,12 @@ type Vm struct {
 	CloudNetworkConfig string              `json:"-"`
 	VIFsMap            []map[string]string `json:"-"`
 	WaitForIps         bool                `json:"-"`
+	Installation       Installation        `json:"-"`
+}
+
+type Installation struct {
+	Method     string `json:"-"`
+	Repository string `json:"-"`
 }
 
 func (v Vm) Compare(obj interface{}) bool {
@@ -81,25 +87,42 @@ func (v Vm) Compare(obj interface{}) bool {
 }
 
 func (c *Client) CreateVm(vmReq Vm) (*Vm, error) {
+	tmpl, err := c.GetTemplate(Template{
+		Id: vmReq.Template,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(tmpl) != 1 {
+		return nil, errors.New(fmt.Sprintf("cannot create VM when multiple templates are returned: %v", tmpl))
+	}
+
+	useExistingDisks := tmpl[0].isDiskTemplate()
+	installation := vmReq.Installation
+	if !useExistingDisks && installation.Method != "cdrom" {
+		return nil, errors.New("cannot create a VM from a diskless template without an ISO")
+	}
+
 	existingDisks := map[string]interface{}{}
 	vdis := []interface{}{}
+	disks := vmReq.Disks
 
-	for idx, disk := range vmReq.Disks {
-		d := map[string]interface{}{
-			"$SR":              disk.SrId,
-			"name_label":       disk.NameLabel,
-			"name_description": disk.NameDescription,
-			"size":             disk.Size,
-		}
-
-		if idx == 0 {
-			existingDisks[fmt.Sprintf("%d", idx)] = d
-		} else {
-			d["type"] = "user"
-			d["SR"] = disk.SrId
-			vdis = append(vdis, d)
-		}
+	firstDisk := createVdiMap(disks[0])
+	// Treat the first disk differently. This covers the
+	// case where we are using a template with an already
+	// installed OS or a diskless template.
+	if useExistingDisks {
+		existingDisks["0"] = firstDisk
+	} else {
+		vdis = append(vdis, firstDisk)
 	}
+
+	for i := 1; i < len(disks); i++ {
+		vdis = append(vdis, createVdiMap(disks[i]))
+	}
+
 	params := map[string]interface{}{
 		"affinityHost":     vmReq.AffinityHost,
 		"bootAfterCreate":  true,
@@ -115,6 +138,13 @@ func (c *Client) CreateVm(vmReq Vm) (*Vm, error) {
 		"VDIs":             vdis,
 		"VIFs":             vmReq.VIFsMap,
 		"tags":             vmReq.Tags,
+	}
+
+	if installation.Method != "" {
+		params["installation"] = map[string]string{
+			"method":     installation.Method,
+			"repository": installation.Repository,
+		}
 	}
 
 	cloudConfig := vmReq.CloudConfig
@@ -133,7 +163,7 @@ func (c *Client) CreateVm(vmReq Vm) (*Vm, error) {
 	}
 	log.Printf("[DEBUG] VM params for vm.create %#v", params)
 	var vmId string
-	err := c.Call("vm.create", params, &vmId)
+	err = c.Call("vm.create", params, &vmId)
 
 	if err != nil {
 		return nil, err
@@ -150,6 +180,17 @@ func (c *Client) CreateVm(vmReq Vm) (*Vm, error) {
 			Id: vmId,
 		},
 	)
+}
+
+func createVdiMap(disk Disk) map[string]interface{} {
+	return map[string]interface{}{
+		"$SR":              disk.SrId,
+		"SR":               disk.SrId,
+		"name_label":       disk.NameLabel,
+		"name_description": disk.NameDescription,
+		"size":             disk.Size,
+		"type":             "user",
+	}
 }
 
 func (c *Client) UpdateVm(id string, cpus int, nameLabel, nameDescription, ha, rs string, autoPowerOn bool, affinityHost string) (*Vm, error) {
@@ -232,6 +273,18 @@ func (c *Client) GetVms() ([]Vm, error) {
 
 	log.Printf("[DEBUG] Found vms: %+v", vms)
 	return vms, nil
+}
+
+func (c *Client) EjectVmCd(vm *Vm) error {
+	params := map[string]interface{}{
+		"id": vm.Id,
+	}
+	var result bool
+	err := c.Call("vm.ejectCd", params, &result)
+	if err != nil || !result {
+		return err
+	}
+	return nil
 }
 
 func (c *Client) waitForModifyVm(id string, waitForIp bool, timeout time.Duration) error {

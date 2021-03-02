@@ -40,12 +40,13 @@ var accTestHost Host
 var accDefaultSr StorageRepository
 var accDefaultNetwork Network
 var testTemplate Template
+var disklessTestTemplate Template
 var accVm Vm
 
 func TestMain(m *testing.M) {
-
-	FindTemplateForTests(&testTemplate)
 	FindPoolForTests(&accTestPool)
+	FindTemplateForTests(&testTemplate, accTestPool.Id, "XOA_TEMPLATE")
+	FindTemplateForTests(&disklessTestTemplate, accTestPool.Id, "XOA_DISKLESS_TEMPLATE")
 	FindHostForTests(accTestPool.Master, &accTestHost)
 	FindStorageRepositoryForTests(accTestPool, &accDefaultSr, integrationTestPrefix)
 	CreateNetwork(&accDefaultNetwork)

@@ -6,15 +6,33 @@ import (
 	"os"
 )
 
+type TemplateDisk struct {
+	Bootable bool   `json:"bootable"`
+	Device   string `json:"device"`
+	Size     int    `json:"size"`
+	Type     string `json:"type"`
+	SR       string `json:"SR"`
+}
+
+type TemplateInfo struct {
+	Arch  string         `json:"arch"`
+	Disks []TemplateDisk `json:"disks"`
+}
+
 type Template struct {
-	Id        string `json:"id"`
-	Uuid      string `json:"uuid"`
-	NameLabel string `json:"name_label"`
-	PoolId    string `json:"$poolId"`
+	Id           string       `json:"id"`
+	Uuid         string       `json:"uuid"`
+	NameLabel    string       `json:"name_label"`
+	PoolId       string       `json:"$poolId"`
+	TemplateInfo TemplateInfo `json:"template_info"`
 }
 
 func (t Template) Compare(obj interface{}) bool {
 	other := obj.(Template)
+
+	if t.Id == other.Id {
+		return true
+	}
 
 	labelsMatch := false
 	if t.NameLabel == other.NameLabel {
@@ -26,6 +44,14 @@ func (t Template) Compare(obj interface{}) bool {
 	} else if t.PoolId == other.PoolId && labelsMatch {
 		return true
 	}
+	return false
+}
+
+func (t Template) isDiskTemplate() bool {
+	if len(t.TemplateInfo.Disks) == 0 && t.NameLabel != "Other install media" {
+		return true
+	}
+
 	return false
 }
 
@@ -45,11 +71,11 @@ func (c *Client) GetTemplate(template Template) ([]Template, error) {
 	return templates, nil
 }
 
-func FindTemplateForTests(template *Template) {
+func FindTemplateForTests(template *Template, poolId, templateEnvVar string) {
 	var found bool
-	templateName, found := os.LookupEnv("XOA_TEMPLATE")
+	templateName, found := os.LookupEnv(templateEnvVar)
 	if !found {
-		fmt.Println("The XOA_TEMPLATE environment variable must be set for the tests")
+		fmt.Println(fmt.Sprintf("The %s environment variable must be set for the tests", templateEnvVar))
 		os.Exit(-1)
 	}
 
@@ -61,6 +87,7 @@ func FindTemplateForTests(template *Template) {
 
 	templates, err := c.GetTemplate(Template{
 		NameLabel: templateName,
+		PoolId:    poolId,
 	})
 
 	if err != nil {

@@ -22,6 +22,7 @@ The following environment variables must be set:
 - XOA_PASSWORD - the password of the associated user
 - XOA_POOL - The XO pool you want to target when running the tests. VMs, storage repositories and other resources will be created / launched on this pool
 - XOA_TEMPLATE - A VM template that has an existing OS **already installed**
+- XOA_DISKLESS_TEMPLATE - A VM template that does not have an existing OS (found from `xe template-list`)
 - XOA_ISO - The name of an ISO that exists on the same pool as `XOA_POOL`
 
 I typically keep these in a ~/.xoa file and run the following before running the test suite
@@ -34,6 +35,7 @@ export XOA_USER=username
 export XOA_PASSWORD=password
 export XOA_POOL=pool-1
 export XOA_TEMPLATE='Debian 10 Cloudinit'
+export XOA_TEMPLATE='Debian Buster 10'
 
 # Source the environment variables inside the file
 eval $(cat ~/.xoa)

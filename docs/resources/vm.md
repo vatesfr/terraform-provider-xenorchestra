@@ -58,26 +58,28 @@ resource "xenorchestra_vm" "bar" {
 ```
 
 ## Argument Reference
-* name_label - (Required) The name of VM.
-* name_description - (Optional) The description of the VM.
-* template - (Required) The ID of the VM template to create the new VM from.
-* cloud_config - (Optional) The content of the cloud-init config to use
-* cloud_network_config - (Optional) The content of the cloud-init network configuration for the VM (uses [version 1](https://cloudinit.readthedocs.io/en/latest/topics/network-config-format-v1.html))
-* cpus - (Required) The number of CPUs the VM will have.
-* memory_max - (Required) The amount of memory in bytes the VM will have.
-* high_availabililty - (Optional) The restart priority for the VM. Possible values are `best-effort`, `restart` and empty string (no restarts on failure. Defaults to empty string.
-* auto_poweron - (Optional) If the VM will automatically turn on. Defaults to `false`.
-* affinity_host - (Optional) The preferred host you would like the VM to run on. If changed on an existing VM it will require a reboot for the VM to be rescheduled.
-* wait_for_ip - (Optional) Whether terraform should wait until IP addresses are present on the VM's network interfaces before considering it created. This only works if guest-tools are installed in the VM. Defaults to false.
-* network - (Required) The network the VM will use
-    * network_id - (Required) The ID of the network the VM will be on.
-    * mac_address - (Optional) The mac address of the network interface. This must be parsable by go's [net.ParseMAC function](https://golang.org/pkg/net/#ParseMAC). All mac addresses are stored in Terraform's state with [HardwareAddr's string representation](https://golang.org/pkg/net/#HardwareAddr.String) i.e. 00:00:5e:00:53:01
-* disk - (Required) The disk the VM will have access to.
-    * sr_id - (Required) The storage repository ID to use.
-    * name_label - (Required) The name for the disk.
-    * name_description - (Optional) A description for the disk.
-    * size - (Required) The size in bytes of the disk.
-* tags - (Optional) List of labels (strings) that are used to identify and organize resources. These are equivalent to Xenserver [tags](https://docs.citrix.com/en-us/xencenter/7-1/resources-tagging.html).
+* `name_label` - (Required) The name of VM.
+* `name_description` - (Optional) The description of the VM.
+* `template` - (Required) The ID of the VM template to create the new VM from.
+* `cloud_config` - (Optional) The content of the cloud-init config to use
+* `cloud_network_config` - (Optional) The content of the cloud-init network configuration for the VM (uses [version 1](https://cloudinit.readthedocs.io/en/latest/topics/network-config-format-v1.html))
+* `cpus` - (Required) The number of CPUs the VM will have.
+* `memory_max` - (Required) The amount of memory in bytes the VM will have.
+* `high_availabililty` - (Optional) The restart priority for the VM. Possible values are `best-effort`, `restart` and empty string (no restarts on failure. Defaults to empty string.
+* `auto_poweron` - (Optional) If the VM will automatically turn on. Defaults to `false`.
+* `affinity_host` - (Optional) The preferred host you would like the VM to run on. If changed on an existing VM it will require a reboot for the VM to be rescheduled.
+* `wait_for_ip` - (Optional) Whether terraform should wait until IP addresses are present on the VM's network interfaces before considering it created. This only works if guest-tools are installed in the VM. Defaults to false.
+* `cdrom` - (Optional) The ISO that should be attached to VM. This allows you to create a VM from a diskless template (any templates available from `xe template-list`) and install the OS from the following ISO.
+    * `id` - The ID of the ISO (VDI) to attach to the VM. This can be easily provided by using the `vdi` data source.
+* `network` - (Required) The network the VM will use
+    * `network_id` - (Required) The ID of the network the VM will be on.
+    * `mac_address` - (Optional) The mac address of the network interface. This must be parsable by go's [net.ParseMAC function](https://golang.org/pkg/net/#ParseMAC). All mac addresses are stored in Terraform's state with [HardwareAddr's string representation](https://golang.org/pkg/net/#HardwareAddr.String) i.e. 00:00:5e:00:53:01
+* `disk` - (Required) The disk the VM will have access to.
+    * `sr_id` - (Required) The storage repository ID to use.
+    * `name_label` - (Required) The name for the disk.
+    * `name_description` - (Optional) A description for the disk.
+    * `size` - (Required) The size in bytes of the disk.
+* `tags` - (Optional) List of labels (strings) that are used to identify and organize resources. These are equivalent to Xenserver [tags](https://docs.citrix.com/en-us/xencenter/7-1/resources-tagging.html).
 
 ## Attributes Reference
 In addition to all the arguments above, the following attributes are exported:
