@@ -75,7 +75,7 @@ func FindTemplateForTests(template *Template, poolId, templateEnvVar string) {
 	var found bool
 	templateName, found := os.LookupEnv(templateEnvVar)
 	if !found {
-		fmt.Println("The XOA_TEMPLATE environment variable must be set for the tests")
+		fmt.Println(fmt.Sprintf("The %s environment variable must be set for the tests", templateEnvVar))
 		os.Exit(-1)
 	}
 
