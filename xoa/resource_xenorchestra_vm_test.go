@@ -456,62 +456,6 @@ func TestAccXenorchestraVm_createWithDisklessTemplateAndISO(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
-				),
-			},
-		},
-	})
-}
-
-func TestAccXenorchestraVm_insertISOToVM(t *testing.T) {
-	ejectCdrom := func() {
-		c, err := client.NewClient(client.GetConfigFromEnv())
-		if err != nil {
-			t.Fatalf("failed to create client with error: %v", err)
-		}
-
-		vm, err := c.GetVm(client.Vm{
-			NameLabel: "Terraform testing",
-		})
-
-		if err != nil {
-			t.Fatalf("failed to find VM with error: %v", err)
-		}
-
-		err = c.EjectVmCd(vm)
-		if err != nil {
-			t.Fatalf("failed to eject cd from VM with error: %v", err)
-		}
-	}
-	resourceName := "xenorchestra_vm.bar"
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckXenorchestraVmDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccVmConfigWithISO(),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccVmExists(resourceName),
-					resource.TestCheckResourceAttrSet(resourceName, "id"),
-					resource.TestCheckResourceAttr(resourceName, "cdrom.#", "1"),
-					internal.TestCheckTypeSetElemAttrPair(resourceName, "cdrom.0.*", "data.xenorchestra_vdi.iso", "id"),
-				),
-			},
-			{
-				Config: testAccVmConfigWithISO(),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccVmExists(resourceName),
-					resource.TestCheckResourceAttrSet(resourceName, "id"),
-					resource.TestCheckResourceAttr(resourceName, "cdrom.#", "1"),
-					internal.TestCheckTypeSetElemAttrPair(resourceName, "cdrom.0.*", "data.xenorchestra_vdi.iso", "id"),
-				),
-			},
-			{
-				PreConfig: ejectCdrom,
-				Config:    testAccVmConfigWithISO(),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccVmExists(resourceName),
-					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttr(resourceName, "cdrom.#", "1"),
 					internal.TestCheckTypeSetElemAttrPair(resourceName, "cdrom.0.*", "data.xenorchestra_vdi.iso", "id"),
 				),
@@ -520,7 +464,7 @@ func TestAccXenorchestraVm_insertISOToVM(t *testing.T) {
 	})
 }
 
-func TestAccXenorchestraVm_createAndInsertCd(t *testing.T) {
+func TestAccXenorchestraVm_insertAndEjectCd(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
