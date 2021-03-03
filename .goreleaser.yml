@@ -26,6 +26,7 @@ builds:
     - arm64
   ignore:
     - goarch: '386'
+    - goarm: '6'
   binary: '{{ .ProjectName }}_v{{ .Version }}'
 archives:
 - format: zip
