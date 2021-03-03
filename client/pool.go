@@ -22,6 +22,10 @@ type CpuInfo struct {
 func (p Pool) Compare(obj interface{}) bool {
 	otherPool := obj.(Pool)
 
+	if otherPool.Id == p.Id {
+		return true
+	}
+
 	if otherPool.NameLabel != p.NameLabel {
 		return false
 	}
@@ -30,6 +34,16 @@ func (p Pool) Compare(obj interface{}) bool {
 
 func (c *Client) GetPoolByName(name string) (pools []Pool, err error) {
 	obj, err := c.FindFromGetAllObjects(Pool{NameLabel: name})
+	if err != nil {
+		return
+	}
+	pools = obj.([]Pool)
+
+	return pools, nil
+}
+
+func (c *Client) GetPools(pool Pool) (pools []Pool, err error) {
+	obj, err := c.FindFromGetAllObjects(pool)
 	if err != nil {
 		return
 	}

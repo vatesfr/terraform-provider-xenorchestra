@@ -20,7 +20,7 @@ func resourceHostSchema() map[string]*schema.Schema {
 			Type:     schema.TypeString,
 			Required: true,
 		},
-		"pool": &schema.Schema{
+		"pool_id": &schema.Schema{
 			Type:     schema.TypeString,
 			Computed: true,
 		},

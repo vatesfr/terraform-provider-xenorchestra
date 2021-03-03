@@ -1,9 +1,10 @@
 package xoa
 
 import (
+	"log"
+
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"log"
 )
 
 func dataSourceXoaHosts() *schema.Resource {
@@ -19,7 +20,7 @@ func dataSourceXoaHosts() *schema.Resource {
 				Computed: true,
 				Elem:     resourceHost(),
 			},
-			"pool": &schema.Schema{
+			"pool_id": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
 			},
@@ -38,10 +39,10 @@ func dataSourceXoaHosts() *schema.Resource {
 
 func dataSourceHostsRead(d *schema.ResourceData, m interface{}) error {
 	c := m.(*client.Client)
-	poolLabel := d.Get("pool").(string)
+	poolLabel := d.Get("pool_id").(string)
 	tags := d.Get("tags").([]interface{})
 
-	pool, err := c.GetPoolByName(poolLabel)
+	pool, err := c.GetPools(client.Pool{Id: poolLabel})
 	if err != nil {
 		return err
 	}
@@ -76,7 +77,7 @@ func hostsToMapList(hosts []client.Host) []map[string]interface{} {
 		hostMap := map[string]interface{}{
 			"id":         host.Id,
 			"name_label": host.NameLabel,
-			"pool":       host.Pool,
+			"pool_id":    host.Pool,
 			"tags":       host.Tags,
 		}
 		result = append(result, hostMap)

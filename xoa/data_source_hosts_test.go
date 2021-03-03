@@ -5,6 +5,7 @@ import (
 	"log"
 	"testing"
 
+	"github.com/ddelnano/terraform-provider-xenorchestra/xoa/internal"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
@@ -20,7 +21,11 @@ func TestAccXenorchestraDataSource_hosts(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckXenorchestraDataSourceHosts(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
-					resource.TestCheckResourceAttr(resourceName, "pool", accTestPool.Id)),
+					resource.TestCheckResourceAttr(resourceName, "pool_id", accTestPool.Id),
+					internal.TestCheckTypeSetElemNestedAttrs(resourceName, "hosts.*", map[string]string{
+						"pool_id": accTestPool.Id,
+					}),
+				),
 			},
 		},
 	},
@@ -45,7 +50,7 @@ func testAccCheckXenorchestraDataSourceHosts(n string) resource.TestCheckFunc {
 func testAccXenorchestraDataSourceHostsConfig() string {
 	return fmt.Sprintf(`
 data "xenorchestra_hosts" "hosts" {
-    pool = "%s"
+    pool_id = "%s"
 }
 `, accTestPool.Id)
 }
