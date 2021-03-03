@@ -71,7 +71,7 @@ func FindHostForTests(hostId string, host *Host) {
 	*host = queriedHost
 }
 
-func (c *Client) GetHostsByPoolName(host Host, sortBy, sortOder string) (hosts []Host, err error) {
+func (c *Client) GetHostsByPoolName(host Host, sortBy, sortOrder string) (hosts []Host, err error) {
 	obj, err := c.FindFromGetAllObjects(host)
 
 	if err != nil {
@@ -79,7 +79,7 @@ func (c *Client) GetHostsByPoolName(host Host, sortBy, sortOder string) (hosts [
 	}
 	slice := obj.([]Host)
 
-	return sortHostsByField(slice, sortBy, sortOder), nil
+	return sortHostsByField(slice, sortBy, sortOrder), nil
 }
 
 const (
