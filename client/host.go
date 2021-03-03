@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sort"
 )
 
 type Host struct {
@@ -70,7 +71,7 @@ func FindHostForTests(hostId string, host *Host) {
 	*host = queriedHost
 }
 
-func (c *Client) GetHostsByPoolName(host Host) (hosts []Host, err error) {
+func (c *Client) GetHostsByPoolName(host Host, sortBy, sortOder string) (hosts []Host, err error) {
 	obj, err := c.FindFromGetAllObjects(host)
 
 	if err != nil {
@@ -78,5 +79,38 @@ func (c *Client) GetHostsByPoolName(host Host) (hosts []Host, err error) {
 	}
 	slice := obj.([]Host)
 
-	return slice, nil
+	return sortHostsByField(slice, sortBy, sortOder), nil
+}
+
+const (
+	sortOrderAsc       = "asc"
+	sortOrderDesc      = "desc"
+	sortFieldId        = "id"
+	sortFieldNameLabel = "name_label"
+)
+
+func sortHostsByField(hosts []Host, by, order string) []Host {
+	if by == "" || order == "" {
+		return hosts
+	}
+	sort.Slice(hosts, func(i, j int) bool {
+		switch order {
+		case sortOrderAsc:
+			return sortByField(hosts, by, i, j)
+		case sortOrderDesc:
+			return sortByField(hosts, by, j, i)
+		}
+		return false
+	})
+	return hosts
+}
+
+func sortByField(hosts []Host, field string, i, j int) bool {
+	switch field {
+	case sortFieldNameLabel:
+		return hosts[i].NameLabel < hosts[j].NameLabel
+	case sortFieldId:
+		return hosts[i].Id < hosts[j].Id
+	}
+	return false
 }

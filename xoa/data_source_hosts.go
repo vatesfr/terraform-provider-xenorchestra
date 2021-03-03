@@ -46,7 +46,7 @@ func dataSourceHostsRead(d *schema.ResourceData, m interface{}) error {
 	if err != nil {
 		return err
 	}
-	hosts, err := c.GetHostsByPoolName(client.Host{Pool: pool[0].Id, Tags: tags})
+	hosts, err := c.GetHostsByPoolName(client.Host{Pool: pool[0].Id, Tags: tags}, d.Get("sort_by").(string), d.Get("sort_order").(string))
 	if err != nil {
 		return err
 	}
