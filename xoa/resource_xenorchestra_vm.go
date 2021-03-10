@@ -35,6 +35,7 @@ func resourceRecord() *schema.Resource {
 		Timeouts: &schema.ResourceTimeout{
 			Create: &duration,
 			Update: &duration,
+			Delete: &duration,
 		},
 		Schema: map[string]*schema.Schema{
 			"affinity_host": &schema.Schema{
@@ -314,6 +315,7 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		VIFsMap:      network_maps,
 		WaitForIps:   d.Get("wait_for_ip").(bool),
 	},
+		d.Timeout(schema.TimeoutCreate),
 	)
 
 	if err != nil {
