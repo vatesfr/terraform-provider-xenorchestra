@@ -86,7 +86,7 @@ func (v Vm) Compare(obj interface{}) bool {
 	return false
 }
 
-func (c *Client) CreateVm(vmReq Vm) (*Vm, error) {
+func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 	tmpl, err := c.GetTemplate(Template{
 		Id: vmReq.Template,
 	})
@@ -169,7 +169,7 @@ func (c *Client) CreateVm(vmReq Vm) (*Vm, error) {
 		return nil, err
 	}
 
-	err = c.waitForModifyVm(vmId, vmReq.WaitForIps, 5*time.Minute)
+	err = c.waitForModifyVm(vmId, vmReq.WaitForIps, createTime)
 
 	if err != nil {
 		return nil, err
@@ -395,6 +395,7 @@ func FindOrCreateVmForTests(vm *Vm, poolId, srId, templateName, tag string) {
 					},
 				},
 			},
+			5*time.Minute,
 		)
 	}
 
