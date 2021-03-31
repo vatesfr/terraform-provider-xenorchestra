@@ -1098,6 +1098,33 @@ func TestAccXenorchestraVm_createAndUpdateWithResourceSet(t *testing.T) {
 	})
 }
 
+func TestAccXenorchestraVm_createWithTemplateAndPlanWithTemplateName(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfig(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckNoResourceAttr(resourceName, "template_name"),
+					resource.TestCheckResourceAttr(resourceName, "template", testTemplate.Id)),
+			},
+			{
+				Config: testAccVmConfigWithTemplateName(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckNoResourceAttr(resourceName, "template"),
+					resource.TestCheckResourceAttr(resourceName, "template_name", testTemplate.Id)),
+			},
+		},
+	})
+}
+
 func testAccVmExists(resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]
@@ -1992,4 +2019,37 @@ resource "xenorchestra_vm" "bar" {
     }
 }
 `, accDefaultSr.Id)
+}
+
+func testAccVmConfigWithTemplateName() string {
+	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
+
+data "xenorchestra_template" "template" {
+    name_label = "%s"
+}
+
+data "xenorchestra_network" "network" {
+    name_label = "Pool-wide network associated with eth0"
+    pool_id = "%s"
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 4295000000
+    cpus  = 1
+    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    name_label = "Terraform testing"
+    name_description = "description"
+    template_name = "${data.xenorchestra_template.template.name_label}"
+    network {
+       network_id = "${data.xenorchestra_network.network.id}"
+    }
+
+    disk {
+      sr_id = "%s"
+      name_label = "disk 1"
+      size = 4294967296
+    }
+}
+`, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id)
+
 }

@@ -68,9 +68,20 @@ func resourceRecord() *schema.Resource {
 				ValidateFunc: internal.StringInSlice(validHaOptions, false),
 			},
 			"template": &schema.Schema{
+				Optional: true,
 				Type:     schema.TypeString,
-				Required: true,
 				ForceNew: true,
+				ExactlyOneOf: []string{
+					"template_name",
+				},
+			},
+			"template_name": &schema.Schema{
+				Optional: true,
+				Type:     schema.TypeString,
+				ForceNew: true,
+				ExactlyOneOf: []string{
+					"template",
+				},
 			},
 			"cloud_config": &schema.Schema{
 				Type:     schema.TypeString,
