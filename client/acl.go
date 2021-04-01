@@ -42,7 +42,7 @@ func (c *Client) CreateAcl(acl Acl) (*Acl, error) {
 	return c.GetAcl(acl)
 }
 
-func (c *Client) GetAcl(aclReq Acl) (*Acl, error) {
+func (c *Client) GetAcls() ([]Acl, error) {
 	params := map[string]interface{}{
 		"dummy": "dummy",
 	}
@@ -53,6 +53,14 @@ func (c *Client) GetAcl(aclReq Acl) (*Acl, error) {
 		return nil, err
 	}
 	log.Printf("[DEBUG] Found the following ACLs: %v\n", acls)
+	return acls, nil
+}
+
+func (c *Client) GetAcl(aclReq Acl) (*Acl, error) {
+	acls, err := c.GetAcls()
+	if err != nil {
+		return nil, err
+	}
 
 	var foundAcl Acl
 	for _, acl := range acls {
