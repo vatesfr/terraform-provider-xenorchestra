@@ -6,8 +6,6 @@ import (
 	"log"
 	"os"
 	"time"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
 type allObjectResponse struct {
@@ -298,7 +296,7 @@ func (c *Client) waitForModifyVm(id string, waitForIp bool, timeout time.Duratio
 
 			return vm, vm.PowerState, nil
 		}
-		stateConf := &resource.StateChangeConf{
+		stateConf := &StateChangeConf{
 			Pending: []string{"Halted", "Stopped"},
 			Refresh: refreshFn,
 			Target:  []string{"Running"},
@@ -321,7 +319,7 @@ func (c *Client) waitForModifyVm(id string, waitForIp bool, timeout time.Duratio
 
 			return vm, "Ready", nil
 		}
-		stateConf := &resource.StateChangeConf{
+		stateConf := &StateChangeConf{
 			Pending: []string{"Waiting"},
 			Refresh: refreshFn,
 			Target:  []string{"Ready"},
