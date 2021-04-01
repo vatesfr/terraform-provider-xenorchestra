@@ -53,6 +53,7 @@ TF_LOG=debug TEST=TestAccXONetworkDataSource_read make testacc
 The following command can be used to run the entire test suite.
 
 ```
-make testacc
+# This runs the testclient and testacc Makefile targets
+make test
 ```
 
