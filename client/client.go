@@ -133,40 +133,35 @@ type XoObject interface {
 }
 
 func (c *Client) GetAllObjectsOfType(obj XoObject, response interface{}) error {
-	filter := make(map[string]interface{})
+	xoApiType := ""
 	switch t := obj.(type) {
 	case Network:
-		filter["type"] = "network"
+		xoApiType = "network"
 	case PIF:
-		filter["type"] = "PIF"
+		xoApiType = "PIF"
 	case Pool:
-		filter["type"] = "pool"
+		xoApiType = "pool"
 	case Host:
-		hostObject := obj.(Host)
-		filter["type"] = "host"
-		if hostObject.Pool != "" {
-			filter["$pool"] = hostObject.Pool
-		}
-		if len(hostObject.Tags) > 0 {
-			filter["tags"] = hostObject.Tags
-		}
+		xoApiType = "host"
 	case StorageRepository:
-		filter["type"] = "SR"
+		xoApiType = "SR"
 	case Vm:
-		filter["type"] = "VM"
+		xoApiType = "VM"
 	case Template:
-		filter["type"] = "VM-template"
+		xoApiType = "VM-template"
 	case VIF:
-		filter["type"] = "VIF"
+		xoApiType = "VIF"
 	case VBD:
-		filter["type"] = "VBD"
+		xoApiType = "VBD"
 	case VDI:
-		filter["type"] = "VDI"
+		xoApiType = "VDI"
 	default:
 		panic(fmt.Sprintf("XO client does not support type: %T", t))
 	}
 	params := map[string]interface{}{
-		"filter": filter,
+		"filter": map[string]string{
+			"type": xoApiType,
+		},
 	}
 	return c.Call("xo.getAllObjects", params, response)
 }
