@@ -58,14 +58,14 @@ func TestGetHostByName(t *testing.T) {
 
 }
 
-func TestGetHostsByPoolName(t *testing.T) {
+func TestGetSortedHosts(t *testing.T) {
 	c, err := NewClient(GetConfigFromEnv())
 	if err != nil {
 		t.Fatalf("failed to create client with error: %v", err)
 	}
 
 	poolName := accTestHost.Pool
-	hosts, err := c.GetHostsByPoolName(Host{Pool: poolName}, "id", "asc")
+	hosts, err := c.GetSortedHosts(Host{Pool: poolName}, "id", "asc")
 	if err != nil {
 		t.Fatalf("failed to get host with error: %v", err)
 	}

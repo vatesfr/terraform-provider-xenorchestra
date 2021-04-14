@@ -39,35 +39,30 @@ func dataSourceXoaHosts() *schema.Resource {
 
 func dataSourceHostsRead(d *schema.ResourceData, m interface{}) error {
 	c := m.(*client.Client)
-	poolLabel := d.Get("pool_id").(string)
+	poolId := d.Get("pool_id").(string)
 	tags := d.Get("tags").([]interface{})
 
-	pool, err := c.GetPools(client.Pool{Id: poolLabel})
+	pool, err := c.GetPools(client.Pool{Id: poolId})
 	if err != nil {
 		return err
 	}
-	hosts, err := c.GetHostsByPoolName(client.Host{Pool: pool[0].Id, Tags: tags}, d.Get("sort_by").(string), d.Get("sort_order").(string))
-	if err != nil {
-		return err
-	}
+	// TODO: Add check for the length of pool here
+	hosts, err := c.GetSortedHosts(client.Host{Pool: pool[0].Id, Tags: tags}, d.Get("sort_by").(string), d.Get("sort_order").(string))
+
 	log.Printf("[DEBUG] found the following hosts: %s", hosts)
-
-	if _, ok := err.(client.NotFound); ok {
-		d.SetId("")
-		return nil
-	}
-	err = d.Set("hosts", hostsToMapList(hosts))
 	if err != nil {
-		log.Printf("[DEBUG] failed setting hosts: %s", err.Error())
 		return err
 	}
-	err = d.Set("master", pool[0].Master)
+
+	if err = d.Set("hosts", hostsToMapList(hosts)); err != nil {
+		return err
+	}
+	if err = d.Set("master", pool[0].Master); err != nil {
+		return err
+	}
+
+	// TODO: This can't be the pool master as this could collide with other data sources
 	d.SetId(pool[0].Master)
-
-	if err != nil {
-		log.Printf("[DEBUG] failed setting master id: %s", err.Error())
-		return err
-	}
 	return nil
 }
 

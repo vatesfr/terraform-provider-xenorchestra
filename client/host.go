@@ -22,7 +22,7 @@ func (h Host) Compare(obj interface{}) bool {
 	if h.Pool == otherHost.Pool {
 		return true
 	}
-	if otherHost.NameLabel != "" && h.NameLabel == otherHost.NameLabel {
+	if h.NameLabel != "" && h.NameLabel == otherHost.NameLabel {
 		return true
 	}
 	return false
@@ -71,7 +71,7 @@ func FindHostForTests(hostId string, host *Host) {
 	*host = queriedHost
 }
 
-func (c *Client) GetHostsByPoolName(host Host, sortBy, sortOrder string) (hosts []Host, err error) {
+func (c *Client) GetSortedHosts(host Host, sortBy, sortOrder string) (hosts []Host, err error) {
 	obj, err := c.FindFromGetAllObjects(host)
 
 	if err != nil {
