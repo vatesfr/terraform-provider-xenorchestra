@@ -15,6 +15,34 @@ func dataSourceXoaHost() *schema.Resource {
 	}
 }
 
+func resourceHost() *schema.Resource {
+	hostSchema := resourceHostSchema()
+	// This is needed by the hosts data source but
+	// will cause problems for the host data source.
+	// Add this map key at runtime to allow for code reuse.
+	hostSchema["id"] = &schema.Schema{
+		Type:     schema.TypeString,
+		Required: true,
+	}
+	return &schema.Resource{
+		Schema: hostSchema,
+	}
+}
+
+func resourceHostSchema() map[string]*schema.Schema {
+	return map[string]*schema.Schema{
+		"name_label": &schema.Schema{
+			Type:     schema.TypeString,
+			Required: true,
+		},
+		"pool_id": &schema.Schema{
+			Type:     schema.TypeString,
+			Computed: true,
+		},
+		"tags": resourceTags(),
+	}
+}
+
 func dataSourceHostRead(d *schema.ResourceData, m interface{}) error {
 	c := m.(*client.Client)
 	nameLabel := d.Get("name_label").(string)
