@@ -55,6 +55,27 @@ func TestAccXONetworkDataSource_read(t *testing.T) {
 	)
 }
 
+func TestAccXONetworkDataSource_notFound(t *testing.T) {
+	resourceName := "data.xenorchestra_network.network"
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccXenorchestraDataSourceNetworkConfig("not found"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckXenorchestraDataSourceNetwork(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "name_label"),
+					resource.TestCheckResourceAttrSet(resourceName, "pool_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "bridge")),
+				ExpectError: regexp.MustCompile(`Could not find client.Network with query`),
+			},
+		},
+	},
+	)
+}
+
 func TestAccXONetworkDataSource_multipleCauseError(t *testing.T) {
 	resourceName := "data.xenorchestra_network.network"
 	net := getTestNetwork(accTestPool.Id)

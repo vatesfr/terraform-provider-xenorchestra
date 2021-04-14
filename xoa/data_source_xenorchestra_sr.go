@@ -48,11 +48,6 @@ func dataSourceStorageRepositoryRead(d *schema.ResourceData, m interface{}) erro
 
 	srs, err := c.GetStorageRepository(sr)
 
-	if _, ok := err.(client.NotFound); ok {
-		d.SetId("")
-		return nil
-	}
-
 	if err != nil {
 		return err
 	}

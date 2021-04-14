@@ -1,8 +1,8 @@
 package xoa
 
 import (
-	"errors"
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -18,7 +18,7 @@ func TestAccXenorchestraDataSource_storageRepository(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccXenorchestraDataSourceStorageRepositoryConfig(),
+				Config: testAccXenorchestraDataSourceStorageRepositoryConfig(accDefaultSr.NameLabel),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckXenorchestraDataSourceStorageRepository(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -26,6 +26,28 @@ func TestAccXenorchestraDataSource_storageRepository(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "pool_id"),
 					resource.TestCheckResourceAttrSet(resourceName, "uuid"),
 					resource.TestCheckResourceAttr(resourceName, "name_label", accDefaultSr.NameLabel)),
+			},
+		},
+	},
+	)
+}
+
+func TestAccXenorchestraDataSource_storageRepositoryNotFound(t *testing.T) {
+	resourceName := "data.xenorchestra_sr.sr"
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccXenorchestraDataSourceStorageRepositoryConfig("not found"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckXenorchestraDataSourceStorageRepository(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "sr_type"),
+					resource.TestCheckResourceAttrSet(resourceName, "pool_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "uuid"),
+					resource.TestCheckResourceAttr(resourceName, "name_label", accDefaultSr.NameLabel)),
+				ExpectError: regexp.MustCompile(`Could not find client.StorageRepository with query`),
 			},
 		},
 	},
@@ -54,25 +76,13 @@ func TestAccXenorchestraDataSource_storageRepositoryWithPoolId(t *testing.T) {
 }
 
 func TestAccXenorchestraDataSource_storageRepositoryWithNonExistantPoolId(t *testing.T) {
-	resourceName := "data.xenorchestra_sr.sr"
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccXenorchestraDataSourceStorageRepositoryPoolConfig(nonExistantPoolId),
-				Check: func(s *terraform.State) error {
-					rs, ok := s.RootModule().Resources[resourceName]
-					if !ok {
-						return fmt.Errorf("Can't find StorageRepository data source: %s", resourceName)
-					}
-
-					if rs.Primary.ID == "" {
-						return nil
-					}
-
-					return errors.New("Storage Repository data source should have failed to be found")
-				},
+				Config:      testAccXenorchestraDataSourceStorageRepositoryPoolConfig(nonExistantPoolId),
+				ExpectError: regexp.MustCompile(`Could not find client.StorageRepository with query`),
 			},
 		},
 	},
@@ -93,7 +103,7 @@ func testAccCheckXenorchestraDataSourceStorageRepository(n string) resource.Test
 	}
 }
 
-func testAccXenorchestraDataSourceStorageRepositoryConfig() string {
+func testAccXenorchestraDataSourceStorageRepositoryConfig(srNameLabel string) string {
 	return fmt.Sprintf(`
 data "xenorchestra_sr" "sr" {
     name_label = "%s"
@@ -101,7 +111,7 @@ data "xenorchestra_sr" "sr" {
 	"%s"
     ]
 }
-`, accDefaultSr.NameLabel, accTestPrefix)
+`, srNameLabel, accTestPrefix)
 }
 
 func testAccXenorchestraDataSourceStorageRepositoryPoolConfig(poolId string) string {

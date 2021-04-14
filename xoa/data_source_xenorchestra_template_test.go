@@ -2,6 +2,7 @@ package xoa
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -21,6 +22,26 @@ func TestAccXenorchestraDataSource_template(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "uuid"),
 				),
+			},
+		},
+	},
+	)
+}
+
+func TestAccXenorchestraDataSource_templateNotFound(t *testing.T) {
+	resourceName := "data.xenorchestra_template.template"
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccXenorchestraDataSourceTemplateConfig("not found"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckXenorchestraDataSourceTemplate(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "uuid"),
+				),
+				ExpectError: regexp.MustCompile(`Could not find client.Template with query`),
 			},
 		},
 	},

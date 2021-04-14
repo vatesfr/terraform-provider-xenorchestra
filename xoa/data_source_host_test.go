@@ -3,6 +3,7 @@ package xoa
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -16,11 +17,30 @@ func TestAccXenorchestraDataSource_host(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccXenorchestraDataSourceHostConfig(),
+				Config: testAccXenorchestraDataSourceHostConfig(accTestHost.NameLabel),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckXenorchestraDataSourceHost(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttr(resourceName, "name_label", accTestHost.NameLabel)),
+			},
+		},
+	},
+	)
+}
+
+func TestAccXenorchestraDataSource_hostNotFound(t *testing.T) {
+	resourceName := "data.xenorchestra_host.host"
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccXenorchestraDataSourceHostConfig("not found"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckXenorchestraDataSourceHost(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "name_label", accTestHost.NameLabel)),
+				ExpectError: regexp.MustCompile(`Could not find client.Host with query`),
 			},
 		},
 	},
@@ -42,10 +62,10 @@ func testAccCheckXenorchestraDataSourceHost(n string) resource.TestCheckFunc {
 	}
 }
 
-func testAccXenorchestraDataSourceHostConfig() string {
+func testAccXenorchestraDataSourceHostConfig(host string) string {
 	return fmt.Sprintf(`
 data "xenorchestra_host" "host" {
     name_label = "%s"
 }
-`, accTestHost.NameLabel)
+`, host)
 }

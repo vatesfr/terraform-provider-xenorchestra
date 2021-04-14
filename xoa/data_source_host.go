@@ -3,6 +3,7 @@ package xoa
 import (
 	"errors"
 	"fmt"
+
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -23,11 +24,6 @@ func dataSourceHostRead(d *schema.ResourceData, m interface{}) error {
 	c := m.(*client.Client)
 	nameLabel := d.Get("name_label").(string)
 	hosts, err := c.GetHostByName(nameLabel)
-
-	if _, ok := err.(client.NotFound); ok {
-		d.SetId("")
-		return nil
-	}
 
 	if err != nil {
 		return err

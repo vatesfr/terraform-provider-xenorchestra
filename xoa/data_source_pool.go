@@ -41,11 +41,6 @@ func dataSourcePoolRead(d *schema.ResourceData, m interface{}) error {
 
 	pools, err := c.GetPoolByName(nameLabel)
 
-	if _, ok := err.(client.NotFound); ok {
-		d.SetId("")
-		return nil
-	}
-
 	if err != nil {
 		return err
 	}

@@ -80,6 +80,26 @@ func TestAccXenorchestraDataSource_resourceSet(t *testing.T) {
 	)
 }
 
+func TestAccXenorchestraDataSource_resourceSetNotFound(t *testing.T) {
+	resourceName := "data.xenorchestra_resource_set.rs"
+	rsName := getUniqResourceSetName()
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccXenorchestraDataSourceResourceSetConfig("not found"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckXenorchestraDataSourceResourceSet(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "name", rsName)),
+				ExpectError: regexp.MustCompile(`Could not find client.ResourceSet with query`),
+			},
+		},
+	},
+	)
+}
+
 func TestAccXenorchestraDataSource_withDuplicateResourceSetNames(t *testing.T) {
 	rsName := getUniqResourceSetName()
 	resource.Test(t, resource.TestCase{

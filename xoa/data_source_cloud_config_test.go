@@ -38,7 +38,7 @@ func TestAccXenorchestraDataSource_cloudConfigProvidesErrorWhenNotFound(t *testi
 		Steps: []resource.TestStep{
 			{
 				Config:      testAccXenorchestraDataSourceCloudConfigConfig(cloudConfigName),
-				ExpectError: regexp.MustCompile("Could not find client.CloudConfig with query"),
+				ExpectError: regexp.MustCompile("Could not find with query"),
 			},
 		},
 	},

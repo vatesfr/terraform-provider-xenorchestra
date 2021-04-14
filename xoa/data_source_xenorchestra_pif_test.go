@@ -2,6 +2,7 @@ package xoa
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -15,7 +16,7 @@ func TestAccXenorchestraDataSource_pif(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccXenorchestraDataSourcePIFConfig(),
+				Config: testAccXenorchestraDataSourcePIFConfig(accTestPool.Master),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckXenorchestraDataSourcePIF(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -26,6 +27,31 @@ func TestAccXenorchestraDataSource_pif(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "pool_id"),
 					resource.TestCheckResourceAttrSet(resourceName, "uuid"),
 					resource.TestCheckResourceAttrSet(resourceName, "vlan")),
+			},
+		},
+	},
+	)
+}
+
+func TestAccXenorchestraDataSource_pifNotFound(t *testing.T) {
+	resourceName := "data.xenorchestra_pif.pif"
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccXenorchestraDataSourcePIFConfig("not found"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckXenorchestraDataSourcePIF(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "attached"),
+					resource.TestCheckResourceAttr(resourceName, "device", "eth0"),
+					resource.TestCheckResourceAttrSet(resourceName, "host"),
+					resource.TestCheckResourceAttrSet(resourceName, "network"),
+					resource.TestCheckResourceAttrSet(resourceName, "pool_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "uuid"),
+					resource.TestCheckResourceAttrSet(resourceName, "vlan")),
+				ExpectError: regexp.MustCompile(`Could not find client.PIF with query`),
 			},
 		},
 	},
@@ -46,12 +72,12 @@ func testAccCheckXenorchestraDataSourcePIF(n string) resource.TestCheckFunc {
 	}
 }
 
-func testAccXenorchestraDataSourcePIFConfig() string {
+func testAccXenorchestraDataSourcePIFConfig(hostId string) string {
 	return fmt.Sprintf(`
 data "xenorchestra_pif" "pif" {
     device = "eth0"
     vlan = -1
     host_id = "%s"
 }
-`, accTestPool.Master)
+`, hostId)
 }

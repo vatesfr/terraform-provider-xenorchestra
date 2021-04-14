@@ -44,11 +44,6 @@ func dataSourceTemplateRead(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	if _, ok := err.(client.NotFound); ok {
-		d.SetId("")
-		return nil
-	}
-
 	l := len(templates)
 	if l != 1 {
 		return errors.New(fmt.Sprintf("found `%d` templates with query %+v. Templates must be uniquely named to use this data source", l, templateReq))
