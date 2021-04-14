@@ -3,6 +3,7 @@ package xoa
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -16,7 +17,7 @@ func TestAccXenorchestraDataSource_pool(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccXenorchestraDataSourcePoolConfig(),
+				Config: testAccXenorchestraDataSourcePoolConfig(accTestPool.NameLabel),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckXenorchestraDataSourcePool(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -25,6 +26,24 @@ func TestAccXenorchestraDataSource_pool(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "cpus.sockets"),
 					resource.TestCheckResourceAttrSet(resourceName, "cpus.cores"),
 					resource.TestCheckResourceAttr(resourceName, "name_label", accTestPool.NameLabel)),
+			},
+		},
+	},
+	)
+}
+
+func TestAccXenorchestraDataSource_poolNotFound(t *testing.T) {
+	resourceName := "data.xenorchestra_pool.pool"
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccXenorchestraDataSourcePoolConfig("not found"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckXenorchestraDataSourcePool(resourceName),
+				),
+				ExpectError: regexp.MustCompile(`Could not find client.Pool with query`),
 			},
 		},
 	},
@@ -46,10 +65,10 @@ func testAccCheckXenorchestraDataSourcePool(n string) resource.TestCheckFunc {
 	}
 }
 
-func testAccXenorchestraDataSourcePoolConfig() string {
+func testAccXenorchestraDataSourcePoolConfig(pool string) string {
 	return fmt.Sprintf(`
 data "xenorchestra_pool" "pool" {
     name_label = "%s"
 }
-`, accTestPool.NameLabel)
+`, pool)
 }

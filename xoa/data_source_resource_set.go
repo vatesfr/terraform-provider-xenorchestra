@@ -27,11 +27,6 @@ func dataSourceResourceSetRead(d *schema.ResourceData, m interface{}) error {
 
 	resourceSets, err := c.GetResourceSet(client.ResourceSet{Name: name})
 
-	if _, ok := err.(client.NotFound); ok {
-		d.SetId("")
-		return nil
-	}
-
 	if err != nil {
 		return err
 	}

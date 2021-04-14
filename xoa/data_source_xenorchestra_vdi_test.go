@@ -2,6 +2,7 @@ package xoa
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -21,6 +22,26 @@ func TestAccXenorchestraDataSource_VDI(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "name_label"),
 				),
+			},
+		},
+	},
+	)
+}
+
+func TestAccXenorchestraDataSource_vdiNotFound(t *testing.T) {
+	resourceName := "data.xenorchestra_vdi.vdi"
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccXenorchestraDataSourceVDIConfig("not found"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckXenorchestraDataSourceVDI(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "name_label"),
+				),
+				ExpectError: regexp.MustCompile(`Could not find client.VDI with query`),
 			},
 		},
 	},

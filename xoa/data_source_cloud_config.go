@@ -32,11 +32,6 @@ func dataSourceCloudConfigRead(d *schema.ResourceData, m interface{}) error {
 
 	cloudConfigs, err := c.GetCloudConfigByName(name)
 
-	if _, ok := err.(client.NotFound); ok {
-		d.SetId("")
-		return err
-	}
-
 	if err != nil {
 		return err
 	}

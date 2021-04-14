@@ -3,6 +3,7 @@ package xoa
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"testing"
 
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
@@ -24,6 +25,25 @@ func TestAccXenorchestraDataSource_user(t *testing.T) {
 					testAccCheckXenorchestraDataSourceUser(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttr(resourceName, "username", username)),
+			},
+		},
+	},
+	)
+}
+
+func TestAccXenorchestraDataSource_userNotFound(t *testing.T) {
+	resourceName := "data.xenorchestra_user.user"
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccXenorchestraDataSourceUserConfig("not found"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckXenorchestraDataSourceUser(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+				),
+				ExpectError: regexp.MustCompile(`Could not find client.User with query`),
 			},
 		},
 	},

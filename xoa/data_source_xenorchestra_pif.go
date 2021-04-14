@@ -68,11 +68,6 @@ func dataSourcePIFRead(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	if _, ok := err.(client.NotFound); ok {
-		d.SetId("")
-		return nil
-	}
-
 	l := len(pifs)
 	if l != 1 {
 		return errors.New(fmt.Sprintf("found `%d` pifs with device `%s` and vlan `%d`. PIFs must be uniquely named to use this data source", l, device, vlan))
