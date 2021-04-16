@@ -60,7 +60,6 @@ func dataSourceHostsRead(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	// TODO: This can't be the pool master as this could collide with other data sources
 	d.SetId(pool[0].Master)
 	return nil
 }
