@@ -169,6 +169,25 @@ func testCheckTypeSetElem(is *terraform.InstanceState, attr, value string) error
 	return fmt.Errorf("no TypeSet element %q, with value %q in state: %#v", attr, value, is.Attributes)
 }
 
+// TestCheckTypeListAttrSorted is a resource.TestCheckFunc that accepts a resource
+// name, an attribute path, which should use the sentinel value '*' for indexing
+// into a TypeList. The function verifies that the given list is sorted in an ascending
+// or descending fashion.
+//
+// The following invocation would pass with the terraform state given below:
+// e.g. internal.TestCheckTypeListAttrSorted("data.xenorchestra_hosts.hosts, "hosts.*.name_label", "asc"),
+//
+// STATE:
+//
+// data.xenorchestra_hosts.hosts:
+//   ID = 0aea61f4-c9d1-4060-94e8-4eb2024d082c
+//   provider = provider.xenorchestra
+//   hosts.# = 3
+//   hosts.0.name_label = R620-L1
+//   hosts.1.name_label = R620-L3
+//   hosts.2.name_label = R620-L2
+//   sort_by = name_label
+//   sort_order = asc
 func TestCheckTypeListAttrSorted(name, attr, sortOrder string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		is, err := instanceState(s, name)
@@ -176,11 +195,11 @@ func TestCheckTypeListAttrSorted(name, attr, sortOrder string) resource.TestChec
 			return err
 		}
 
-		l := len(is.Attributes)
-		matches := make([]string, l)
-		matchCount := 0
+		// Over allocate the slice length since
+		// matches will be added by index
+		matches := make([]string, len(is.Attributes))
+		matchCount, sentinelPos := 0, -1
 		attrParts := strings.Split(attr, ".")
-		sentinelPos := -1
 
 		for i, attrPart := range attrParts {
 			if attrPart == sentinelIndex {
@@ -194,9 +213,6 @@ func TestCheckTypeListAttrSorted(name, attr, sortOrder string) resource.TestChec
 
 		for stateKey, stateValue := range is.Attributes {
 			stateKeyParts := strings.Split(stateKey, ".")
-			// a List item with nested attrs would have a flatmap address of
-			// at least length 3
-			// foo.0.name = "bar"
 			if len(stateKeyParts) != len(attrParts) {
 				continue
 			}
@@ -221,7 +237,7 @@ func TestCheckTypeListAttrSorted(name, attr, sortOrder string) resource.TestChec
 		}
 
 		// Remove the excess uninitilized elements once the relevant
-		// attributes are identified.
+		// attributes are identified due to slice overallocation
 		matches = matches[:matchCount-1]
 		sorted := sort.SliceIsSorted(matches, func(i, j int) bool {
 			switch sortOrder {
