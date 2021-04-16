@@ -46,7 +46,6 @@ func dataSourceHostsRead(d *schema.ResourceData, m interface{}) error {
 	if err != nil {
 		return err
 	}
-	// TODO: Add check for the length of pool here
 	hosts, err := c.GetSortedHosts(client.Host{Pool: pool[0].Id, Tags: tags}, d.Get("sort_by").(string), d.Get("sort_order").(string))
 
 	log.Printf("[DEBUG] found the following hosts: %s", hosts)

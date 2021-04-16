@@ -1,7 +1,10 @@
 package internal
 
 import (
+	"errors"
 	"fmt"
+	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -18,6 +21,8 @@ import (
 
 const (
 	sentinelIndex = "*"
+	sortOrderAsc  = "asc"
+	sortOrderDesc = "desc"
 )
 
 // TestCheckTypeSetElemNestedAttrs is a resource.TestCheckFunc that accepts a resource
@@ -162,4 +167,76 @@ func testCheckTypeSetElem(is *terraform.InstanceState, attr, value string) error
 	}
 
 	return fmt.Errorf("no TypeSet element %q, with value %q in state: %#v", attr, value, is.Attributes)
+}
+
+func TestCheckTypeListAttrSorted(name, attr, sortOrder string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		is, err := instanceState(s, name)
+		if err != nil {
+			return err
+		}
+
+		l := len(is.Attributes)
+		matches := make([]string, l)
+		matchCount := 0
+		attrParts := strings.Split(attr, ".")
+		sentinelPos := -1
+
+		for i, attrPart := range attrParts {
+			if attrPart == sentinelIndex {
+				sentinelPos = i
+			}
+		}
+
+		if sentinelPos == -1 {
+			return fmt.Errorf("%q does not end contain the special value %q", attr, sentinelIndex)
+		}
+
+		for stateKey, stateValue := range is.Attributes {
+			stateKeyParts := strings.Split(stateKey, ".")
+			// a List item with nested attrs would have a flatmap address of
+			// at least length 3
+			// foo.0.name = "bar"
+			if len(stateKeyParts) != len(attrParts) {
+				continue
+			}
+
+			for i := range stateKeyParts {
+
+				if i == sentinelPos {
+					continue
+				}
+				if stateKeyParts[i] != attrParts[i] {
+					break
+				}
+
+				// Save the match
+				if len(attrParts)-1 == i {
+					pos, _ := strconv.Atoi(stateKeyParts[sentinelPos])
+					matches[pos] = stateValue
+					matchCount++
+				}
+
+			}
+		}
+
+		// Remove the excess uninitilized elements once the relevant
+		// attributes are identified.
+		matches = matches[:matchCount-1]
+		sorted := sort.SliceIsSorted(matches, func(i, j int) bool {
+			switch sortOrder {
+			case sortOrderAsc:
+				return matches[i] < matches[j]
+			case sortOrderDesc:
+				return matches[j] < matches[i]
+			}
+			return false
+		})
+
+		if !sorted {
+			return errors.New(fmt.Sprintf("expected %v to be sorted %s", matches, sortOrder))
+		}
+
+		return nil
+	}
 }

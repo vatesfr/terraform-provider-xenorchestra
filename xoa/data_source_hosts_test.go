@@ -3,6 +3,7 @@ package xoa
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"testing"
 
 	"github.com/ddelnano/terraform-provider-xenorchestra/xoa/internal"
@@ -10,18 +11,100 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-func TestAccXenorchestraDataSource_hosts(t *testing.T) {
+func TestAccXenorchestraDataSource_hostsSortedDescByNameLabel(t *testing.T) {
 	resourceName := "data.xenorchestra_hosts.hosts"
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccXenorchestraDataSourceHostsConfig(),
+				Config: testAccXenorchestraDataSourceHostsConfig("name_label", "desc"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckXenorchestraDataSourceHosts(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttr(resourceName, "pool_id", accTestPool.Id),
+					// Verify that there are atleast 2 hosts returned
+					// This is necessary to test the sorting logic
+					resource.TestMatchResourceAttr(resourceName, "hosts.#", regexp.MustCompile(`[2-9]|\d\d\d*`)),
+					internal.TestCheckTypeListAttrSorted(resourceName, "hosts.*.name_label", "desc"),
+					internal.TestCheckTypeSetElemNestedAttrs(resourceName, "hosts.*", map[string]string{
+						"pool_id": accTestPool.Id,
+					}),
+				),
+			},
+		},
+	},
+	)
+}
+
+func TestAccXenorchestraDataSource_hostsSortedAscByNameLabel(t *testing.T) {
+	resourceName := "data.xenorchestra_hosts.hosts"
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccXenorchestraDataSourceHostsConfig("name_label", "asc"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckXenorchestraDataSourceHosts(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "pool_id", accTestPool.Id),
+					// Verify that there are atleast 2 hosts returned
+					// This is necessary to test the sorting logic
+					resource.TestMatchResourceAttr(resourceName, "hosts.#", regexp.MustCompile(`[2-9]|\d\d\d*`)),
+					internal.TestCheckTypeListAttrSorted(resourceName, "hosts.*.name_label", "asc"),
+					internal.TestCheckTypeSetElemNestedAttrs(resourceName, "hosts.*", map[string]string{
+						"pool_id": accTestPool.Id,
+					}),
+				),
+			},
+		},
+	},
+	)
+}
+
+func TestAccXenorchestraDataSource_hostsSortedDescById(t *testing.T) {
+	resourceName := "data.xenorchestra_hosts.hosts"
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccXenorchestraDataSourceHostsConfig("id", "desc"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckXenorchestraDataSourceHosts(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "pool_id", accTestPool.Id),
+					// Verify that there are atleast 2 hosts returned
+					// This is necessary to test the sorting logic
+					resource.TestMatchResourceAttr(resourceName, "hosts.#", regexp.MustCompile(`[2-9]|\d\d\d*`)),
+					internal.TestCheckTypeListAttrSorted(resourceName, "hosts.*.id", "desc"),
+					internal.TestCheckTypeSetElemNestedAttrs(resourceName, "hosts.*", map[string]string{
+						"pool_id": accTestPool.Id,
+					}),
+				),
+			},
+		},
+	},
+	)
+}
+
+func TestAccXenorchestraDataSource_hostsSortedAscById(t *testing.T) {
+	resourceName := "data.xenorchestra_hosts.hosts"
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccXenorchestraDataSourceHostsConfig("id", "asc"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckXenorchestraDataSourceHosts(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "pool_id", accTestPool.Id),
+					// Verify that there are atleast 2 hosts returned
+					// This is necessary to test the sorting logic
+					resource.TestMatchResourceAttr(resourceName, "hosts.#", regexp.MustCompile(`[2-9]|\d\d\d*`)),
+					internal.TestCheckTypeListAttrSorted(resourceName, "hosts.*.id", "asc"),
 					internal.TestCheckTypeSetElemNestedAttrs(resourceName, "hosts.*", map[string]string{
 						"pool_id": accTestPool.Id,
 					}),
@@ -47,10 +130,12 @@ func testAccCheckXenorchestraDataSourceHosts(n string) resource.TestCheckFunc {
 	}
 }
 
-func testAccXenorchestraDataSourceHostsConfig() string {
+func testAccXenorchestraDataSourceHostsConfig(sortBy, sortOrder string) string {
 	return fmt.Sprintf(`
 data "xenorchestra_hosts" "hosts" {
     pool_id = "%s"
+    sort_by = "%s"
+    sort_order = "%s"
 }
-`, accTestPool.Id)
+`, accTestPool.Id, sortBy, sortOrder)
 }
