@@ -8,7 +8,6 @@ Use this data source to filter Xenorchestra hosts by certain criteria (name_labe
 data "xenorchestra_hosts" "hosts" {
   pool_id = data.xenorchestra_pool.pool.id
 
-  # This assumes that hosts would have a name_label that matches the count.index used below
   sort_by = "name_label"
   sort_order = "asc"
 
