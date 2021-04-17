@@ -15,6 +15,7 @@ func TestHostCompare(t *testing.T) {
 			other: Host{
 				Id:        "788e1dce-44f6-4db7-ae62-185c69fecd3b",
 				NameLabel: "xcp-host1-k8s.domain.eu",
+				Pool:      "pool id",
 			},
 			host:   Host{NameLabel: "xcp-host1-k8s.domain.eu"},
 			result: true,
@@ -23,6 +24,7 @@ func TestHostCompare(t *testing.T) {
 			other: Host{
 				Id:        "788e1dce-44f6-4db7-ae62-185c69fecd3b",
 				NameLabel: "xcp-host2-k8s.domain.eu",
+				Pool:      "pool id",
 			},
 			host:   Host{NameLabel: "xcp-host1-k8s.domain.eu"},
 			result: false,
