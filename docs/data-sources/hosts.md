@@ -1,6 +1,6 @@
 # xenorchestra_hosts
 
-Use this data source to filter Xenorchestra hosts by certain criteria (name_label, labels) for use in other resources.
+Use this data source to filter Xenorchestra hosts by certain criteria (name_label, tags) for use in other resources.
 
 ## Example Usage
 
