@@ -47,6 +47,7 @@ func Provider() terraform.ResourceProvider {
 			"xenorchestra_pif":          dataSourceXoaPIF(),
 			"xenorchestra_pool":         dataSourceXoaPool(),
 			"xenorchestra_host":         dataSourceXoaHost(),
+			"xenorchestra_hosts":        dataSourceXoaHosts(),
 			"xenorchestra_template":     dataSourceXoaTemplate(),
 			"xenorchestra_resource_set": dataSourceXoaResourceSet(),
 			"xenorchestra_sr":           dataSourceXoaStorageRepository(),

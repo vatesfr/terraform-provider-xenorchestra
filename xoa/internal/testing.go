@@ -1,7 +1,10 @@
 package internal
 
 import (
+	"errors"
 	"fmt"
+	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -18,6 +21,8 @@ import (
 
 const (
 	sentinelIndex = "*"
+	sortOrderAsc  = "asc"
+	sortOrderDesc = "desc"
 )
 
 // TestCheckTypeSetElemNestedAttrs is a resource.TestCheckFunc that accepts a resource
@@ -162,4 +167,92 @@ func testCheckTypeSetElem(is *terraform.InstanceState, attr, value string) error
 	}
 
 	return fmt.Errorf("no TypeSet element %q, with value %q in state: %#v", attr, value, is.Attributes)
+}
+
+// TestCheckTypeListAttrSorted is a resource.TestCheckFunc that accepts a resource
+// name, an attribute path, which should use the sentinel value '*' for indexing
+// into a TypeList. The function verifies that the given list is sorted in an ascending
+// or descending fashion.
+//
+// The following invocation would pass with the terraform state given below:
+// e.g. internal.TestCheckTypeListAttrSorted("data.xenorchestra_hosts.hosts, "hosts.*.name_label", "asc"),
+//
+// STATE:
+//
+// data.xenorchestra_hosts.hosts:
+//   ID = 0aea61f4-c9d1-4060-94e8-4eb2024d082c
+//   provider = provider.xenorchestra
+//   hosts.# = 3
+//   hosts.0.name_label = R620-L1
+//   hosts.1.name_label = R620-L3
+//   hosts.2.name_label = R620-L2
+//   sort_by = name_label
+//   sort_order = asc
+func TestCheckTypeListAttrSorted(name, attr, sortOrder string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		is, err := instanceState(s, name)
+		if err != nil {
+			return err
+		}
+
+		// Over allocate the slice length since
+		// matches will be added by index
+		matches := make([]string, len(is.Attributes))
+		matchCount, sentinelPos := 0, -1
+		attrParts := strings.Split(attr, ".")
+
+		for i, attrPart := range attrParts {
+			if attrPart == sentinelIndex {
+				sentinelPos = i
+			}
+		}
+
+		if sentinelPos == -1 {
+			return fmt.Errorf("%q does not end contain the special value %q", attr, sentinelIndex)
+		}
+
+		for stateKey, stateValue := range is.Attributes {
+			stateKeyParts := strings.Split(stateKey, ".")
+			if len(stateKeyParts) != len(attrParts) {
+				continue
+			}
+
+			for i := range stateKeyParts {
+
+				if i == sentinelPos {
+					continue
+				}
+				if stateKeyParts[i] != attrParts[i] {
+					break
+				}
+
+				// Save the match
+				if len(attrParts)-1 == i {
+					pos, _ := strconv.Atoi(stateKeyParts[sentinelPos])
+					matches[pos] = stateValue
+					matchCount++
+				}
+
+			}
+		}
+
+		// Remove the excess uninitilized elements once the relevant
+		// attributes are identified due to slice overallocation
+		matches = matches[:matchCount-1]
+		sorted := sort.SliceIsSorted(matches, func(i, j int) bool {
+			switch sortOrder {
+			case sortOrderAsc:
+				return matches[i] < matches[j]
+			case sortOrderDesc:
+				return matches[j] < matches[i]
+			}
+			return false
+		})
+
+		if !sorted {
+			return errors.New(fmt.Sprintf("expected %v to be sorted %s", matches, sortOrder))
+		}
+
+		return nil
+	}
 }
