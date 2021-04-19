@@ -30,8 +30,8 @@ resource "xenorchestra_vm" "vm" {
 ## Argument Reference
 * pool_id - (Required) The pool id used to filter the resulting hosts by
 * tags - (Optional) The tags used to filter the resulting hosts by
-* sorted_by - (Optional) The host field you would like to sort by
-* sort_order - (Optional) Valid options are "asc" or "desc" and the sort order is applied to the `sorted_by` argument.
+* sorted_by - (Optional) The host field you would like to sort by (id and name_label supported)
+* sort_order - (Optional) Valid options are "asc" or "desc" and the sort order is applied to the `sorted_by` argument
 
 ## Attributes Reference
 * master - The primary host of the pool
