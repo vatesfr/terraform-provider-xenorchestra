@@ -484,8 +484,9 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 	autoPowerOn := d.Get("auto_poweron").(bool)
 	ha := d.Get("high_availability").(string)
 	rs := d.Get("resource_set").(string)
-	vm, err := c.UpdateVm(id, cpus, nameLabel, nameDescription, ha, rs, autoPowerOn, affinityHost)
-	log.Printf("[DEBUG] Retrieved vm after update: %+v\n", vm)
+	memoryMax := d.Get("memory_max").(int)
+
+	vm, err := c.GetVm(client.Vm{Id: id})
 
 	if err != nil {
 		return err
@@ -602,6 +603,39 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 				}
 			}
 		}
+	}
+
+	haltForUpdates := false
+	if _, nCPUs := d.GetChange("cpus"); d.HasChange("cpus") && nCPUs.(int) > vm.CPUs.Max {
+		haltForUpdates = true
+	}
+
+	if d.HasChange("memory_max") {
+		haltForUpdates = true
+	}
+
+	vm, err = c.UpdateVm(client.Vm{
+		Id: id,
+		CPUs: client.CPUs{
+			Number: cpus,
+		},
+		Memory: client.MemoryObject{
+			Static: []int{
+				0, memoryMax,
+			},
+		},
+		NameLabel:       nameLabel,
+		NameDescription: nameDescription,
+		HA:              ha,
+		ResourceSet:     rs,
+		AutoPoweron:     autoPowerOn,
+		AffinityHost:    affinityHost,
+	}, haltForUpdates)
+
+	log.Printf("[DEBUG] Retrieved vm after update: %+v\n", vm)
+
+	if err != nil {
+		return err
 	}
 
 	if d.HasChange("tags") {

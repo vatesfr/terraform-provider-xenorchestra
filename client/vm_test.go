@@ -156,6 +156,23 @@ func TestUnmarshalingVmObject(t *testing.T) {
 
 }
 
+func TestUpdateVmWithUpatesThatRequireHalt(t *testing.T) {
+	c, err := NewClient(GetConfigFromEnv())
+	if err != nil {
+		t.Fatalf("failed to create client with error: %v", err)
+	}
+
+	vm, err := c.UpdateVm(Vm{Id: accVm.Id, CPUs: CPUs{Number: 1}, NameLabel: "terraform testing", Memory: MemoryObject{Static: []int{4294967296}}}, true)
+
+	if err != nil {
+		t.Fatalf("failed to update vm with error: %v", err)
+	}
+
+	if vm.CPUs.Number != 4 {
+		t.Errorf("failed to update VM cpus to 4")
+	}
+}
+
 func validateVmObject(o Vm) bool {
 	if o.Type != "VM" {
 		return false

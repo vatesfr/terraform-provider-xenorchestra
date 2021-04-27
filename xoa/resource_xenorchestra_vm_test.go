@@ -1071,6 +1071,36 @@ func TestAccXenorchestraVm_updatesWithoutReboot(t *testing.T) {
 	})
 }
 
+func TestAccXenorchestraVm_updatesThatRequireReboot(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigUpdateAttrsVariableCPUAndMemory(2, 4295000000, "terraform testing", "", "", false),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "cpus", "2"),
+					resource.TestCheckResourceAttr(resourceName, "memory_max", "4295000000"),
+				),
+			},
+			{
+				Config: testAccVmConfigUpdateAttrsVariableCPUAndMemory(5, 6295000000, "terraform testing", "", "", false),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "cpus", "5"),
+					resource.TestCheckResourceAttr(resourceName, "memory_max", "6295000000"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccXenorchestraVm_createAndUpdateWithResourceSet(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	resource.Test(t, resource.TestCase{
@@ -1907,6 +1937,44 @@ resource "xenorchestra_vm" "bar" {
     }
 }
 `, testTemplate.NameLabel, accTestPool.NameLabel, nameLabel, nameDescription, ha, powerOn, accDefaultSr.Id)
+}
+
+func testAccVmConfigUpdateAttrsVariableCPUAndMemory(cpus, memory int, nameLabel, nameDescription, ha string, powerOn bool) string {
+	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
+data "xenorchestra_template" "template" {
+    name_label = "%s"
+}
+
+data "xenorchestra_pool" "pool" {
+    name_label = "%s"
+}
+
+data "xenorchestra_network" "network" {
+    name_label = "Pool-wide network associated with eth0"
+    pool_id = data.xenorchestra_pool.pool.id
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = %d
+    cpus  = %d
+    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    name_label = "%s"
+    name_description = "%s"
+    affinity_host = "${data.xenorchestra_pool.pool.master}"
+    template = "${data.xenorchestra_template.template.id}"
+    high_availability = "%s"
+    auto_poweron = "%t"
+    network {
+	network_id = "${data.xenorchestra_network.network.id}"
+    }
+
+    disk {
+      sr_id = "%s"
+      name_label = "disk 1"
+      size = 10001317888
+    }
+}
+`, testTemplate.NameLabel, accTestPool.NameLabel, memory, cpus, nameLabel, nameDescription, ha, powerOn, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithResourceSet() string {

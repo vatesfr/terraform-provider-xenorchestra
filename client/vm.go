@@ -13,7 +13,8 @@ type allObjectResponse struct {
 }
 
 type CPUs struct {
-	Number int
+	Number int `json:"max"`
+	Max    int `json:"number"`
 }
 
 type MemoryObject struct {
@@ -191,27 +192,34 @@ func createVdiMap(disk Disk) map[string]interface{} {
 	}
 }
 
-func (c *Client) UpdateVm(id string, cpus int, nameLabel, nameDescription, ha, rs string, autoPowerOn bool, affinityHost string) (*Vm, error) {
-
-	var resourceSet interface{} = rs
-	if rs == "" {
+func (c *Client) UpdateVm(vmReq Vm, haltForUpdates bool) (*Vm, error) {
+	var resourceSet interface{} = vmReq.ResourceSet
+	if vmReq.ResourceSet == "" {
 		resourceSet = nil
 	}
 	params := map[string]interface{}{
-		"id":                id,
-		"affinityHost":      affinityHost,
-		"name_label":        nameLabel,
-		"name_description":  nameDescription,
-		"auto_poweron":      autoPowerOn,
+		"id":                vmReq.Id,
+		"affinityHost":      vmReq.AffinityHost,
+		"name_label":        vmReq.NameLabel,
+		"name_description":  vmReq.NameDescription,
+		"auto_poweron":      vmReq.AutoPoweron,
 		"resourceSet":       resourceSet,
-		"high_availability": ha, // valid options are best-effort, restart, ''
+		"high_availability": vmReq.HA, // valid options are best-effort, restart, ''
 		// TODO: VM must be halted in order to change CPUs
-		// "CPUs":             cpus,
-		// "memoryMax": memoryMax,
+		"CPUs":      vmReq.CPUs.Number,
+		"memoryMax": vmReq.Memory.Static[1],
 		// TODO: These need more investigation before they are implemented
 		// pv_args, cpuMask cpuWeight cpuCap vga videoram coresPerSocket hasVendorDevice expNestedHvm share startDelay nicType hvmBootFirmware virtualizationMode
 	}
 	log.Printf("[DEBUG] VM params for vm.set: %#v", params)
+
+	if haltForUpdates {
+		err := c.HaltVm(vmReq)
+
+		if err != nil {
+			return nil, err
+		}
+	}
 	var success bool
 	err := c.Call("vm.set", params, &success)
 
@@ -223,7 +231,56 @@ func (c *Client) UpdateVm(id string, cpus int, nameLabel, nameDescription, ha, r
 	// attributes after calling vm.set. Need to investigate a better way to detect this.
 	time.Sleep(25 * time.Second)
 
-	return c.GetVm(Vm{Id: id})
+	if haltForUpdates {
+		err = c.StartVm(vmReq.Id)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return c.GetVm(vmReq)
+}
+
+func (c *Client) StartVm(id string) error {
+	params := map[string]interface{}{
+		"id": id,
+	}
+	var success bool
+	// TODO: This can block indefinitely before we get to the waitForVmHalt
+	err := c.Call("vm.start", params, &success)
+
+	if err != nil {
+		return err
+	}
+	return c.waitForVmState(
+		id,
+		StateChangeConf{
+			Pending: []string{"Halted", "Stopped"},
+			Target:  []string{"Running"},
+			Timeout: 2 * time.Minute,
+		},
+	)
+}
+
+func (c *Client) HaltVm(vmReq Vm) error {
+	params := map[string]interface{}{
+		"id": vmReq.Id,
+	}
+	var success bool
+	// TODO: This can block indefinitely before we get to the waitForVmHalt
+	err := c.Call("vm.stop", params, &success)
+
+	if err != nil {
+		return err
+	}
+	return c.waitForVmState(
+		vmReq.Id,
+		StateChangeConf{
+			Pending: []string{"Running", "Stopped"},
+			Target:  []string{"Halted"},
+			Timeout: 2 * time.Minute,
+		},
+	)
 }
 
 func (c *Client) DeleteVm(id string) error {
@@ -231,13 +288,7 @@ func (c *Client) DeleteVm(id string) error {
 		"id": id,
 	}
 	var reply []interface{}
-	err := c.Call("vm.delete", params, &reply)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return c.Call("vm.delete", params, &reply)
 }
 
 func (c *Client) GetVm(vmReq Vm) (*Vm, error) {
@@ -257,6 +308,7 @@ func (c *Client) GetVm(vmReq Vm) (*Vm, error) {
 }
 
 func (c *Client) GetVms() ([]Vm, error) {
+
 	var response map[string]Vm
 	err := c.GetAllObjectsOfType(Vm{PowerState: "Running"}, &response)
 
@@ -283,6 +335,24 @@ func (c *Client) EjectVmCd(vm *Vm) error {
 		return err
 	}
 	return nil
+}
+
+func GetVmPowerState(c *Client, id string) func() (result interface{}, state string, err error) {
+	return func() (interface{}, string, error) {
+		vm, err := c.GetVm(Vm{Id: id})
+
+		if err != nil {
+			return vm, "", err
+		}
+
+		return vm, vm.PowerState, nil
+	}
+}
+
+func (c *Client) waitForVmState(id string, stateConf StateChangeConf) error {
+	stateConf.Refresh = GetVmPowerState(c, id)
+	_, err := stateConf.WaitForState()
+	return err
 }
 
 func (c *Client) waitForModifyVm(id string, waitForIp bool, timeout time.Duration) error {
