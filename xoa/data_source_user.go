@@ -20,7 +20,7 @@ func dataSourceXoaUser() *schema.Resource {
 }
 
 func dataSourceUserRead(d *schema.ResourceData, m interface{}) error {
-	c := m.(*client.Client)
+	c := m.(client.XOClient)
 
 	username := d.Get("username").(string)
 

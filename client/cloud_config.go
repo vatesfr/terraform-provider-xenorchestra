@@ -30,7 +30,7 @@ type CloudConfigResponse struct {
 	Result []CloudConfig `json:"result"`
 }
 
-func (c *Client) GetCloudConfig(id string) (*CloudConfig, error) {
+func (c *client) GetCloudConfig(id string) (*CloudConfig, error) {
 	cloudConfigs, err := c.GetAllCloudConfigs()
 
 	if err != nil {
@@ -49,7 +49,7 @@ func (c *Client) GetCloudConfig(id string) (*CloudConfig, error) {
 	return nil, nil
 }
 
-func (c *Client) GetCloudConfigByName(name string) ([]CloudConfig, error) {
+func (c *client) GetCloudConfigByName(name string) ([]CloudConfig, error) {
 	allCloudConfigs, err := c.GetAllCloudConfigs()
 
 	if err != nil {
@@ -70,7 +70,7 @@ func (c *Client) GetCloudConfigByName(name string) ([]CloudConfig, error) {
 	return cloudConfigs, nil
 }
 
-func (c *Client) GetAllCloudConfigs() ([]CloudConfig, error) {
+func (c *client) GetAllCloudConfigs() ([]CloudConfig, error) {
 	var getAllResp CloudConfigResponse
 	params := map[string]interface{}{}
 	err := c.Call("cloudConfig.getAll", params, &getAllResp.Result)
@@ -81,7 +81,7 @@ func (c *Client) GetAllCloudConfigs() ([]CloudConfig, error) {
 	return getAllResp.Result, nil
 }
 
-func (c *Client) CreateCloudConfig(name, template string) (*CloudConfig, error) {
+func (c *client) CreateCloudConfig(name, template string) (*CloudConfig, error) {
 	params := map[string]interface{}{
 		"name":     name,
 		"template": template,
@@ -110,7 +110,7 @@ func (c *Client) CreateCloudConfig(name, template string) (*CloudConfig, error) 
 	return &found, nil
 }
 
-func (c *Client) DeleteCloudConfig(id string) error {
+func (c *client) DeleteCloudConfig(id string) error {
 	params := map[string]interface{}{
 		"id": id,
 	}

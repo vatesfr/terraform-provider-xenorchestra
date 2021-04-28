@@ -242,7 +242,7 @@ func resourceRecord() *schema.Resource {
 }
 
 func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
-	c := m.(*client.Client)
+	c := m.(client.XOClient)
 
 	network_maps := []map[string]string{}
 	networks := d.Get("network").([]interface{})
@@ -440,7 +440,7 @@ func vifsToMapList(vifs []client.VIF, guestNets []guestNetwork) []map[string]int
 }
 
 func resourceVmRead(d *schema.ResourceData, m interface{}) error {
-	c := m.(*client.Client)
+	c := m.(client.XOClient)
 
 	vm, err := c.GetVm(client.Vm{Id: d.Id()})
 
@@ -474,7 +474,7 @@ func resourceVmRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
-	c := m.(*client.Client)
+	c := m.(client.XOClient)
 
 	id := d.Id()
 	nameLabel := d.Get("name_label").(string)
@@ -662,7 +662,7 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceVmDelete(d *schema.ResourceData, m interface{}) error {
-	c := m.(*client.Client)
+	c := m.(client.XOClient)
 
 	err := c.DeleteVm(d.Id())
 
@@ -717,7 +717,7 @@ func expandNetworks(networks []interface{}) []*client.VIF {
 }
 
 func RecordImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
-	c := m.(*client.Client)
+	c := m.(client.XOClient)
 
 	vm, err := c.GetVm(client.Vm{Id: d.Id()})
 	if err != nil {
@@ -938,7 +938,7 @@ func shouldUpdateDisk(d client.Disk, disks []client.Disk) bool {
 	return false
 }
 
-func performDiskUpdateAction(c *client.Client, action updateDiskActions, d client.Disk) error {
+func performDiskUpdateAction(c client.XOClient, action updateDiskActions, d client.Disk) error {
 	switch action {
 	case diskAttachmentUpdate:
 		if d.Attached {

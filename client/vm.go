@@ -85,7 +85,7 @@ func (v Vm) Compare(obj interface{}) bool {
 	return false
 }
 
-func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
+func (c *client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 	tmpl, err := c.GetTemplate(Template{
 		Id: vmReq.Template,
 	})
@@ -192,7 +192,7 @@ func createVdiMap(disk Disk) map[string]interface{} {
 	}
 }
 
-func (c *Client) UpdateVm(vmReq Vm, haltForUpdates bool) (*Vm, error) {
+func (c *client) UpdateVm(vmReq Vm, haltForUpdates bool) (*Vm, error) {
 	var resourceSet interface{} = vmReq.ResourceSet
 	if vmReq.ResourceSet == "" {
 		resourceSet = nil
@@ -205,9 +205,8 @@ func (c *Client) UpdateVm(vmReq Vm, haltForUpdates bool) (*Vm, error) {
 		"auto_poweron":      vmReq.AutoPoweron,
 		"resourceSet":       resourceSet,
 		"high_availability": vmReq.HA, // valid options are best-effort, restart, ''
-		// TODO: VM must be halted in order to change CPUs
-		"CPUs":      vmReq.CPUs.Number,
-		"memoryMax": vmReq.Memory.Static[1],
+		"CPUs":              vmReq.CPUs.Number,
+		"memoryMax":         vmReq.Memory.Static[1],
 		// TODO: These need more investigation before they are implemented
 		// pv_args, cpuMask cpuWeight cpuCap vga videoram coresPerSocket hasVendorDevice expNestedHvm share startDelay nicType hvmBootFirmware virtualizationMode
 	}
@@ -241,7 +240,7 @@ func (c *Client) UpdateVm(vmReq Vm, haltForUpdates bool) (*Vm, error) {
 	return c.GetVm(vmReq)
 }
 
-func (c *Client) StartVm(id string) error {
+func (c *client) StartVm(id string) error {
 	params := map[string]interface{}{
 		"id": id,
 	}
@@ -262,7 +261,7 @@ func (c *Client) StartVm(id string) error {
 	)
 }
 
-func (c *Client) HaltVm(vmReq Vm) error {
+func (c *client) HaltVm(vmReq Vm) error {
 	params := map[string]interface{}{
 		"id": vmReq.Id,
 	}
@@ -283,7 +282,7 @@ func (c *Client) HaltVm(vmReq Vm) error {
 	)
 }
 
-func (c *Client) DeleteVm(id string) error {
+func (c *client) DeleteVm(id string) error {
 	params := map[string]interface{}{
 		"id": id,
 	}
@@ -291,7 +290,7 @@ func (c *Client) DeleteVm(id string) error {
 	return c.Call("vm.delete", params, &reply)
 }
 
-func (c *Client) GetVm(vmReq Vm) (*Vm, error) {
+func (c *client) GetVm(vmReq Vm) (*Vm, error) {
 	obj, err := c.FindFromGetAllObjects(vmReq)
 
 	if err != nil {
@@ -307,7 +306,7 @@ func (c *Client) GetVm(vmReq Vm) (*Vm, error) {
 	return &vms[0], nil
 }
 
-func (c *Client) GetVms() ([]Vm, error) {
+func (c *client) GetVms() ([]Vm, error) {
 
 	var response map[string]Vm
 	err := c.GetAllObjectsOfType(Vm{PowerState: "Running"}, &response)
@@ -325,7 +324,7 @@ func (c *Client) GetVms() ([]Vm, error) {
 	return vms, nil
 }
 
-func (c *Client) EjectVmCd(vm *Vm) error {
+func (c *client) EjectVmCd(vm *Vm) error {
 	params := map[string]interface{}{
 		"id": vm.Id,
 	}
@@ -337,7 +336,7 @@ func (c *Client) EjectVmCd(vm *Vm) error {
 	return nil
 }
 
-func GetVmPowerState(c *Client, id string) func() (result interface{}, state string, err error) {
+func GetVmPowerState(c *client, id string) func() (result interface{}, state string, err error) {
 	return func() (interface{}, string, error) {
 		vm, err := c.GetVm(Vm{Id: id})
 
@@ -349,13 +348,13 @@ func GetVmPowerState(c *Client, id string) func() (result interface{}, state str
 	}
 }
 
-func (c *Client) waitForVmState(id string, stateConf StateChangeConf) error {
+func (c *client) waitForVmState(id string, stateConf StateChangeConf) error {
 	stateConf.Refresh = GetVmPowerState(c, id)
 	_, err := stateConf.WaitForState()
 	return err
 }
 
-func (c *Client) waitForModifyVm(id string, waitForIp bool, timeout time.Duration) error {
+func (c *client) waitForModifyVm(id string, waitForIp bool, timeout time.Duration) error {
 	if !waitForIp {
 		refreshFn := func() (result interface{}, state string, err error) {
 			vm, err := c.GetVm(Vm{Id: id})

@@ -34,7 +34,7 @@ func (net Network) Compare(obj interface{}) bool {
 	return false
 }
 
-func (c *Client) CreateNetwork(netReq Network) (*Network, error) {
+func (c *client) CreateNetwork(netReq Network) (*Network, error) {
 	var id string
 	params := map[string]interface{}{
 		"pool": netReq.PoolId,
@@ -49,7 +49,7 @@ func (c *Client) CreateNetwork(netReq Network) (*Network, error) {
 	return c.GetNetwork(Network{Id: id})
 }
 
-func (c *Client) GetNetwork(netReq Network) (*Network, error) {
+func (c *client) GetNetwork(netReq Network) (*Network, error) {
 	obj, err := c.FindFromGetAllObjects(netReq)
 
 	if err != nil {
@@ -65,7 +65,7 @@ func (c *Client) GetNetwork(netReq Network) (*Network, error) {
 	return &nets[0], nil
 }
 
-func (c *Client) GetNetworks() ([]Network, error) {
+func (c *client) GetNetworks() ([]Network, error) {
 	var response map[string]Network
 	err := c.GetAllObjectsOfType(Network{}, &response)
 
@@ -76,7 +76,7 @@ func (c *Client) GetNetworks() ([]Network, error) {
 	return nets, err
 }
 
-func (c *Client) DeleteNetwork(id string) error {
+func (c *client) DeleteNetwork(id string) error {
 	var success bool
 	params := map[string]interface{}{
 		"id": id,

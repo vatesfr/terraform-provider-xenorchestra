@@ -35,7 +35,7 @@ func dataSourceXoaPool() *schema.Resource {
 }
 
 func dataSourcePoolRead(d *schema.ResourceData, m interface{}) error {
-	c := m.(*client.Client)
+	c := m.(client.XOClient)
 
 	nameLabel := d.Get("name_label").(string)
 

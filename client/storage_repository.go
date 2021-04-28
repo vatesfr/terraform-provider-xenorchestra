@@ -53,7 +53,7 @@ func stringInSlice(needle string, haystack []string) bool {
 	return false
 }
 
-func (c *Client) GetStorageRepositoryById(id string) (StorageRepository, error) {
+func (c *client) GetStorageRepositoryById(id string) (StorageRepository, error) {
 	obj, err := c.FindFromGetAllObjects(StorageRepository{Id: id})
 	var sr StorageRepository
 
@@ -73,7 +73,7 @@ func (c *Client) GetStorageRepositoryById(id string) (StorageRepository, error) 
 	return srs[0], nil
 }
 
-func (c *Client) GetStorageRepository(sr StorageRepository) ([]StorageRepository, error) {
+func (c *client) GetStorageRepository(sr StorageRepository) ([]StorageRepository, error) {
 	obj, err := c.FindFromGetAllObjects(sr)
 
 	if err != nil {

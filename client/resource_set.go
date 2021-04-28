@@ -39,11 +39,11 @@ func (rs ResourceSet) Compare(obj interface{}) bool {
 	return false
 }
 
-func (c Client) GetResourceSets() ([]ResourceSet, error) {
+func (c client) GetResourceSets() ([]ResourceSet, error) {
 	return c.makeResourceSetGetAllCall()
 }
 
-func (c Client) GetResourceSetById(id string) (*ResourceSet, error) {
+func (c client) GetResourceSetById(id string) (*ResourceSet, error) {
 	resourceSets, err := c.GetResourceSet(ResourceSet{
 		Id: id,
 	})
@@ -60,7 +60,7 @@ func (c Client) GetResourceSetById(id string) (*ResourceSet, error) {
 	return &resourceSets[0], nil
 }
 
-func (c Client) GetResourceSet(rsReq ResourceSet) ([]ResourceSet, error) {
+func (c client) GetResourceSet(rsReq ResourceSet) ([]ResourceSet, error) {
 	resourceSets, err := c.makeResourceSetGetAllCall()
 
 	if err != nil {
@@ -82,7 +82,7 @@ func (c Client) GetResourceSet(rsReq ResourceSet) ([]ResourceSet, error) {
 	return rsRv, nil
 }
 
-func (c Client) makeResourceSetGetAllCall() ([]ResourceSet, error) {
+func (c client) makeResourceSetGetAllCall() ([]ResourceSet, error) {
 
 	var res struct {
 		ResourceSets []ResourceSet `json:"-"`
@@ -115,7 +115,7 @@ func createLimitsMap(rsl ResourceSetLimits) map[string]interface{} {
 	return rv
 }
 
-func (c Client) CreateResourceSet(rsReq ResourceSet) (*ResourceSet, error) {
+func (c client) CreateResourceSet(rsReq ResourceSet) (*ResourceSet, error) {
 	rs := ResourceSet{}
 	limits := createLimitsMap(rsReq.Limits)
 	params := map[string]interface{}{
@@ -134,7 +134,7 @@ func (c Client) CreateResourceSet(rsReq ResourceSet) (*ResourceSet, error) {
 	return &rs, err
 }
 
-func (c Client) DeleteResourceSet(rsReq ResourceSet) error {
+func (c client) DeleteResourceSet(rsReq ResourceSet) error {
 
 	id := rsReq.Id
 	if id == "" {
@@ -160,7 +160,7 @@ func (c Client) DeleteResourceSet(rsReq ResourceSet) error {
 	return err
 }
 
-func (c Client) RemoveResourceSetSubject(rsReq ResourceSet, subject string) error {
+func (c client) RemoveResourceSetSubject(rsReq ResourceSet, subject string) error {
 	params := map[string]interface{}{
 		"id":      rsReq.Id,
 		"subject": subject,
@@ -171,7 +171,7 @@ func (c Client) RemoveResourceSetSubject(rsReq ResourceSet, subject string) erro
 	return err
 }
 
-func (c Client) AddResourceSetSubject(rsReq ResourceSet, subject string) error {
+func (c client) AddResourceSetSubject(rsReq ResourceSet, subject string) error {
 	params := map[string]interface{}{
 		"id":      rsReq.Id,
 		"subject": subject,
@@ -182,7 +182,7 @@ func (c Client) AddResourceSetSubject(rsReq ResourceSet, subject string) error {
 	return err
 }
 
-func (c Client) RemoveResourceSetObject(rsReq ResourceSet, object string) error {
+func (c client) RemoveResourceSetObject(rsReq ResourceSet, object string) error {
 	params := map[string]interface{}{
 		"id":     rsReq.Id,
 		"object": object,
@@ -193,7 +193,7 @@ func (c Client) RemoveResourceSetObject(rsReq ResourceSet, object string) error 
 	return err
 }
 
-func (c Client) AddResourceSetObject(rsReq ResourceSet, object string) error {
+func (c client) AddResourceSetObject(rsReq ResourceSet, object string) error {
 	params := map[string]interface{}{
 		"id":     rsReq.Id,
 		"object": object,
@@ -204,7 +204,7 @@ func (c Client) AddResourceSetObject(rsReq ResourceSet, object string) error {
 	return err
 }
 
-func (c Client) RemoveResourceSetLimit(rsReq ResourceSet, limit string) error {
+func (c client) RemoveResourceSetLimit(rsReq ResourceSet, limit string) error {
 	params := map[string]interface{}{
 		"id":      rsReq.Id,
 		"limitId": limit,
@@ -215,7 +215,7 @@ func (c Client) RemoveResourceSetLimit(rsReq ResourceSet, limit string) error {
 	return err
 }
 
-func (c Client) AddResourceSetLimit(rsReq ResourceSet, limit string, quantity int) error {
+func (c client) AddResourceSetLimit(rsReq ResourceSet, limit string, quantity int) error {
 	params := map[string]interface{}{
 		"id":       rsReq.Id,
 		"limitId":  limit,

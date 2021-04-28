@@ -55,7 +55,7 @@ func (t Template) isDiskTemplate() bool {
 	return false
 }
 
-func (c *Client) GetTemplate(template Template) ([]Template, error) {
+func (c *client) GetTemplate(template Template) ([]Template, error) {
 	obj, err := c.FindFromGetAllObjects(template)
 	var templates []Template
 	if err != nil {

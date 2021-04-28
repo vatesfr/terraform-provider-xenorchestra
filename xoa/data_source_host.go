@@ -44,7 +44,7 @@ func resourceHostSchema() map[string]*schema.Schema {
 }
 
 func dataSourceHostRead(d *schema.ResourceData, m interface{}) error {
-	c := m.(*client.Client)
+	c := m.(client.XOClient)
 	nameLabel := d.Get("name_label").(string)
 	hosts, err := c.GetHostByName(nameLabel)
 

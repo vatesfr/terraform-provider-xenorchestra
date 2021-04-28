@@ -39,7 +39,7 @@ func (user User) Compare(obj interface{}) bool {
 	return false
 }
 
-func (c *Client) CreateUser(user User) (*User, error) {
+func (c *client) CreateUser(user User) (*User, error) {
 	var id string
 	params := map[string]interface{}{
 		"email":    user.Email,
@@ -54,7 +54,7 @@ func (c *Client) CreateUser(user User) (*User, error) {
 	return c.GetUser(User{Id: id})
 }
 
-func (c *Client) GetAllUsers() ([]User, error) {
+func (c *client) GetAllUsers() ([]User, error) {
 	params := map[string]interface{}{
 		"dummy": "dummy",
 	}
@@ -68,7 +68,7 @@ func (c *Client) GetAllUsers() ([]User, error) {
 	return users, nil
 }
 
-func (c *Client) GetUser(userReq User) (*User, error) {
+func (c *client) GetUser(userReq User) (*User, error) {
 	users, err := c.GetAllUsers()
 	if err != nil {
 		return nil, err
@@ -88,7 +88,7 @@ func (c *Client) GetUser(userReq User) (*User, error) {
 	return &foundUser, nil
 }
 
-func (c *Client) DeleteUser(user User) error {
+func (c *client) DeleteUser(user User) error {
 	var success bool
 	params := map[string]interface{}{
 		"id": user.Id,

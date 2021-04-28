@@ -32,7 +32,7 @@ func TestCall_withJsonRPC2Error(t *testing.T) {
 	msg := "invalid parameters"
 	var expectedErrMsg string = fmt.Sprintf(`jsonrpc2: code %d message: %s: %s`, rpcCode, msg, jsonRpcErr)
 	var data json.RawMessage = []byte(jsonRpcErr)
-	c := Client{
+	c := client{
 		rpc: jsonRPCFail{
 			err: &jsonrpc2.Error{
 				Data:    &data,
@@ -60,7 +60,7 @@ func TestCall_withJsonRPC2ErrorWithNilData(t *testing.T) {
 	rpcCode := 10
 	msg := "invalid parameters"
 	var expectedErrMsg string = fmt.Sprintf(`jsonrpc2: code %d message: %s`, rpcCode, msg)
-	c := Client{
+	c := client{
 		rpc: jsonRPCFail{
 			err: &jsonrpc2.Error{
 				Data:    nil,
@@ -86,7 +86,7 @@ func TestCall_withJsonRPC2ErrorWithNilData(t *testing.T) {
 
 func TestCall_withNonJsonRPC2Error(t *testing.T) {
 	expectedErr := errors.New("This is not a jsonrpc2 error")
-	c := Client{
+	c := client{
 		rpc: jsonRPCFail{
 			err: expectedErr,
 		},

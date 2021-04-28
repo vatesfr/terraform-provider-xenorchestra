@@ -32,7 +32,7 @@ func (p Pool) Compare(obj interface{}) bool {
 	return true
 }
 
-func (c *Client) GetPoolByName(name string) (pools []Pool, err error) {
+func (c *client) GetPoolByName(name string) (pools []Pool, err error) {
 	obj, err := c.FindFromGetAllObjects(Pool{NameLabel: name})
 	if err != nil {
 		return
@@ -42,7 +42,7 @@ func (c *Client) GetPoolByName(name string) (pools []Pool, err error) {
 	return pools, nil
 }
 
-func (c *Client) GetPools(pool Pool) (pools []Pool, err error) {
+func (c *client) GetPools(pool Pool) (pools []Pool, err error) {
 	obj, err := c.FindFromGetAllObjects(pool)
 	if err != nil {
 		return

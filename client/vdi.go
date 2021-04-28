@@ -75,7 +75,7 @@ func (v VBD) Compare(obj interface{}) bool {
 	return false
 }
 
-func (c *Client) getDisksFromVBDs(vbd VBD) ([]Disk, error) {
+func (c *client) getDisksFromVBDs(vbd VBD) ([]Disk, error) {
 	obj, err := c.FindFromGetAllObjects(vbd)
 
 	if _, ok := err.(NotFound); ok {
@@ -104,14 +104,14 @@ func (c *Client) getDisksFromVBDs(vbd VBD) ([]Disk, error) {
 	return vdis, nil
 }
 
-func (c *Client) GetDisks(vm *Vm) ([]Disk, error) {
+func (c *client) GetDisks(vm *Vm) ([]Disk, error) {
 	return c.getDisksFromVBDs(VBD{
 		VmId:      vm.Id,
 		IsCdDrive: false,
 	})
 }
 
-func (c *Client) GetCdroms(vm *Vm) ([]Disk, error) {
+func (c *client) GetCdroms(vm *Vm) ([]Disk, error) {
 	cds, err := c.getDisksFromVBDs(VBD{
 		VmId:      vm.Id,
 		IsCdDrive: true,
@@ -127,7 +127,7 @@ func (c *Client) GetCdroms(vm *Vm) ([]Disk, error) {
 	return cds, err
 }
 
-func (c *Client) GetVDIs(vdiReq VDI) ([]VDI, error) {
+func (c *client) GetVDIs(vdiReq VDI) ([]VDI, error) {
 	obj, err := c.FindFromGetAllObjects(vdiReq)
 
 	if err != nil {
@@ -143,7 +143,7 @@ func (c *Client) GetVDIs(vdiReq VDI) ([]VDI, error) {
 	return vdis, nil
 }
 
-func (c *Client) GetParentVDI(vbd VBD) (VDI, error) {
+func (c *client) GetParentVDI(vbd VBD) (VDI, error) {
 	obj, err := c.FindFromGetAllObjects(VDI{
 		VDIId: vbd.VDI,
 	})
@@ -166,7 +166,7 @@ func (c *Client) GetParentVDI(vbd VBD) (VDI, error) {
 	return disks[0], nil
 }
 
-func (c *Client) CreateDisk(vm Vm, d Disk) (string, error) {
+func (c *client) CreateDisk(vm Vm, d Disk) (string, error) {
 	var id string
 	params := map[string]interface{}{
 		"name": d.NameLabel,
@@ -179,7 +179,7 @@ func (c *Client) CreateDisk(vm Vm, d Disk) (string, error) {
 	return id, err
 }
 
-func (c *Client) DeleteDisk(vm Vm, d Disk) error {
+func (c *client) DeleteDisk(vm Vm, d Disk) error {
 	var success bool
 	disconnectParams := map[string]interface{}{
 		"id": d.Id,
@@ -196,7 +196,7 @@ func (c *Client) DeleteDisk(vm Vm, d Disk) error {
 	return c.Call("vdi.delete", vdiDeleteParams, &success)
 }
 
-func (c *Client) ConnectDisk(d Disk) error {
+func (c *client) ConnectDisk(d Disk) error {
 	var success bool
 	params := map[string]interface{}{
 		"id": d.Id,
@@ -204,7 +204,7 @@ func (c *Client) ConnectDisk(d Disk) error {
 	return c.Call("vbd.connect", params, &success)
 }
 
-func (c *Client) DisconnectDisk(d Disk) error {
+func (c *client) DisconnectDisk(d Disk) error {
 	var success bool
 	params := map[string]interface{}{
 		"id": d.Id,
@@ -212,7 +212,7 @@ func (c *Client) DisconnectDisk(d Disk) error {
 	return c.Call("vbd.disconnect", params, &success)
 }
 
-func (c *Client) UpdateVDI(d Disk) error {
+func (c *client) UpdateVDI(d Disk) error {
 	var success bool
 	params := map[string]interface{}{
 		"id":               d.VDIId,
@@ -222,7 +222,7 @@ func (c *Client) UpdateVDI(d Disk) error {
 	return c.Call("vdi.set", params, &success)
 }
 
-func (c *Client) EjectCd(id string) error {
+func (c *client) EjectCd(id string) error {
 	var success bool
 	params := map[string]interface{}{
 		"id": id,
@@ -230,7 +230,7 @@ func (c *Client) EjectCd(id string) error {
 	return c.Call("vm.ejectCd", params, &success)
 }
 
-func (c *Client) InsertCd(vmId, cdId string) error {
+func (c *client) InsertCd(vmId, cdId string) error {
 	var success bool
 	params := map[string]interface{}{
 		"id":    vmId,

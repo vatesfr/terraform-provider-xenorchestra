@@ -29,7 +29,7 @@ func (p PIF) Compare(obj interface{}) bool {
 	return false
 }
 
-func (c *Client) GetPIFByDevice(dev string, vlan int) ([]PIF, error) {
+func (c *client) GetPIFByDevice(dev string, vlan int) ([]PIF, error) {
 	obj, err := c.FindFromGetAllObjects(PIF{Device: dev, Vlan: vlan})
 
 	if err != nil {
@@ -44,7 +44,7 @@ func (c *Client) GetPIFByDevice(dev string, vlan int) ([]PIF, error) {
 	return pifs, nil
 }
 
-func (c *Client) GetPIF(pifReq PIF) (pifs []PIF, err error) {
+func (c *client) GetPIF(pifReq PIF) (pifs []PIF, err error) {
 	obj, err := c.FindFromGetAllObjects(pifReq)
 
 	if err != nil {
