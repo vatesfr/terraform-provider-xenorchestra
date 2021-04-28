@@ -6,7 +6,7 @@ import (
 	"log"
 )
 
-func (c *client) AddTag(id, tag string) error {
+func (c *Client) AddTag(id, tag string) error {
 	var success bool
 	params := map[string]interface{}{
 		"id":  id,
@@ -20,7 +20,7 @@ func (c *client) AddTag(id, tag string) error {
 	return nil
 }
 
-func (c *client) RemoveTag(id, tag string) error {
+func (c *Client) RemoveTag(id, tag string) error {
 	var success bool
 	params := map[string]interface{}{
 		"id":  id,
@@ -39,7 +39,7 @@ type Object struct {
 	Type string
 }
 
-func (c *client) GetObjectsWithTags(tags []string) ([]Object, error) {
+func (c *Client) GetObjectsWithTags(tags []string) ([]Object, error) {
 	var objsRes struct {
 		Objects map[string]interface{} `json:"-"`
 	}

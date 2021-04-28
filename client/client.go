@@ -28,8 +28,10 @@ type XOClient interface {
 
 	CreateVm(vmReq Vm, d time.Duration) (*Vm, error)
 	GetVm(vmReq Vm) (*Vm, error)
-	UpdateVm(vmReq Vm, haltForUpdates bool) (*Vm, error)
+	UpdateVm(vmReq Vm) (*Vm, error)
 	DeleteVm(id string) error
+	HaltVm(vmReq Vm) error
+	StartVm(id string) error
 
 	GetCloudConfigByName(name string) ([]CloudConfig, error)
 	CreateCloudConfig(name, template string) (*CloudConfig, error)
@@ -103,7 +105,7 @@ type XOClient interface {
 	InsertCd(vmId, cdId string) error
 }
 
-type client struct {
+type Client struct {
 	rpc jsonrpc2.JSONRPC2
 }
 
@@ -174,12 +176,12 @@ func NewClient(config Config) (XOClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &client{
+	return &Client{
 		rpc: c,
 	}, nil
 }
 
-func (c *client) Call(method string, params, result interface{}, opt ...jsonrpc2.CallOption) error {
+func (c *Client) Call(method string, params, result interface{}, opt ...jsonrpc2.CallOption) error {
 	err := c.rpc.Call(context.Background(), method, params, result, opt...)
 	var callRes interface{}
 	t := reflect.TypeOf(result)
@@ -212,7 +214,7 @@ type XoObject interface {
 	Compare(obj interface{}) bool
 }
 
-func (c *client) GetAllObjectsOfType(obj XoObject, response interface{}) error {
+func (c *Client) GetAllObjectsOfType(obj XoObject, response interface{}) error {
 	xoApiType := ""
 	switch t := obj.(type) {
 	case Network:
@@ -246,7 +248,7 @@ func (c *client) GetAllObjectsOfType(obj XoObject, response interface{}) error {
 	return c.Call("xo.getAllObjects", params, response)
 }
 
-func (c *client) FindFromGetAllObjects(obj XoObject) (interface{}, error) {
+func (c *Client) FindFromGetAllObjects(obj XoObject) (interface{}, error) {
 	var objsRes struct {
 		Objects map[string]interface{} `json:"-"`
 	}

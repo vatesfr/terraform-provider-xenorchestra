@@ -26,7 +26,7 @@ func (acl Acl) Compare(obj interface{}) bool {
 	return false
 }
 
-func (c *client) CreateAcl(acl Acl) (*Acl, error) {
+func (c *Client) CreateAcl(acl Acl) (*Acl, error) {
 	var success bool
 	params := map[string]interface{}{
 		"subject": acl.Subject,
@@ -42,7 +42,7 @@ func (c *client) CreateAcl(acl Acl) (*Acl, error) {
 	return c.GetAcl(acl)
 }
 
-func (c *client) GetAcls() ([]Acl, error) {
+func (c *Client) GetAcls() ([]Acl, error) {
 	params := map[string]interface{}{
 		"dummy": "dummy",
 	}
@@ -56,7 +56,7 @@ func (c *client) GetAcls() ([]Acl, error) {
 	return acls, nil
 }
 
-func (c *client) GetAcl(aclReq Acl) (*Acl, error) {
+func (c *Client) GetAcl(aclReq Acl) (*Acl, error) {
 	acls, err := c.GetAcls()
 	if err != nil {
 		return nil, err
@@ -76,7 +76,7 @@ func (c *client) GetAcl(aclReq Acl) (*Acl, error) {
 	return &foundAcl, nil
 }
 
-func (c *client) DeleteAcl(acl Acl) error {
+func (c *Client) DeleteAcl(acl Acl) error {
 	var err error
 	var aclRef *Acl
 	if getAclById(acl) {

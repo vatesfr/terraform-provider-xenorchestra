@@ -28,7 +28,7 @@ func (h Host) Compare(obj interface{}) bool {
 	return false
 }
 
-func (c *client) GetHostByName(nameLabel string) (hosts []Host, err error) {
+func (c *Client) GetHostByName(nameLabel string) (hosts []Host, err error) {
 	obj, err := c.FindFromGetAllObjects(Host{NameLabel: nameLabel})
 	if err != nil {
 		return
@@ -36,7 +36,7 @@ func (c *client) GetHostByName(nameLabel string) (hosts []Host, err error) {
 	return obj.([]Host), nil
 }
 
-func (c *client) GetHostById(id string) (host Host, err error) {
+func (c *Client) GetHostById(id string) (host Host, err error) {
 	obj, err := c.FindFromGetAllObjects(Host{Id: id})
 	if err != nil {
 		return
@@ -71,7 +71,7 @@ func FindHostForTests(hostId string, host *Host) {
 	*host = queriedHost
 }
 
-func (c *client) GetSortedHosts(host Host, sortBy, sortOrder string) (hosts []Host, err error) {
+func (c *Client) GetSortedHosts(host Host, sortBy, sortOrder string) (hosts []Host, err error) {
 	obj, err := c.FindFromGetAllObjects(host)
 
 	if err != nil {

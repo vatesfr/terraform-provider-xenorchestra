@@ -31,7 +31,7 @@ func (v VIF) Compare(obj interface{}) bool {
 	return false
 }
 
-func (c *client) GetVIFs(vm *Vm) ([]VIF, error) {
+func (c *Client) GetVIFs(vm *Vm) ([]VIF, error) {
 	obj, err := c.FindFromGetAllObjects(VIF{VmId: vm.Id})
 
 	if _, ok := err.(NotFound); ok {
@@ -49,7 +49,7 @@ func (c *client) GetVIFs(vm *Vm) ([]VIF, error) {
 	return vifs, nil
 }
 
-func (c *client) GetVIF(vifReq *VIF) (*VIF, error) {
+func (c *Client) GetVIF(vifReq *VIF) (*VIF, error) {
 
 	obj, err := c.FindFromGetAllObjects(VIF{
 		Id:         vifReq.Id,
@@ -68,7 +68,7 @@ func (c *client) GetVIF(vifReq *VIF) (*VIF, error) {
 	return &vifs[0], nil
 }
 
-func (c *client) CreateVIF(vm *Vm, vif *VIF) (*VIF, error) {
+func (c *Client) CreateVIF(vm *Vm, vif *VIF) (*VIF, error) {
 
 	var id string
 	params := map[string]interface{}{
@@ -85,7 +85,7 @@ func (c *client) CreateVIF(vm *Vm, vif *VIF) (*VIF, error) {
 	return c.GetVIF(&VIF{Id: id})
 }
 
-func (c *client) ConnectVIF(vifReq *VIF) (err error) {
+func (c *Client) ConnectVIF(vifReq *VIF) (err error) {
 	vif, err := c.GetVIF(vifReq)
 
 	if err != nil {
@@ -98,7 +98,7 @@ func (c *client) ConnectVIF(vifReq *VIF) (err error) {
 	return
 }
 
-func (c *client) DisconnectVIF(vifReq *VIF) (err error) {
+func (c *Client) DisconnectVIF(vifReq *VIF) (err error) {
 	vif, err := c.GetVIF(vifReq)
 
 	if err != nil {
@@ -112,7 +112,7 @@ func (c *client) DisconnectVIF(vifReq *VIF) (err error) {
 	return
 }
 
-func (c *client) DeleteVIF(vifReq *VIF) (err error) {
+func (c *Client) DeleteVIF(vifReq *VIF) (err error) {
 	var vif *VIF
 
 	// This is a request that is looking the VIF

@@ -13,8 +13,8 @@ type allObjectResponse struct {
 }
 
 type CPUs struct {
-	Number int `json:"max"`
-	Max    int `json:"number"`
+	Number int `json:"number"`
+	Max    int `json:"max"`
 }
 
 type MemoryObject struct {
@@ -85,7 +85,7 @@ func (v Vm) Compare(obj interface{}) bool {
 	return false
 }
 
-func (c *client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
+func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 	tmpl, err := c.GetTemplate(Template{
 		Id: vmReq.Template,
 	})
@@ -192,7 +192,7 @@ func createVdiMap(disk Disk) map[string]interface{} {
 	}
 }
 
-func (c *client) UpdateVm(vmReq Vm, haltForUpdates bool) (*Vm, error) {
+func (c *Client) UpdateVm(vmReq Vm) (*Vm, error) {
 	var resourceSet interface{} = vmReq.ResourceSet
 	if vmReq.ResourceSet == "" {
 		resourceSet = nil
@@ -212,13 +212,6 @@ func (c *client) UpdateVm(vmReq Vm, haltForUpdates bool) (*Vm, error) {
 	}
 	log.Printf("[DEBUG] VM params for vm.set: %#v", params)
 
-	if haltForUpdates {
-		err := c.HaltVm(vmReq)
-
-		if err != nil {
-			return nil, err
-		}
-	}
 	var success bool
 	err := c.Call("vm.set", params, &success)
 
@@ -230,17 +223,10 @@ func (c *client) UpdateVm(vmReq Vm, haltForUpdates bool) (*Vm, error) {
 	// attributes after calling vm.set. Need to investigate a better way to detect this.
 	time.Sleep(25 * time.Second)
 
-	if haltForUpdates {
-		err = c.StartVm(vmReq.Id)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	return c.GetVm(vmReq)
 }
 
-func (c *client) StartVm(id string) error {
+func (c *Client) StartVm(id string) error {
 	params := map[string]interface{}{
 		"id": id,
 	}
@@ -261,7 +247,7 @@ func (c *client) StartVm(id string) error {
 	)
 }
 
-func (c *client) HaltVm(vmReq Vm) error {
+func (c *Client) HaltVm(vmReq Vm) error {
 	params := map[string]interface{}{
 		"id": vmReq.Id,
 	}
@@ -282,7 +268,7 @@ func (c *client) HaltVm(vmReq Vm) error {
 	)
 }
 
-func (c *client) DeleteVm(id string) error {
+func (c *Client) DeleteVm(id string) error {
 	params := map[string]interface{}{
 		"id": id,
 	}
@@ -290,7 +276,7 @@ func (c *client) DeleteVm(id string) error {
 	return c.Call("vm.delete", params, &reply)
 }
 
-func (c *client) GetVm(vmReq Vm) (*Vm, error) {
+func (c *Client) GetVm(vmReq Vm) (*Vm, error) {
 	obj, err := c.FindFromGetAllObjects(vmReq)
 
 	if err != nil {
@@ -306,7 +292,7 @@ func (c *client) GetVm(vmReq Vm) (*Vm, error) {
 	return &vms[0], nil
 }
 
-func (c *client) GetVms() ([]Vm, error) {
+func (c *Client) GetVms() ([]Vm, error) {
 
 	var response map[string]Vm
 	err := c.GetAllObjectsOfType(Vm{PowerState: "Running"}, &response)
@@ -324,7 +310,7 @@ func (c *client) GetVms() ([]Vm, error) {
 	return vms, nil
 }
 
-func (c *client) EjectVmCd(vm *Vm) error {
+func (c *Client) EjectVmCd(vm *Vm) error {
 	params := map[string]interface{}{
 		"id": vm.Id,
 	}
@@ -336,7 +322,7 @@ func (c *client) EjectVmCd(vm *Vm) error {
 	return nil
 }
 
-func GetVmPowerState(c *client, id string) func() (result interface{}, state string, err error) {
+func GetVmPowerState(c *Client, id string) func() (result interface{}, state string, err error) {
 	return func() (interface{}, string, error) {
 		vm, err := c.GetVm(Vm{Id: id})
 
@@ -348,13 +334,13 @@ func GetVmPowerState(c *client, id string) func() (result interface{}, state str
 	}
 }
 
-func (c *client) waitForVmState(id string, stateConf StateChangeConf) error {
+func (c *Client) waitForVmState(id string, stateConf StateChangeConf) error {
 	stateConf.Refresh = GetVmPowerState(c, id)
 	_, err := stateConf.WaitForState()
 	return err
 }
 
-func (c *client) waitForModifyVm(id string, waitForIp bool, timeout time.Duration) error {
+func (c *Client) waitForModifyVm(id string, waitForIp bool, timeout time.Duration) error {
 	if !waitForIp {
 		refreshFn := func() (result interface{}, state string, err error) {
 			vm, err := c.GetVm(Vm{Id: id})

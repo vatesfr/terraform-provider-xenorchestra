@@ -1101,6 +1101,36 @@ func TestAccXenorchestraVm_updatesThatRequireReboot(t *testing.T) {
 	})
 }
 
+func TestAccXenorchestraVm_updatingCpusInsideMaxCpuDoesNotRequireReboot(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders2,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigUpdateAttrsVariableCPUAndMemory(5, 4295000000, "terraform testing", "", "", false),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "cpus", "5"),
+					resource.TestCheckResourceAttr(resourceName, "memory_max", "4295000000"),
+				),
+			},
+			{
+				Config: testAccVmConfigUpdateAttrsVariableCPUAndMemory(2, 4295000000, "terraform testing", "", "", false),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "cpus", "2"),
+					resource.TestCheckResourceAttr(resourceName, "memory_max", "4295000000"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccXenorchestraVm_createAndUpdateWithResourceSet(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	resource.Test(t, resource.TestCase{

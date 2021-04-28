@@ -162,7 +162,7 @@ func TestUpdateVmWithUpatesThatRequireHalt(t *testing.T) {
 		t.Fatalf("failed to create client with error: %v", err)
 	}
 
-	vm, err := c.UpdateVm(Vm{Id: accVm.Id, CPUs: CPUs{Number: 1}, NameLabel: "terraform testing", Memory: MemoryObject{Static: []int{0, 4294967296}}}, true)
+	vm, err := c.UpdateVm(Vm{Id: accVm.Id, CPUs: CPUs{Number: 1}, NameLabel: "terraform testing", Memory: MemoryObject{Static: []int{0, 4294967296}}})
 
 	if err != nil {
 		t.Fatalf("failed to update vm with error: %v", err)

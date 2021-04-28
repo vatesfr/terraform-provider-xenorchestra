@@ -614,7 +614,7 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		haltForUpdates = true
 	}
 
-	vm, err = c.UpdateVm(client.Vm{
+	vmReq := client.Vm{
 		Id: id,
 		CPUs: client.CPUs{
 			Number: cpus,
@@ -630,7 +630,23 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		ResourceSet:     rs,
 		AutoPoweron:     autoPowerOn,
 		AffinityHost:    affinityHost,
-	}, haltForUpdates)
+	}
+	if haltForUpdates {
+		err := c.HaltVm(vmReq)
+
+		if err != nil {
+			return err
+		}
+	}
+	vm, err = c.UpdateVm(vmReq)
+
+	if haltForUpdates {
+		err := c.StartVm(vmReq.Id)
+
+		if err != nil {
+			return err
+		}
+	}
 
 	log.Printf("[DEBUG] Retrieved vm after update: %+v\n", vm)
 
