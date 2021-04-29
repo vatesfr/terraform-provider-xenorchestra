@@ -610,7 +610,7 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		haltForUpdates = true
 	}
 
-	if d.HasChange("memory_max") {
+	if _, nMemoryMax := d.GetChange("memory_max"); d.HasChange("memory_max") && nMemoryMax.(int) > vm.Memory.Static[1] {
 		haltForUpdates = true
 	}
 
@@ -766,12 +766,12 @@ func RecordImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData
 func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, cdroms []client.Disk, d *schema.ResourceData) error {
 	d.SetId(resource.Id)
 	// d.Set("cloud_config", resource.CloudConfig)
-	if len(resource.Memory.Static) == 2 {
-		if err := d.Set("memory_max", resource.Memory.Static[1]); err != nil {
+	if len(resource.Memory.Dynamic) == 2 {
+		if err := d.Set("memory_max", resource.Memory.Dynamic[1]); err != nil {
 			return err
 		}
 	} else {
-		log.Printf("[WARN] Expected the VM's static memory limits to have two values, %v found instead\n", resource.Memory.Static)
+		log.Printf("[WARN] Expected the VM's static memory limits to have two values, %v found instead\n", resource.Memory.Dynamic)
 	}
 
 	d.Set("cpus", resource.CPUs.Number)
