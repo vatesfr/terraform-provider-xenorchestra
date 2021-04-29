@@ -1105,8 +1105,11 @@ func TestAccXenorchestraVm_updatingCpusInsideMaxCpuDoesNotRequireReboot(t *testi
 	resourceName := "xenorchestra_vm.bar"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders2,
+		PreCheck: func() { testAccPreCheck(t) },
+		// Use a provider that has a XO client that will error if StartVm
+		// or HaltVm are called. This ensures that the VM is not rebooted during
+		// the test to prove that the CPUs are changed online
+		Providers:    testAccFailToStartAndHaltProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
 			{

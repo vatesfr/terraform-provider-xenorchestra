@@ -1,57 +1,19 @@
 package xoa
 
 import (
-	"errors"
 	"os"
 	"testing"
 
-	"github.com/ddelnano/terraform-provider-xenorchestra/client"
+	"github.com/ddelnano/terraform-provider-xenorchestra/xoa/internal"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
 var testAccProviders map[string]terraform.ResourceProvider
-var testAccProviders2 map[string]terraform.ResourceProvider
+var testAccFailToStartAndHaltProviders map[string]terraform.ResourceProvider
 
 var testAccProvider *schema.Provider
-var testAccProvider2 *schema.Provider
-
-type testClient struct {
-	*client.Client
-}
-
-func (c testClient) HaltVm(vmReq client.Vm) error {
-	return errors.New("This method shouldn't be called")
-}
-func (c testClient) StartVm(id string) error {
-	return errors.New("This method shouldn't be called")
-}
-
-func newTestClient(config client.Config) (client.XOClient, error) {
-	xoClient, err := client.NewClient(config)
-
-	if err != nil {
-		return nil, err
-	}
-
-	c := xoClient.(*client.Client)
-
-	return &testClient{c}, nil
-}
-
-func configureFn(d *schema.ResourceData) (interface{}, error) {
-	url := d.Get("url").(string)
-	username := d.Get("username").(string)
-	password := d.Get("password").(string)
-	insecure := d.Get("insecure").(bool)
-	config := client.Config{
-		Url:                url,
-		Username:           username,
-		Password:           password,
-		InsecureSkipVerify: insecure,
-	}
-	return newTestClient(config)
-}
+var testAccFailToStartHaltVmProvider *schema.Provider
 
 func init() {
 	testAccProvider = Provider().(*schema.Provider)
@@ -59,10 +21,10 @@ func init() {
 		"xenorchestra": testAccProvider,
 	}
 
-	testAccProvider2 = Provider().(*schema.Provider)
-	testAccProvider2.ConfigureFunc = configureFn
-	testAccProviders2 = map[string]terraform.ResourceProvider{
-		"xenorchestra": testAccProvider2,
+	testAccFailToStartHaltVmProvider = Provider().(*schema.Provider)
+	testAccFailToStartHaltVmProvider.ConfigureFunc = internal.GetFailToStartAndHaltXOClient
+	testAccFailToStartAndHaltProviders = map[string]terraform.ResourceProvider{
+		"xenorchestra": testAccFailToStartHaltVmProvider,
 	}
 }
 
