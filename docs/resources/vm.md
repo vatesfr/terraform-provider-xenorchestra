@@ -63,8 +63,24 @@ resource "xenorchestra_vm" "bar" {
 * `template` - (Required) The ID of the VM template to create the new VM from.
 * `cloud_config` - (Optional) The content of the cloud-init config to use
 * `cloud_network_config` - (Optional) The content of the cloud-init network configuration for the VM (uses [version 1](https://cloudinit.readthedocs.io/en/latest/topics/network-config-format-v1.html))
-* `cpus` - (Required) The number of CPUs the VM will have.
-* `memory_max` - (Required) The amount of memory in bytes the VM will have.
+* `cpus` - (Required) The number of CPUs the VM will have. Updates to this field will cause a halt and start of the VM if new CPU value is greater than the max CPU value. This can be determined with the following command. In the example below a VM could be resized online with an update to use 3 CPUs but would require a halt/start if it were updated to 5 CPUs.
+```
+$ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd0b8"}' | jq '.[].CPUs'
+{
+  "max": 4,
+  "number": 2
+}
+```
+* `memory_max` - (Required) The amount of memory in bytes the VM will have. Updates to this field will cause a halt and start of the VM if the new `memory_max` value is greater than the dynamic memory max. In the example below a VM could be resized online with an update to use 3GB of memory but would require a halt/start if it were updated to 5GB of memory
+```
+$ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd0b8"}' | jq '.[].memory.dynamic'
+[
+  2147483648, # memory dynamic min
+  4294967296  # memory dynamic max (4GB)
+]
+```
+
+
 * `high_availabililty` - (Optional) The restart priority for the VM. Possible values are `best-effort`, `restart` and empty string (no restarts on failure. Defaults to empty string.
 * `auto_poweron` - (Optional) If the VM will automatically turn on. Defaults to `false`.
 * `affinity_host` - (Optional) The preferred host you would like the VM to run on. If changed on an existing VM it will require a reboot for the VM to be rescheduled.
