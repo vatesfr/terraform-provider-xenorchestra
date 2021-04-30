@@ -63,21 +63,26 @@ resource "xenorchestra_vm" "bar" {
 * `template` - (Required) The ID of the VM template to create the new VM from.
 * `cloud_config` - (Optional) The content of the cloud-init config to use
 * `cloud_network_config` - (Optional) The content of the cloud-init network configuration for the VM (uses [version 1](https://cloudinit.readthedocs.io/en/latest/topics/network-config-format-v1.html))
-* `cpus` - (Required) The number of CPUs the VM will have. Updates to this field will cause a halt and start of the VM if new CPU value is greater than the max CPU value. This can be determined with the following command. In the example below a VM could be resized online with an update to use 3 CPUs but would require a halt/start if it were updated to 5 CPUs.
+* `cpus` - (Required) The number of CPUs the VM will have. Updates to this field will cause a stop and start of the VM if the new CPU value is greater than the max CPU value. This can be determined with the following command:
 ```
 $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd0b8"}' | jq '.[].CPUs'
 {
   "max": 4,
   "number": 2
 }
+
+# Updating the VM to use 3 CPUs would happen without stopping/starting the VM
+# Updating the VM to use 5 CPUs would happen would stop/start the VM
 ```
-* `memory_max` - (Required) The amount of memory in bytes the VM will have. Updates to this field will cause a halt and start of the VM if the new `memory_max` value is greater than the dynamic memory max. In the example below a VM could be resized online with an update to use 3GB of memory but would require a halt/start if it were updated to 5GB of memory
+* `memory_max` - (Required) The amount of memory in bytes the VM will have. Updates to this field will cause a stop and start of the VM if the new `memory_max` value is greater than the dynamic memory max. This can be determined with the following command:
 ```
 $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd0b8"}' | jq '.[].memory.dynamic'
 [
   2147483648, # memory dynamic min
   4294967296  # memory dynamic max (4GB)
 ]
+# Updating the VM to use 3GB of memory would happen without stopping/starting the VM
+# Updating the VM to use 5GB of memory would stop/start the VM
 ```
 
 
