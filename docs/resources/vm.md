@@ -72,7 +72,7 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 }
 
 # Updating the VM to use 3 CPUs would happen without stopping/starting the VM
-# Updating the VM to use 5 CPUs would happen would stop/start the VM
+# Updating the VM to use 5 CPUs would stop/start the VM
 ```
 * `memory_max` - (Required) The amount of memory in bytes the VM will have. Updates to this field will cause a stop and start of the VM if the new `memory_max` value is greater than the dynamic memory max. This can be determined with the following command:
 ```
