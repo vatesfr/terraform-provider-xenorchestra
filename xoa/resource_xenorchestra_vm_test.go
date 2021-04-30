@@ -1080,7 +1080,7 @@ func TestAccXenorchestraVm_updatesThatRequireReboot(t *testing.T) {
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccVmConfigUpdateAttrsVariableCPUAndMemory(2, 4295000000, "terraform testing", "", "", false),
+				Config: testAccVmConfigUpdateAttrsVariableCPUAndMemory(2, 4295000000, "Terraform testing", "", "", false),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -1089,7 +1089,7 @@ func TestAccXenorchestraVm_updatesThatRequireReboot(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccVmConfigUpdateAttrsVariableCPUAndMemory(5, 6295000000, "terraform testing", "", "", false),
+				Config: testAccVmConfigUpdateAttrsVariableCPUAndMemory(5, 6295000000, "Terraform testing", "", "", false),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -1113,7 +1113,7 @@ func TestAccXenorchestraVm_updatingCpusInsideMaxCpuAndMemInsideStaticMaxDoesNotR
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccVmConfigUpdateAttrsVariableCPUAndMemory(5, 4295000000, "terraform testing", "", "", false),
+				Config: testAccVmConfigUpdateAttrsVariableCPUAndMemory(5, 4295000000, "Terraform testing", "", "", false),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -1122,7 +1122,7 @@ func TestAccXenorchestraVm_updatingCpusInsideMaxCpuAndMemInsideStaticMaxDoesNotR
 				),
 			},
 			{
-				Config: testAccVmConfigUpdateAttrsVariableCPUAndMemory(2, 3221225472, "terraform testing", "", "", false),
+				Config: testAccVmConfigUpdateAttrsVariableCPUAndMemory(2, 3221225472, "Terraform testing", "", "", false),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
