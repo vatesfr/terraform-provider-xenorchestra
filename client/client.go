@@ -23,6 +23,88 @@ const (
 	PongWait       = 60 * time.Second
 )
 
+type XOClient interface {
+	GetObjectsWithTags(tags []string) ([]Object, error)
+
+	CreateVm(vmReq Vm, d time.Duration) (*Vm, error)
+	GetVm(vmReq Vm) (*Vm, error)
+	UpdateVm(vmReq Vm) (*Vm, error)
+	DeleteVm(id string) error
+	HaltVm(vmReq Vm) error
+	StartVm(id string) error
+
+	GetCloudConfigByName(name string) ([]CloudConfig, error)
+	CreateCloudConfig(name, template string) (*CloudConfig, error)
+	GetCloudConfig(id string) (*CloudConfig, error)
+	DeleteCloudConfig(id string) error
+	GetAllCloudConfigs() ([]CloudConfig, error)
+
+	GetHostById(id string) (host Host, err error)
+	GetHostByName(nameLabel string) (hosts []Host, err error)
+
+	GetPools(pool Pool) ([]Pool, error)
+	GetPoolByName(name string) (pools []Pool, err error)
+
+	GetSortedHosts(host Host, sortBy, sortOrder string) (hosts []Host, err error)
+
+	CreateResourceSet(rsReq ResourceSet) (*ResourceSet, error)
+	GetResourceSets() ([]ResourceSet, error)
+	GetResourceSet(rsReq ResourceSet) ([]ResourceSet, error)
+	GetResourceSetById(id string) (*ResourceSet, error)
+	DeleteResourceSet(rsReq ResourceSet) error
+	AddResourceSetSubject(rsReq ResourceSet, subject string) error
+	AddResourceSetObject(rsReq ResourceSet, object string) error
+	AddResourceSetLimit(rsReq ResourceSet, limit string, quantity int) error
+	RemoveResourceSetSubject(rsReq ResourceSet, subject string) error
+	RemoveResourceSetObject(rsReq ResourceSet, object string) error
+	RemoveResourceSetLimit(rsReq ResourceSet, limit string) error
+
+	CreateUser(user User) (*User, error)
+	GetAllUsers() ([]User, error)
+	GetUser(userReq User) (*User, error)
+	DeleteUser(userReq User) error
+
+	CreateNetwork(netReq Network) (*Network, error)
+	GetNetwork(netReq Network) (*Network, error)
+	GetNetworks() ([]Network, error)
+	DeleteNetwork(id string) error
+
+	GetPIF(pifReq PIF) (pifs []PIF, err error)
+	GetPIFByDevice(dev string, vlan int) ([]PIF, error)
+
+	GetStorageRepository(sr StorageRepository) ([]StorageRepository, error)
+	GetStorageRepositoryById(id string) (StorageRepository, error)
+
+	GetTemplate(template Template) ([]Template, error)
+
+	GetVDIs(vdiReq VDI) ([]VDI, error)
+	UpdateVDI(d Disk) error
+
+	CreateAcl(acl Acl) (*Acl, error)
+	GetAcl(aclReq Acl) (*Acl, error)
+	DeleteAcl(acl Acl) error
+
+	AddTag(id, tag string) error
+	RemoveTag(id, tag string) error
+
+	GetDisks(vm *Vm) ([]Disk, error)
+	CreateDisk(vm Vm, d Disk) (string, error)
+	DeleteDisk(vm Vm, d Disk) error
+	ConnectDisk(d Disk) error
+	DisconnectDisk(d Disk) error
+
+	GetVIF(vifReq *VIF) (*VIF, error)
+	GetVIFs(vm *Vm) ([]VIF, error)
+	CreateVIF(vm *Vm, vif *VIF) (*VIF, error)
+	DeleteVIF(vifReq *VIF) (err error)
+	DisconnectVIF(vifReq *VIF) (err error)
+	ConnectVIF(vifReq *VIF) (err error)
+
+	GetCdroms(vm *Vm) ([]Disk, error)
+	EjectCd(id string) error
+	InsertCd(vmId, cdId string) error
+}
+
 type Client struct {
 	rpc jsonrpc2.JSONRPC2
 }
@@ -64,7 +146,7 @@ func GetConfigFromEnv() Config {
 	}
 }
 
-func NewClient(config Config) (*Client, error) {
+func NewClient(config Config) (XOClient, error) {
 	url := config.Url
 	username := config.Username
 	password := config.Password

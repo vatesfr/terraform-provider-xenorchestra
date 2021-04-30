@@ -43,7 +43,7 @@ func resourceAcl() *schema.Resource {
 }
 
 func resourceAclCreate(d *schema.ResourceData, m interface{}) error {
-	c := m.(*client.Client)
+	c := m.(client.XOClient)
 
 	acl, err := c.CreateAcl(client.Acl{
 		Subject: d.Get("subject").(string),
@@ -57,7 +57,7 @@ func resourceAclCreate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceAclRead(d *schema.ResourceData, m interface{}) error {
-	c := m.(*client.Client)
+	c := m.(client.XOClient)
 
 	acl, err := c.GetAcl(client.Acl{
 		Id: d.Id(),
@@ -76,7 +76,7 @@ func resourceAclRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceAclDelete(d *schema.ResourceData, m interface{}) error {
-	c := m.(*client.Client)
+	c := m.(client.XOClient)
 
 	err := c.DeleteAcl(client.Acl{
 		Id: d.Id(),

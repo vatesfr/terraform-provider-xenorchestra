@@ -50,7 +50,7 @@ func dataSourceXoaPIF() *schema.Resource {
 }
 
 func dataSourcePIFRead(d *schema.ResourceData, m interface{}) error {
-	c := m.(*client.Client)
+	c := m.(client.XOClient)
 
 	device := d.Get("device").(string)
 	vlan := d.Get("vlan").(int)

@@ -34,7 +34,7 @@ func dataSourceXoaStorageRepository() *schema.Resource {
 }
 
 func dataSourceStorageRepositoryRead(d *schema.ResourceData, m interface{}) error {
-	c := m.(*client.Client)
+	c := m.(client.XOClient)
 
 	nameLabel := d.Get("name_label").(string)
 	poolId := d.Get("pool_id").(string)

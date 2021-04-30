@@ -4,17 +4,27 @@ import (
 	"os"
 	"testing"
 
+	"github.com/ddelnano/terraform-provider-xenorchestra/xoa/internal"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
 var testAccProviders map[string]terraform.ResourceProvider
+var testAccFailToStartAndHaltProviders map[string]terraform.ResourceProvider
+
 var testAccProvider *schema.Provider
+var testAccFailToStartHaltVmProvider *schema.Provider
 
 func init() {
 	testAccProvider = Provider().(*schema.Provider)
 	testAccProviders = map[string]terraform.ResourceProvider{
 		"xenorchestra": testAccProvider,
+	}
+
+	testAccFailToStartHaltVmProvider = Provider().(*schema.Provider)
+	testAccFailToStartHaltVmProvider.ConfigureFunc = internal.GetFailToStartAndHaltXOClient
+	testAccFailToStartAndHaltProviders = map[string]terraform.ResourceProvider{
+		"xenorchestra": testAccFailToStartHaltVmProvider,
 	}
 }
 

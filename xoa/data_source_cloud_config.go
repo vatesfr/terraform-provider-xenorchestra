@@ -26,7 +26,7 @@ func dataSourceXoaCloudConfig() *schema.Resource {
 }
 
 func dataSourceCloudConfigRead(d *schema.ResourceData, m interface{}) error {
-	c := m.(*client.Client)
+	c := m.(client.XOClient)
 
 	name := d.Get("name").(string)
 

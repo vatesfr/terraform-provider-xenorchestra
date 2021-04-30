@@ -38,7 +38,7 @@ func dataSourceXoaHosts() *schema.Resource {
 }
 
 func dataSourceHostsRead(d *schema.ResourceData, m interface{}) error {
-	c := m.(*client.Client)
+	c := m.(client.XOClient)
 	poolId := d.Get("pool_id").(string)
 	tags := d.Get("tags").([]interface{})
 

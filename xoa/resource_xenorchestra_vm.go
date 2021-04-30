@@ -242,7 +242,7 @@ func resourceRecord() *schema.Resource {
 }
 
 func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
-	c := m.(*client.Client)
+	c := m.(client.XOClient)
 
 	network_maps := []map[string]string{}
 	networks := d.Get("network").([]interface{})
@@ -440,7 +440,7 @@ func vifsToMapList(vifs []client.VIF, guestNets []guestNetwork) []map[string]int
 }
 
 func resourceVmRead(d *schema.ResourceData, m interface{}) error {
-	c := m.(*client.Client)
+	c := m.(client.XOClient)
 
 	vm, err := c.GetVm(client.Vm{Id: d.Id()})
 
@@ -474,7 +474,7 @@ func resourceVmRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
-	c := m.(*client.Client)
+	c := m.(client.XOClient)
 
 	id := d.Id()
 	nameLabel := d.Get("name_label").(string)
@@ -484,8 +484,9 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 	autoPowerOn := d.Get("auto_poweron").(bool)
 	ha := d.Get("high_availability").(string)
 	rs := d.Get("resource_set").(string)
-	vm, err := c.UpdateVm(id, cpus, nameLabel, nameDescription, ha, rs, autoPowerOn, affinityHost)
-	log.Printf("[DEBUG] Retrieved vm after update: %+v\n", vm)
+	memoryMax := d.Get("memory_max").(int)
+
+	vm, err := c.GetVm(client.Vm{Id: id})
 
 	if err != nil {
 		return err
@@ -604,6 +605,55 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 
+	haltForUpdates := false
+	if _, nCPUs := d.GetChange("cpus"); d.HasChange("cpus") && nCPUs.(int) > vm.CPUs.Max {
+		haltForUpdates = true
+	}
+
+	if _, nMemoryMax := d.GetChange("memory_max"); d.HasChange("memory_max") && nMemoryMax.(int) > vm.Memory.Static[1] {
+		haltForUpdates = true
+	}
+
+	vmReq := client.Vm{
+		Id: id,
+		CPUs: client.CPUs{
+			Number: cpus,
+		},
+		Memory: client.MemoryObject{
+			Static: []int{
+				0, memoryMax,
+			},
+		},
+		NameLabel:       nameLabel,
+		NameDescription: nameDescription,
+		HA:              ha,
+		ResourceSet:     rs,
+		AutoPoweron:     autoPowerOn,
+		AffinityHost:    affinityHost,
+	}
+	if haltForUpdates {
+		err := c.HaltVm(vmReq)
+
+		if err != nil {
+			return err
+		}
+	}
+	vm, err = c.UpdateVm(vmReq)
+
+	if haltForUpdates {
+		err := c.StartVm(vmReq.Id)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	log.Printf("[DEBUG] Retrieved vm after update: %+v\n", vm)
+
+	if err != nil {
+		return err
+	}
+
 	if d.HasChange("tags") {
 		o, n := d.GetChange("tags")
 		oTags := New(o)
@@ -628,7 +678,7 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceVmDelete(d *schema.ResourceData, m interface{}) error {
-	c := m.(*client.Client)
+	c := m.(client.XOClient)
 
 	err := c.DeleteVm(d.Id())
 
@@ -683,7 +733,7 @@ func expandNetworks(networks []interface{}) []*client.VIF {
 }
 
 func RecordImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
-	c := m.(*client.Client)
+	c := m.(client.XOClient)
 
 	vm, err := c.GetVm(client.Vm{Id: d.Id()})
 	if err != nil {
@@ -716,12 +766,12 @@ func RecordImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData
 func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, cdroms []client.Disk, d *schema.ResourceData) error {
 	d.SetId(resource.Id)
 	// d.Set("cloud_config", resource.CloudConfig)
-	if len(resource.Memory.Static) == 2 {
-		if err := d.Set("memory_max", resource.Memory.Static[1]); err != nil {
+	if len(resource.Memory.Dynamic) == 2 {
+		if err := d.Set("memory_max", resource.Memory.Dynamic[1]); err != nil {
 			return err
 		}
 	} else {
-		log.Printf("[WARN] Expected the VM's static memory limits to have two values, %v found instead\n", resource.Memory.Static)
+		log.Printf("[WARN] Expected the VM's static memory limits to have two values, %v found instead\n", resource.Memory.Dynamic)
 	}
 
 	d.Set("cpus", resource.CPUs.Number)
@@ -904,7 +954,7 @@ func shouldUpdateDisk(d client.Disk, disks []client.Disk) bool {
 	return false
 }
 
-func performDiskUpdateAction(c *client.Client, action updateDiskActions, d client.Disk) error {
+func performDiskUpdateAction(c client.XOClient, action updateDiskActions, d client.Disk) error {
 	switch action {
 	case diskAttachmentUpdate:
 		if d.Attached {
