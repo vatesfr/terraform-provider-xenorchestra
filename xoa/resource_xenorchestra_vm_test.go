@@ -444,7 +444,19 @@ func TestAccXenorchestraVm_createWithTags(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttr(resourceName, "tags.#", "2"),
 					resource.TestCheckResourceAttr(resourceName, "tags.0", tag1),
-					resource.TestCheckResourceAttr(resourceName, "tags.1", tag2)),
+					resource.TestCheckResourceAttr(resourceName, "tags.1", tag2),
+				),
+			},
+			{
+				Config:   testAccVmConfigWithTags(tag2, tag1),
+				PlanOnly: true,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "tags.#", "2"),
+					// resource.TestCheckResourceAttr(resourceName, "tags.0", tag1),
+					// resource.TestCheckResourceAttr(resourceName, "tags.1", tag2),
+				),
 			},
 			{
 				Config: testAccVmConfigWithTag(tag1),
@@ -452,7 +464,8 @@ func TestAccXenorchestraVm_createWithTags(t *testing.T) {
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttr(resourceName, "tags.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "tags.0", tag1)),
+					resource.TestCheckResourceAttr(resourceName, "tags.0", tag1),
+				),
 			},
 		},
 	})
@@ -1171,6 +1184,7 @@ func testAccVmExists(resourceName string) resource.TestCheckFunc {
 		if rs.Primary.ID == "" {
 			return fmt.Errorf("No Vm Id is set")
 		}
+		fmt.Printf("Terraform state for vm resource: %+v", rs)
 
 		c, err := client.NewClient(client.GetConfigFromEnv())
 		if err != nil {
