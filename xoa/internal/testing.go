@@ -119,6 +119,17 @@ func instanceState(s *terraform.State, name string) (*terraform.InstanceState, e
 	return is, nil
 }
 
+func TestCheckTypeSetAttr(nameFirst, keyFirst, value string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		isFirst, err := instanceState(s, nameFirst)
+		if err != nil {
+			return err
+		}
+
+		return testCheckTypeSetElem(isFirst, keyFirst, value)
+	}
+}
+
 // TestCheckTypeSetElemAttrPair is a TestCheckFunc that verifies a pair of name/key
 // combinations are equal where the first uses the sentinel value to index into a
 // TypeSet.
