@@ -30,7 +30,7 @@ func dataSourceVDIRead(d *schema.ResourceData, m interface{}) error {
 
 	nameLabel := d.Get("name_label").(string)
 	poolId := d.Get("pool_id").(string)
-	tags := d.Get("tags").([]interface{})
+	tags := d.Get("tags").(*schema.Set).List()
 
 	vdi := client.VDI{
 		NameLabel: nameLabel,

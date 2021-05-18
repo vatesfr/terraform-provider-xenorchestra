@@ -443,8 +443,20 @@ func TestAccXenorchestraVm_createWithTags(t *testing.T) {
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttr(resourceName, "tags.#", "2"),
-					resource.TestCheckResourceAttr(resourceName, "tags.0", tag1),
-					resource.TestCheckResourceAttr(resourceName, "tags.1", tag2)),
+					internal.TestCheckTypeSetAttr(resourceName, "tags.*", tag1),
+					internal.TestCheckTypeSetAttr(resourceName, "tags.*", tag2),
+				),
+			},
+			{
+				Config:   testAccVmConfigWithTags(tag2, tag1),
+				PlanOnly: true,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "tags.#", "2"),
+					internal.TestCheckTypeSetAttr(resourceName, "tags.*", tag1),
+					internal.TestCheckTypeSetAttr(resourceName, "tags.*", tag2),
+				),
 			},
 			{
 				Config: testAccVmConfigWithTag(tag1),
@@ -452,7 +464,8 @@ func TestAccXenorchestraVm_createWithTags(t *testing.T) {
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttr(resourceName, "tags.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "tags.0", tag1)),
+					internal.TestCheckTypeSetAttr(resourceName, "tags.*", tag1),
+				),
 			},
 		},
 	})

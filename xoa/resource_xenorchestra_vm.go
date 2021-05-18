@@ -273,7 +273,7 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		})
 	}
 
-	tags := d.Get("tags").([]interface{})
+	tags := d.Get("tags").(*schema.Set).List()
 	vmTags := []string{}
 	for _, tag := range tags {
 		t := tag.(string)
@@ -656,19 +656,19 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 
 	if d.HasChange("tags") {
 		o, n := d.GetChange("tags")
-		oTags := New(o)
-		nTags := New(n)
+		oTags := o.(*schema.Set)
+		nTags := n.(*schema.Set)
 
-		removals := oTags.Without(nTags)
-		for _, removal := range removals {
-			if err := c.RemoveTag(id, removal); err != nil {
+		removals := oTags.Difference(nTags)
+		for _, removal := range removals.List() {
+			if err := c.RemoveTag(id, removal.(string)); err != nil {
 				return err
 			}
 		}
 
-		additions := nTags.Without(oTags)
-		for _, addition := range additions {
-			if err := c.AddTag(id, addition); err != nil {
+		additions := nTags.Difference(oTags)
+		for _, addition := range additions.List() {
+			if err := c.AddTag(id, addition.(string)); err != nil {
 				return err
 			}
 		}
