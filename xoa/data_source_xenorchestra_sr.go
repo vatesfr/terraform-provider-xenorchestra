@@ -38,7 +38,7 @@ func dataSourceStorageRepositoryRead(d *schema.ResourceData, m interface{}) erro
 
 	nameLabel := d.Get("name_label").(string)
 	poolId := d.Get("pool_id").(string)
-	tags := d.Get("tags").([]interface{})
+	tags := d.Get("tags").(*schema.Set).List()
 
 	sr := client.StorageRepository{
 		NameLabel: nameLabel,

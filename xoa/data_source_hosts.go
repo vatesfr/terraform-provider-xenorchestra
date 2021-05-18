@@ -40,7 +40,7 @@ func dataSourceXoaHosts() *schema.Resource {
 func dataSourceHostsRead(d *schema.ResourceData, m interface{}) error {
 	c := m.(client.XOClient)
 	poolId := d.Get("pool_id").(string)
-	tags := d.Get("tags").([]interface{})
+	tags := d.Get("tags").(*schema.Set).List()
 
 	pool, err := c.GetPools(client.Pool{Id: poolId})
 	if err != nil {
