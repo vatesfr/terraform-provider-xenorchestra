@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-func TestAccXenorchestraDataSource_VDI(t *testing.T) {
+func TestAccXenorchestraDataSource_vdi(t *testing.T) {
 	resourceName := "data.xenorchestra_vdi.vdi"
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
