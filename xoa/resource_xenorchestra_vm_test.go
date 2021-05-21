@@ -316,13 +316,14 @@ func Test_shouldUpdateVif(t *testing.T) {
 }
 
 func TestAccXenorchestraVm_createWithShorterResourceTimeout(t *testing.T) {
+	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config:      testAccVmConfigWithShortTimeout(),
+				Config:      testAccVmConfigWithShortTimeout(vmName),
 				ExpectError: regexp.MustCompile("timeout while waiting for state to become"),
 			},
 		},
@@ -331,6 +332,7 @@ func TestAccXenorchestraVm_createWithShorterResourceTimeout(t *testing.T) {
 
 func TestAccXenorchestraVm_createAndPlanWithNonExistantVm(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
 	removeVm := func() {
 		c, err := client.NewClient(client.GetConfigFromEnv())
 		if err != nil {
@@ -338,7 +340,7 @@ func TestAccXenorchestraVm_createAndPlanWithNonExistantVm(t *testing.T) {
 		}
 
 		vm, err := c.GetVm(client.Vm{
-			NameLabel: "Terraform testing",
+			NameLabel: vmName,
 		})
 
 		if err != nil {
@@ -356,7 +358,7 @@ func TestAccXenorchestraVm_createAndPlanWithNonExistantVm(t *testing.T) {
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccVmConfig(),
+				Config: testAccVmConfig(vmName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -365,7 +367,7 @@ func TestAccXenorchestraVm_createAndPlanWithNonExistantVm(t *testing.T) {
 			},
 			{
 				PreConfig:          removeVm,
-				Config:             testAccVmConfig(),
+				Config:             testAccVmConfig(vmName),
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: true,
 			},
@@ -375,13 +377,14 @@ func TestAccXenorchestraVm_createAndPlanWithNonExistantVm(t *testing.T) {
 
 func TestAccXenorchestraVm_createWhenWaitingForIp(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccVmConfigWaitForIp(),
+				Config: testAccVmConfigWaitForIp(vmName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -402,13 +405,14 @@ func TestAccXenorchestraVm_createAndUpdateDiskNameLabelAndNameDescription(t *tes
 	description := "disk description"
 	updatedNameLabel := "updated disk name label"
 	updatedDescription := "updated description"
+	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccVmConfigWithDiskNameLabelAndNameDescription(nameLabel, description),
+				Config: testAccVmConfigWithDiskNameLabelAndNameDescription(vmName, nameLabel, description),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -417,7 +421,7 @@ func TestAccXenorchestraVm_createAndUpdateDiskNameLabelAndNameDescription(t *tes
 					resource.TestCheckResourceAttr(resourceName, "disk.0.name_description", description)),
 			},
 			{
-				Config: testAccVmConfigWithDiskNameLabelAndNameDescription(updatedNameLabel, updatedDescription),
+				Config: testAccVmConfigWithDiskNameLabelAndNameDescription(vmName, updatedNameLabel, updatedDescription),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -430,6 +434,7 @@ func TestAccXenorchestraVm_createAndUpdateDiskNameLabelAndNameDescription(t *tes
 
 func TestAccXenorchestraVm_createWithTags(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
 	tag1 := "tag1"
 	tag2 := "tag2"
 	resource.Test(t, resource.TestCase{
@@ -438,7 +443,7 @@ func TestAccXenorchestraVm_createWithTags(t *testing.T) {
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccVmConfigWithTags(tag1, tag2),
+				Config: testAccVmConfigWithTags(vmName, tag1, tag2),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -448,7 +453,7 @@ func TestAccXenorchestraVm_createWithTags(t *testing.T) {
 				),
 			},
 			{
-				Config:   testAccVmConfigWithTags(tag2, tag1),
+				Config:   testAccVmConfigWithTags(vmName, tag2, tag1),
 				PlanOnly: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
@@ -459,7 +464,7 @@ func TestAccXenorchestraVm_createWithTags(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccVmConfigWithTag(tag1),
+				Config: testAccVmConfigWithTag(vmName, tag1),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -473,13 +478,14 @@ func TestAccXenorchestraVm_createWithTags(t *testing.T) {
 
 func TestAccXenorchestraVm_createWithDisklessTemplateAndISO(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccVmConfigWithISO(),
+				Config: testAccVmConfigWithISO(vmName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -493,20 +499,21 @@ func TestAccXenorchestraVm_createWithDisklessTemplateAndISO(t *testing.T) {
 
 func TestAccXenorchestraVm_insertAndEjectCd(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccVmConfig(),
+				Config: testAccVmConfig(vmName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 				),
 			},
 			{
-				Config: testAccVmConfigWithCd(),
+				Config: testAccVmConfigWithCd(vmName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -515,7 +522,7 @@ func TestAccXenorchestraVm_insertAndEjectCd(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccVmConfig(),
+				Config: testAccVmConfig(vmName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -528,6 +535,7 @@ func TestAccXenorchestraVm_insertAndEjectCd(t *testing.T) {
 
 func TestAccXenorchestraVm_createWithAffinityHost(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
 	affinityHost := accTestPool.Master
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -535,7 +543,7 @@ func TestAccXenorchestraVm_createWithAffinityHost(t *testing.T) {
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccVmConfigWithAffinityHost(),
+				Config: testAccVmConfigWithAffinityHost(vmName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -547,13 +555,14 @@ func TestAccXenorchestraVm_createWithAffinityHost(t *testing.T) {
 
 func TestAccXenorchestraVm_createWithoutCloudConfig(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccVmWithoutCloudInitConfig(),
+				Config: testAccVmWithoutCloudInitConfig(vmName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -565,13 +574,14 @@ func TestAccXenorchestraVm_createWithoutCloudConfig(t *testing.T) {
 
 func TestAccXenorchestraVm_createWithCloudInitNetworkConfig(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccVmConfigWithNetworkConfig(),
+				Config: testAccVmConfigWithNetworkConfig(vmName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -584,6 +594,7 @@ func TestAccXenorchestraVm_createWithCloudInitNetworkConfig(t *testing.T) {
 
 func TestAccXenorchestraVm_createWithDashedMacAddress(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
 	macWithDashes := "00-0a-83-b1-c0-01"
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -591,7 +602,7 @@ func TestAccXenorchestraVm_createWithDashedMacAddress(t *testing.T) {
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccVmConfigWithMacAddress(macWithDashes),
+				Config: testAccVmConfigWithMacAddress(vmName, macWithDashes),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -608,6 +619,7 @@ func TestAccXenorchestraVm_createWithDashedMacAddress(t *testing.T) {
 
 func TestAccXenorchestraVm_createAndUpdateWithMacAddress(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
 	macAddress := "00:0a:83:b1:c0:83"
 	otherMacAddress := "00:0a:83:b1:c0:00"
 	macWithDashes := "00-0a-83-b1-c0-01"
@@ -617,7 +629,7 @@ func TestAccXenorchestraVm_createAndUpdateWithMacAddress(t *testing.T) {
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccVmConfigWithMacAddress(macAddress),
+				Config: testAccVmConfigWithMacAddress(vmName, macAddress),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -628,7 +640,7 @@ func TestAccXenorchestraVm_createAndUpdateWithMacAddress(t *testing.T) {
 					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
 			},
 			{
-				Config: testAccVmConfigWithMacAddress(otherMacAddress),
+				Config: testAccVmConfigWithMacAddress(vmName, otherMacAddress),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -639,7 +651,7 @@ func TestAccXenorchestraVm_createAndUpdateWithMacAddress(t *testing.T) {
 					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
 			},
 			{
-				Config: testAccVmConfigWithMacAddress(macWithDashes),
+				Config: testAccVmConfigWithMacAddress(vmName, macWithDashes),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -656,25 +668,26 @@ func TestAccXenorchestraVm_createAndUpdateWithMacAddress(t *testing.T) {
 
 func TestAccXenorchestraVm_disconnectAttachedVif(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccVmVifAttachedConfig(),
+				Config: testAccVmVifAttachedConfig(vmName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
 			},
 			{
-				Config:             testAccVmVifDetachedConfig(),
+				Config:             testAccVmVifDetachedConfig(vmName),
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: true,
 			},
 			{
-				Config: testAccVmVifDetachedConfig(),
+				Config: testAccVmVifDetachedConfig(vmName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -687,6 +700,7 @@ func TestAccXenorchestraVm_disconnectAttachedVif(t *testing.T) {
 
 func TestAccXenorchestraVm_attachDisconnectedVif(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
 	removeVif := func() {
 		c, err := client.NewClient(client.GetConfigFromEnv())
 		if err != nil {
@@ -694,7 +708,7 @@ func TestAccXenorchestraVm_attachDisconnectedVif(t *testing.T) {
 		}
 
 		vm, err := c.GetVm(client.Vm{
-			NameLabel: "Terraform testing",
+			NameLabel: vmName,
 		})
 
 		if err != nil {
@@ -714,7 +728,7 @@ func TestAccXenorchestraVm_attachDisconnectedVif(t *testing.T) {
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccVmVifAttachedConfig(),
+				Config: testAccVmVifAttachedConfig(vmName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -722,12 +736,12 @@ func TestAccXenorchestraVm_attachDisconnectedVif(t *testing.T) {
 			},
 			{
 				PreConfig:          removeVif,
-				Config:             testAccVmVifAttachedConfig(),
+				Config:             testAccVmVifAttachedConfig(vmName),
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: true,
 			},
 			{
-				Config: testAccVmVifAttachedConfig(),
+				Config: testAccVmVifAttachedConfig(vmName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -740,6 +754,7 @@ func TestAccXenorchestraVm_attachDisconnectedVif(t *testing.T) {
 
 func TestAccXenorchestraVm_attachDisconnectedDisk(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
 	disconnectDisk := func() {
 		c, err := client.NewClient(client.GetConfigFromEnv())
 		if err != nil {
@@ -747,7 +762,7 @@ func TestAccXenorchestraVm_attachDisconnectedDisk(t *testing.T) {
 		}
 
 		vm, err := c.GetVm(client.Vm{
-			NameLabel: "Terraform testing",
+			NameLabel: vmName,
 		})
 
 		if err != nil {
@@ -779,7 +794,7 @@ func TestAccXenorchestraVm_attachDisconnectedDisk(t *testing.T) {
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccVmConfigWithAdditionalDisk(),
+				Config: testAccVmConfigWithAdditionalDisk(vmName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -789,7 +804,7 @@ func TestAccXenorchestraVm_attachDisconnectedDisk(t *testing.T) {
 			},
 			{
 				PreConfig: disconnectDisk,
-				Config:    testAccVmConfigWithAdditionalDisk(),
+				Config:    testAccVmConfigWithAdditionalDisk(vmName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -800,7 +815,7 @@ func TestAccXenorchestraVm_attachDisconnectedDisk(t *testing.T) {
 				ExpectNonEmptyPlan: true,
 			},
 			{
-				Config: testAccVmConfigWithAdditionalDisk(),
+				Config: testAccVmConfigWithAdditionalDisk(vmName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -814,13 +829,14 @@ func TestAccXenorchestraVm_attachDisconnectedDisk(t *testing.T) {
 
 func TestAccXenorchestraVm_disconnectAttachedDisk(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccVmConfig(),
+				Config: testAccVmConfig(vmName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -828,12 +844,12 @@ func TestAccXenorchestraVm_disconnectAttachedDisk(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "disk.0.attached", "true")),
 			},
 			{
-				Config:             testAccVmConfigDisconnectedDisk(),
+				Config:             testAccVmConfigDisconnectedDisk(vmName),
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: true,
 			},
 			{
-				Config: testAccVmConfigDisconnectedDisk(),
+				Config: testAccVmConfigDisconnectedDisk(vmName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -846,13 +862,14 @@ func TestAccXenorchestraVm_disconnectAttachedDisk(t *testing.T) {
 
 func TestAccXenorchestraVm_createWithMutipleDisks(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccVmConfigWithAdditionalDisk(),
+				Config: testAccVmConfigWithAdditionalDisk(vmName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -866,13 +883,14 @@ func TestAccXenorchestraVm_createWithMutipleDisks(t *testing.T) {
 
 func TestAccXenorchestraVm_addAndRemoveDisksToVm(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccVmConfig(),
+				Config: testAccVmConfig(vmName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -883,7 +901,7 @@ func TestAccXenorchestraVm_addAndRemoveDisksToVm(t *testing.T) {
 				PreConfig: func() {
 					time.Sleep(20 * time.Second)
 				},
-				Config: testAccVmConfigWithAdditionalDisk(),
+				Config: testAccVmConfigWithAdditionalDisk(vmName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -894,7 +912,7 @@ func TestAccXenorchestraVm_addAndRemoveDisksToVm(t *testing.T) {
 				PreConfig: func() {
 					time.Sleep(20 * time.Second)
 				},
-				Config: testAccVmConfig(),
+				Config: testAccVmConfig(vmName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -907,6 +925,7 @@ func TestAccXenorchestraVm_addAndRemoveDisksToVm(t *testing.T) {
 
 func TestAccXenorchestraVm_import(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
 	checkFn := func(s []*terraform.InstanceState) error {
 		attrs := []string{"id", "name_label"}
 		for _, attr := range attrs {
@@ -924,7 +943,7 @@ func TestAccXenorchestraVm_import(t *testing.T) {
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccVmConfig(),
+				Config: testAccVmConfig(vmName),
 			},
 			{
 				ResourceName:     resourceName,
@@ -938,7 +957,7 @@ func TestAccXenorchestraVm_import(t *testing.T) {
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttr(resourceName, "name_description", "description"),
-					resource.TestCheckResourceAttr(resourceName, "name_label", "Terraform testing"),
+					resource.TestCheckResourceAttr(resourceName, "name_label", vmName),
 					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
 			},
 		},
@@ -971,13 +990,14 @@ func testAccCheckXenorchestraVmDestroy(s *terraform.State) error {
 
 func TestAccXenorchestraVm_addVifAndRemoveVif(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccVmConfig(),
+				Config: testAccVmConfig(vmName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -985,7 +1005,7 @@ func TestAccXenorchestraVm_addVifAndRemoveVif(t *testing.T) {
 					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
 			},
 			{
-				Config: testAccVmConfigWithSecondVIF(),
+				Config: testAccVmConfigWithSecondVIF(vmName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -998,7 +1018,7 @@ func TestAccXenorchestraVm_addVifAndRemoveVif(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "network.1.attached", "true")),
 			},
 			{
-				Config: testAccVmConfig(),
+				Config: testAccVmConfig(vmName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -1015,13 +1035,14 @@ func TestAccXenorchestraVm_replaceExistingVifs(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	firstMacAddress := "02:00:00:00:00:00"
 	secondMacAddress := "02:00:00:00:00:11"
+	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccVmConfigWithTwoMacAddresses(firstMacAddress, secondMacAddress),
+				Config: testAccVmConfigWithTwoMacAddresses(vmName, firstMacAddress, secondMacAddress),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -1030,7 +1051,7 @@ func TestAccXenorchestraVm_replaceExistingVifs(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "network.1.mac_address", secondMacAddress)),
 			},
 			{
-				Config: testAccVmConfigWithTwoMacAddresses(secondMacAddress, firstMacAddress),
+				Config: testAccVmConfigWithTwoMacAddresses(vmName, secondMacAddress, firstMacAddress),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -1046,7 +1067,7 @@ func TestAccXenorchestraVm_replaceExistingVifs(t *testing.T) {
 func TestAccXenorchestraVm_updatesWithoutReboot(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 
-	origNameLabel := "name label"
+	origNameLabel := fmt.Sprintf("Terraform testing - orig label (%s)", t.Name())
 	origNameDesc := "name label"
 	origHa := ""
 	origPowerOn := false
@@ -1086,14 +1107,14 @@ func TestAccXenorchestraVm_updatesWithoutReboot(t *testing.T) {
 
 func TestAccXenorchestraVm_updatesThatRequireReboot(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
-
+	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccVmConfigUpdateAttrsVariableCPUAndMemory(2, 4295000000, "Terraform testing", "", "", false),
+				Config: testAccVmConfigUpdateAttrsVariableCPUAndMemory(2, 4295000000, vmName, "", "", false),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -1102,7 +1123,7 @@ func TestAccXenorchestraVm_updatesThatRequireReboot(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccVmConfigUpdateAttrsVariableCPUAndMemory(5, 6295000000, "Terraform testing", "", "", false),
+				Config: testAccVmConfigUpdateAttrsVariableCPUAndMemory(5, 6295000000, vmName, "", "", false),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -1116,7 +1137,7 @@ func TestAccXenorchestraVm_updatesThatRequireReboot(t *testing.T) {
 
 func TestAccXenorchestraVm_updatingCpusInsideMaxCpuAndMemInsideStaticMaxDoesNotRequireReboot(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
-
+	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { testAccPreCheck(t) },
 		// Use a provider that has a XO client that will error if StartVm
@@ -1126,7 +1147,7 @@ func TestAccXenorchestraVm_updatingCpusInsideMaxCpuAndMemInsideStaticMaxDoesNotR
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccVmConfigUpdateAttrsVariableCPUAndMemory(5, 4295000000, "Terraform testing", "", "", false),
+				Config: testAccVmConfigUpdateAttrsVariableCPUAndMemory(5, 4295000000, vmName, "", "", false),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -1135,7 +1156,7 @@ func TestAccXenorchestraVm_updatingCpusInsideMaxCpuAndMemInsideStaticMaxDoesNotR
 				),
 			},
 			{
-				Config: testAccVmConfigUpdateAttrsVariableCPUAndMemory(2, 3221225472, "Terraform testing", "", "", false),
+				Config: testAccVmConfigUpdateAttrsVariableCPUAndMemory(2, 3221225472, vmName, "", "", false),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -1149,13 +1170,14 @@ func TestAccXenorchestraVm_updatingCpusInsideMaxCpuAndMemInsideStaticMaxDoesNotR
 
 func TestAccXenorchestraVm_createAndUpdateWithResourceSet(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccVmConfigWithResourceSet(),
+				Config: testAccVmConfigWithResourceSet(vmName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -1163,7 +1185,7 @@ func TestAccXenorchestraVm_createAndUpdateWithResourceSet(t *testing.T) {
 					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
 			},
 			{
-				Config: testAccVmConfigWithoutResourceSet(),
+				Config: testAccVmConfigWithoutResourceSet(vmName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -1203,7 +1225,7 @@ func testAccVmExists(resourceName string) resource.TestCheckFunc {
 	}
 }
 
-func testAccVmWithoutCloudInitConfig() string {
+func testAccVmWithoutCloudInitConfig(vmName string) string {
 	return fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
@@ -1218,7 +1240,7 @@ data "xenorchestra_network" "network" {
 resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
-    name_label = "Terraform testing"
+    name_label = "%s"
     name_description = "description"
     template = "${data.xenorchestra_template.template.id}"
     network {
@@ -1231,10 +1253,10 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id)
+`, testTemplate.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
-func testAccVmConfigWithTag(tag string) string {
+func testAccVmConfigWithTag(vmName, tag string) string {
 	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
@@ -1249,7 +1271,7 @@ resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
-    name_label = "Terraform testing"
+    name_label = "%s"
     name_description = "description"
     template = "${data.xenorchestra_template.template.id}"
     network {
@@ -1266,10 +1288,10 @@ resource "xenorchestra_vm" "bar" {
       "%s",
     ]
 }
-`, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id, tag)
+`, testTemplate.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id, tag)
 }
 
-func testAccVmConfigWithISO() string {
+func testAccVmConfigWithISO(vmName string) string {
 	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
@@ -1290,7 +1312,7 @@ resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
-    name_label = "Terraform testing"
+    name_label = "%s"
     name_description = "description"
     template = "${data.xenorchestra_template.template.id}"
     network {
@@ -1307,10 +1329,10 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, disklessTestTemplate.NameLabel, accTestPool.Id, testIsoName, accTestPool.Id, accTestPool.Id, accDefaultSr.Id)
+`, disklessTestTemplate.NameLabel, accTestPool.Id, testIsoName, accTestPool.Id, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
-func testAccVmConfigWithoutISO() string {
+func testAccVmConfigWithoutISO(vmName string) string {
 	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
@@ -1331,7 +1353,7 @@ resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
-    name_label = "Terraform testing"
+    name_label = "%s"
     name_description = "description"
     template = "${data.xenorchestra_template.template.id}"
     network {
@@ -1344,10 +1366,10 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, disklessTestTemplate.NameLabel, accTestPool.Id, testIsoName, accTestPool.Id, accTestPool.Id, accDefaultSr.Id)
+`, disklessTestTemplate.NameLabel, accTestPool.Id, testIsoName, accTestPool.Id, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
-func testAccVmConfigWithTags(tag, secondTag string) string {
+func testAccVmConfigWithTags(vmName, tag, secondTag string) string {
 	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
@@ -1362,7 +1384,7 @@ resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
-    name_label = "Terraform testing"
+    name_label = "%s"
     name_description = "description"
     template = "${data.xenorchestra_template.template.id}"
     network {
@@ -1380,10 +1402,10 @@ resource "xenorchestra_vm" "bar" {
       "%s",
     ]
 }
-`, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id, tag, secondTag)
+`, testTemplate.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id, tag, secondTag)
 }
 
-func testAccVmConfigWithAffinityHost() string {
+func testAccVmConfigWithAffinityHost(vmName string) string {
 	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
@@ -1403,7 +1425,7 @@ resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
-    name_label = "Terraform testing"
+    name_label = "%s"
     name_description = "description"
     template = "${data.xenorchestra_template.template.id}"
     network {
@@ -1416,10 +1438,10 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accTestPool.NameLabel, accDefaultSr.Id)
+`, testTemplate.NameLabel, accTestPool.NameLabel, vmName, accDefaultSr.Id)
 }
 
-func testAccVmConfig() string {
+func testAccVmConfig(vmName string) string {
 	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
@@ -1434,7 +1456,7 @@ resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
-    name_label = "Terraform testing"
+    name_label = "%s"
     name_description = "description"
     template = "${data.xenorchestra_template.template.id}"
     network {
@@ -1447,10 +1469,10 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id)
+`, testTemplate.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
-func testAccVmConfigWithShortTimeout() string {
+func testAccVmConfigWithShortTimeout(vmName string) string {
 	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
@@ -1465,7 +1487,7 @@ resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
-    name_label = "Terraform testing"
+    name_label = "%s"
     name_description = "description"
     template = "${data.xenorchestra_template.template.id}"
     network {
@@ -1482,10 +1504,10 @@ resource "xenorchestra_vm" "bar" {
 	create = "5s"
     }
 }
-`, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id)
+`, testTemplate.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
-func testAccVmConfigWithCd() string {
+func testAccVmConfigWithCd(vmName string) string {
 	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
@@ -1505,7 +1527,7 @@ resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
-    name_label = "Terraform testing"
+    name_label = "%s"
     name_description = "description"
     template = "${data.xenorchestra_template.template.id}"
     network {
@@ -1522,10 +1544,10 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, testIsoName, accTestPool.Id, accTestPool.Id, accDefaultSr.Id)
+`, testTemplate.NameLabel, testIsoName, accTestPool.Id, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
-func testAccVmConfigWaitForIp() string {
+func testAccVmConfigWaitForIp(vmName string) string {
 	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
@@ -1541,7 +1563,7 @@ resource "xenorchestra_vm" "bar" {
     wait_for_ip = true
     cpus  = 1
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
-    name_label = "Terraform testing"
+    name_label = "%s"
     name_description = "description"
     template = "${data.xenorchestra_template.template.id}"
     network {
@@ -1554,10 +1576,10 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id)
+`, testTemplate.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
-func testAccVmConfigWithDiskNameLabelAndNameDescription(nameLabel string, description string) string {
+func testAccVmConfigWithDiskNameLabelAndNameDescription(vmName, nameLabel, description string) string {
 	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
@@ -1572,7 +1594,7 @@ resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
-    name_label = "Terraform testing"
+    name_label = "%s"
     name_description = "description"
     template = "${data.xenorchestra_template.template.id}"
     network {
@@ -1586,10 +1608,10 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id, nameLabel, description)
+`, testTemplate.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id, nameLabel, description)
 }
 
-func testAccVmConfigWithNetworkConfig() string {
+func testAccVmConfigWithNetworkConfig(vmName string) string {
 	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
@@ -1604,7 +1626,7 @@ resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
-    name_label = "Terraform testing"
+    name_label = "%s"
     name_description = "description"
     template = "${data.xenorchestra_template.template.id}"
     cloud_network_config = <<EOF
@@ -1626,10 +1648,10 @@ EOF
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id)
+`, testTemplate.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
-func testAccVmConfigDisconnectedDisk() string {
+func testAccVmConfigDisconnectedDisk(vmName string) string {
 	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
@@ -1644,7 +1666,7 @@ resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
-    name_label = "Terraform testing"
+    name_label = "%s"
     name_description = "description"
     template = "${data.xenorchestra_template.template.id}"
     network {
@@ -1658,10 +1680,10 @@ resource "xenorchestra_vm" "bar" {
       attached = false
     }
 }
-`, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id)
+`, testTemplate.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
-func testAccVmConfigWithAdditionalDisk() string {
+func testAccVmConfigWithAdditionalDisk(vmName string) string {
 	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
@@ -1676,7 +1698,7 @@ resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
-    name_label = "Terraform testing"
+    name_label = "%s"
     name_description = "description"
     template = "${data.xenorchestra_template.template.id}"
     network {
@@ -1695,10 +1717,10 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id, accDefaultSr.Id)
+`, testTemplate.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id, accDefaultSr.Id)
 }
 
-func testAccVmVifAttachedConfig() string {
+func testAccVmVifAttachedConfig(vmName string) string {
 	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
@@ -1713,7 +1735,7 @@ resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
-    name_label = "Terraform testing"
+    name_label = "%s"
     name_description = "description"
     template = "${data.xenorchestra_template.template.id}"
     network {
@@ -1727,10 +1749,10 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id)
+`, testTemplate.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
-func testAccVmVifDetachedConfig() string {
+func testAccVmVifDetachedConfig(vmName string) string {
 	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
@@ -1745,7 +1767,7 @@ resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
-    name_label = "Terraform testing"
+    name_label = "%s"
     name_description = "description"
     template = "${data.xenorchestra_template.template.id}"
     network {
@@ -1759,10 +1781,10 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id)
+`, testTemplate.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
-func testAccVmConfigWithMacAddress(macAddress string) string {
+func testAccVmConfigWithMacAddress(vmName, macAddress string) string {
 	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
@@ -1777,7 +1799,7 @@ resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
-    name_label = "Terraform testing"
+    name_label = "%s"
     name_description = "description"
     template = "${data.xenorchestra_template.template.id}"
     network {
@@ -1791,10 +1813,10 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accTestPool.Id, macAddress, accDefaultSr.Id)
+`, testTemplate.NameLabel, accTestPool.Id, vmName, macAddress, accDefaultSr.Id)
 }
 
-func testAccVmConfigWithTwoMacAddresses(firstMac, secondMac string) string {
+func testAccVmConfigWithTwoMacAddresses(vmName, firstMac, secondMac string) string {
 	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
@@ -1809,7 +1831,7 @@ resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
-    name_label = "Terraform testing"
+    name_label = "%s"
     name_description = "description"
     template = "${data.xenorchestra_template.template.id}"
     network {
@@ -1828,10 +1850,10 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accTestPool.Id, firstMac, secondMac, accDefaultSr.Id)
+`, testTemplate.NameLabel, accTestPool.Id, vmName, firstMac, secondMac, accDefaultSr.Id)
 }
 
-func testAccVmConfigWithSecondVIF() string {
+func testAccVmConfigWithSecondVIF(vmName string) string {
 	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
@@ -1851,7 +1873,7 @@ resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
-    name_label = "Terraform testing"
+    name_label = "%s"
     name_description = "description"
     template = "${data.xenorchestra_template.template.id}"
     network {
@@ -1867,10 +1889,10 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id)
+`, testTemplate.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
-func testAccVmConfigWithThreeVIFs() string {
+func testAccVmConfigWithThreeVIFs(vmName string) string {
 	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
@@ -1890,7 +1912,7 @@ resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
-    name_label = "Terraform testing"
+    name_label = "%s"
     name_description = "description"
     template = "${data.xenorchestra_template.template.id}"
     network {
@@ -1909,7 +1931,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id)
+`, testTemplate.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
 // Terraform config that tests changes to a VM that do not require halting
@@ -2023,14 +2045,14 @@ resource "xenorchestra_vm" "bar" {
 `, testTemplate.NameLabel, accTestPool.NameLabel, memory, cpus, nameLabel, nameDescription, ha, powerOn, accDefaultSr.Id)
 }
 
-func testAccVmConfigWithResourceSet() string {
+func testAccVmConfigWithResourceSet(vmName string) string {
 	return testAccCloudConfigConfig("vm-template", "template") + testAccVmResourceSet() + fmt.Sprintf(`
 
 resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
-    name_label = "Terraform testing resource sets"
+    name_label = "%s"
     name_description = "description"
     template = "${data.xenorchestra_template.template.id}"
     resource_set = "${xenorchestra_resource_set.rs.id}"
@@ -2044,7 +2066,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, accDefaultSr.Id)
+`, vmName, accDefaultSr.Id)
 }
 
 func testAccVmResourceSet() string {
@@ -2085,14 +2107,14 @@ resource "xenorchestra_resource_set" "rs" {
 `, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id)
 }
 
-func testAccVmConfigWithoutResourceSet() string {
+func testAccVmConfigWithoutResourceSet(vmName string) string {
 	return testAccCloudConfigConfig("vm-template", "template") + testAccVmResourceSet() + fmt.Sprintf(`
 
 resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
-    name_label = "Terraform testing resource sets"
+    name_label = "%s"
     name_description = "description"
     template = "${data.xenorchestra_template.template.id}"
     network {
@@ -2105,5 +2127,5 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, accDefaultSr.Id)
+`, vmName, accDefaultSr.Id)
 }
