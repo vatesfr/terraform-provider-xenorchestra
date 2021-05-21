@@ -317,7 +317,7 @@ func Test_shouldUpdateVif(t *testing.T) {
 
 func TestAccXenorchestraVm_createWithShorterResourceTimeout(t *testing.T) {
 	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
@@ -352,7 +352,7 @@ func TestAccXenorchestraVm_createAndPlanWithNonExistantVm(t *testing.T) {
 			t.Fatalf("failed to delete VM with error: %v", err)
 		}
 	}
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
@@ -378,7 +378,7 @@ func TestAccXenorchestraVm_createAndPlanWithNonExistantVm(t *testing.T) {
 func TestAccXenorchestraVm_createWhenWaitingForIp(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
@@ -406,7 +406,7 @@ func TestAccXenorchestraVm_createAndUpdateDiskNameLabelAndNameDescription(t *tes
 	updatedNameLabel := "updated disk name label"
 	updatedDescription := "updated description"
 	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
@@ -437,7 +437,7 @@ func TestAccXenorchestraVm_createWithTags(t *testing.T) {
 	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
 	tag1 := "tag1"
 	tag2 := "tag2"
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
@@ -479,7 +479,7 @@ func TestAccXenorchestraVm_createWithTags(t *testing.T) {
 func TestAccXenorchestraVm_createWithDisklessTemplateAndISO(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
@@ -500,7 +500,7 @@ func TestAccXenorchestraVm_createWithDisklessTemplateAndISO(t *testing.T) {
 func TestAccXenorchestraVm_insertAndEjectCd(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
@@ -537,7 +537,7 @@ func TestAccXenorchestraVm_createWithAffinityHost(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
 	affinityHost := accTestPool.Master
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
@@ -556,7 +556,7 @@ func TestAccXenorchestraVm_createWithAffinityHost(t *testing.T) {
 func TestAccXenorchestraVm_createWithoutCloudConfig(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
@@ -575,7 +575,7 @@ func TestAccXenorchestraVm_createWithoutCloudConfig(t *testing.T) {
 func TestAccXenorchestraVm_createWithCloudInitNetworkConfig(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
@@ -596,7 +596,7 @@ func TestAccXenorchestraVm_createWithDashedMacAddress(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
 	macWithDashes := "00-0a-83-b1-c0-01"
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
@@ -623,7 +623,7 @@ func TestAccXenorchestraVm_createAndUpdateWithMacAddress(t *testing.T) {
 	macAddress := "00:0a:83:b1:c0:83"
 	otherMacAddress := "00:0a:83:b1:c0:00"
 	macWithDashes := "00-0a-83-b1-c0-01"
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
@@ -669,7 +669,7 @@ func TestAccXenorchestraVm_createAndUpdateWithMacAddress(t *testing.T) {
 func TestAccXenorchestraVm_disconnectAttachedVif(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
@@ -722,7 +722,7 @@ func TestAccXenorchestraVm_attachDisconnectedVif(t *testing.T) {
 			t.Fatalf("failed to disconnect VIF with error: %v", err)
 		}
 	}
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
@@ -788,7 +788,7 @@ func TestAccXenorchestraVm_attachDisconnectedDisk(t *testing.T) {
 			}
 		}
 	}
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
@@ -830,7 +830,7 @@ func TestAccXenorchestraVm_attachDisconnectedDisk(t *testing.T) {
 func TestAccXenorchestraVm_disconnectAttachedDisk(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
@@ -863,7 +863,7 @@ func TestAccXenorchestraVm_disconnectAttachedDisk(t *testing.T) {
 func TestAccXenorchestraVm_createWithMutipleDisks(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
@@ -884,7 +884,7 @@ func TestAccXenorchestraVm_createWithMutipleDisks(t *testing.T) {
 func TestAccXenorchestraVm_addAndRemoveDisksToVm(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
@@ -937,7 +937,7 @@ func TestAccXenorchestraVm_import(t *testing.T) {
 		}
 		return nil
 	}
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
@@ -991,7 +991,7 @@ func testAccCheckXenorchestraVmDestroy(s *terraform.State) error {
 func TestAccXenorchestraVm_addVifAndRemoveVif(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
@@ -1036,7 +1036,7 @@ func TestAccXenorchestraVm_replaceExistingVifs(t *testing.T) {
 	firstMacAddress := "02:00:00:00:00:00"
 	secondMacAddress := "02:00:00:00:00:11"
 	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
@@ -1076,7 +1076,7 @@ func TestAccXenorchestraVm_updatesWithoutReboot(t *testing.T) {
 	updatedHa := "restart"
 	updatedPowerOn := true
 	affinityHost := accTestPool.Master
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
@@ -1108,7 +1108,7 @@ func TestAccXenorchestraVm_updatesWithoutReboot(t *testing.T) {
 func TestAccXenorchestraVm_updatesThatRequireReboot(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
@@ -1138,7 +1138,7 @@ func TestAccXenorchestraVm_updatesThatRequireReboot(t *testing.T) {
 func TestAccXenorchestraVm_updatingCpusInsideMaxCpuAndMemInsideStaticMaxDoesNotRequireReboot(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { testAccPreCheck(t) },
 		// Use a provider that has a XO client that will error if StartVm
 		// or HaltVm are called. This ensures that the VM is not rebooted during
@@ -1171,7 +1171,7 @@ func TestAccXenorchestraVm_updatingCpusInsideMaxCpuAndMemInsideStaticMaxDoesNotR
 func TestAccXenorchestraVm_createAndUpdateWithResourceSet(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,

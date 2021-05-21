@@ -1,6 +1,7 @@
 .PHONY: import testacc testclient test dist
 
 TIMEOUT ?= 40m
+GOMAXPROCS ?= 5
 ifdef TEST
     TEST := ./... -run $(TEST)
 else
@@ -33,4 +34,4 @@ testclient:
 	cd client; go test $(TEST) -v -count 1
 
 testacc:
-	TF_ACC=1 $(TF_LOG) go test $(TEST) -v -count 1 -timeout $(TIMEOUT)
+	TF_ACC=1 $(TF_LOG) go test $(TEST) -parallel $(GOMAXPROCS) -v -count 1 -timeout $(TIMEOUT)
