@@ -1196,6 +1196,48 @@ func TestAccXenorchestraVm_createAndUpdateWithResourceSet(t *testing.T) {
 	})
 }
 
+func TestAccXenorchestraVm_diskAndNetworkAttachmentIgnoredWhenHalted(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
+	shutdownVm := func() {
+		c, err := client.NewClient(client.GetConfigFromEnv())
+		if err != nil {
+			t.Fatalf("failed to create client with error: %v", err)
+		}
+
+		vm, err := c.GetVm(client.Vm{
+			NameLabel: vmName,
+		})
+
+		err = c.HaltVm(*vm)
+
+		if err != nil {
+			t.Fatalf("failed to halt VM with error: %v", err)
+		}
+	}
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfig(vmName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+				),
+			},
+			{
+				PreConfig: shutdownVm,
+				Config:    testAccVmConfig(vmName),
+				PlanOnly:  true,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+				),
+			},
+		},
+	})
+}
+
 func testAccVmExists(resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]

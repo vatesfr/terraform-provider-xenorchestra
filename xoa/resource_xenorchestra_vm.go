@@ -59,6 +59,10 @@ func resourceRecord() *schema.Resource {
 				Default:  false,
 				Optional: true,
 			},
+			"power_state": &schema.Schema{
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"high_availability": &schema.Schema{
 				Type:     schema.TypeString,
 				Default:  "",
@@ -144,9 +148,10 @@ func resourceRecord() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"attached": &schema.Schema{
-							Type:     schema.TypeBool,
-							Default:  true,
-							Optional: true,
+							Type:             schema.TypeBool,
+							Default:          true,
+							Optional:         true,
+							DiffSuppressFunc: suppressAttachedDiffWhenHalted,
 						},
 						"device": &schema.Schema{
 							Type:     schema.TypeString,
@@ -217,9 +222,10 @@ func resourceRecord() *schema.Resource {
 							Required: true,
 						},
 						"attached": &schema.Schema{
-							Type:     schema.TypeBool,
-							Default:  true,
-							Optional: true,
+							Type:             schema.TypeBool,
+							Default:          true,
+							Optional:         true,
+							DiffSuppressFunc: suppressAttachedDiffWhenHalted,
 						},
 						"position": &schema.Schema{
 							Type:     schema.TypeString,
@@ -1049,4 +1055,13 @@ func extractIpsFromNetworks(networks map[string]string) []guestNetwork {
 	}
 	log.Printf("[DEBUG] Extracted the following network interface ips: %v\n", devices)
 	return devices
+}
+
+func suppressAttachedDiffWhenHalted(k, old, new string, d *schema.ResourceData) bool {
+	powerState := d.Get("power_state").(string)
+
+	if powerState != "Running" {
+		return true
+	}
+	return false
 }
