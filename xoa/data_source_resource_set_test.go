@@ -36,8 +36,8 @@ var getTestResourceSet = func(name string) client.ResourceSet {
 
 var rsIdx int = 1
 
-func getUniqResourceSetName() string {
-	rv := fmt.Sprintf("%s%d", testResourceSetName, rsIdx)
+func getUniqResourceSetName(t *testing.T) string {
+	rv := fmt.Sprintf("%s%d - %s", testResourceSetName, rsIdx, t.Name())
 	rsIdx++
 	return rv
 }
@@ -51,7 +51,9 @@ var createResourceSet = func(t *testing.T, name string, count int) func() {
 		}
 
 		for i := 0; i < count; i++ {
-			_, err = c.CreateResourceSet(getTestResourceSet(name))
+			_, err = c.CreateResourceSet(
+				getTestResourceSet(name),
+			)
 
 			if err != nil {
 				t.Fatalf("failed to created resource set with error: %v", err)
@@ -62,7 +64,7 @@ var createResourceSet = func(t *testing.T, name string, count int) func() {
 
 func TestAccXenorchestraDataSource_resourceSet(t *testing.T) {
 	resourceName := "data.xenorchestra_resource_set.rs"
-	rsName := getUniqResourceSetName()
+	rsName := getUniqResourceSetName(t)
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
@@ -82,7 +84,7 @@ func TestAccXenorchestraDataSource_resourceSet(t *testing.T) {
 
 func TestAccXenorchestraDataSource_resourceSetNotFound(t *testing.T) {
 	resourceName := "data.xenorchestra_resource_set.rs"
-	rsName := getUniqResourceSetName()
+	rsName := getUniqResourceSetName(t)
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
@@ -101,7 +103,7 @@ func TestAccXenorchestraDataSource_resourceSetNotFound(t *testing.T) {
 }
 
 func TestAccXenorchestraDataSource_withDuplicateResourceSetNames(t *testing.T) {
-	rsName := getUniqResourceSetName()
+	rsName := getUniqResourceSetName(t)
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,

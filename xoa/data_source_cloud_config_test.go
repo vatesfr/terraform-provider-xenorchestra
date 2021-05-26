@@ -13,7 +13,7 @@ import (
 
 func TestAccXenorchestraDataSource_cloudConfig(t *testing.T) {
 	resourceName := "data.xenorchestra_cloud_config.config"
-	cloudConfigName := fmt.Sprintf("%s-cloud-config-data-source-test", accTestPrefix)
+	cloudConfigName := fmt.Sprintf("%s-cloud-config-data-source-test - %s", accTestPrefix, t.Name())
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
