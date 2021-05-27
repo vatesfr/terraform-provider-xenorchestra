@@ -787,6 +787,7 @@ func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, cd
 	d.Set("high_availability", resource.HA)
 	d.Set("auto_poweron", resource.AutoPoweron)
 	d.Set("resource_set", resource.ResourceSet)
+	d.Set("power_state", resource.PowerState)
 
 	if err := d.Set("tags", resource.Tags); err != nil {
 		return err
@@ -1057,11 +1058,13 @@ func extractIpsFromNetworks(networks map[string]string) []guestNetwork {
 	return devices
 }
 
-func suppressAttachedDiffWhenHalted(k, old, new string, d *schema.ResourceData) bool {
+func suppressAttachedDiffWhenHalted(k, old, new string, d *schema.ResourceData) (suppress bool) {
 	powerState := d.Get("power_state").(string)
+	suppress = true
 
-	if powerState != "Running" {
-		return true
+	if powerState == "Running" {
+		suppress = false
 	}
-	return false
+	log.Printf("[DEBUG] VM '%s' attribute has transitioned from '%s' to '%s' when PowerState '%s'. Suppress diff: %t", k, old, new, powerState, suppress)
+	return
 }

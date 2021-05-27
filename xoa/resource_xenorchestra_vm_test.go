@@ -1299,7 +1299,7 @@ resource "xenorchestra_vm" "bar" {
 }
 
 func testAccVmConfigWithTag(vmName, tag string) string {
-	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
 }
@@ -1334,7 +1334,7 @@ resource "xenorchestra_vm" "bar" {
 }
 
 func testAccVmConfigWithISO(vmName string) string {
-	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
     pool_id = "%s"
@@ -1375,7 +1375,7 @@ resource "xenorchestra_vm" "bar" {
 }
 
 func testAccVmConfigWithoutISO(vmName string) string {
-	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
     pool_id = "%s"
@@ -1412,7 +1412,7 @@ resource "xenorchestra_vm" "bar" {
 }
 
 func testAccVmConfigWithTags(vmName, tag, secondTag string) string {
-	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
 }
@@ -1448,7 +1448,7 @@ resource "xenorchestra_vm" "bar" {
 }
 
 func testAccVmConfigWithAffinityHost(vmName string) string {
-	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
 }
@@ -1484,7 +1484,7 @@ resource "xenorchestra_vm" "bar" {
 }
 
 func testAccVmConfig(vmName string) string {
-	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
 }
@@ -1515,7 +1515,7 @@ resource "xenorchestra_vm" "bar" {
 }
 
 func testAccVmConfigWithShortTimeout(vmName string) string {
-	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
 }
@@ -1550,7 +1550,7 @@ resource "xenorchestra_vm" "bar" {
 }
 
 func testAccVmConfigWithCd(vmName string) string {
-	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
 }
@@ -1590,7 +1590,7 @@ resource "xenorchestra_vm" "bar" {
 }
 
 func testAccVmConfigWaitForIp(vmName string) string {
-	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
 }
@@ -1622,7 +1622,7 @@ resource "xenorchestra_vm" "bar" {
 }
 
 func testAccVmConfigWithDiskNameLabelAndNameDescription(vmName, nameLabel, description string) string {
-	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
 }
@@ -1654,7 +1654,7 @@ resource "xenorchestra_vm" "bar" {
 }
 
 func testAccVmConfigWithNetworkConfig(vmName string) string {
-	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
 }
@@ -1694,7 +1694,7 @@ EOF
 }
 
 func testAccVmConfigDisconnectedDisk(vmName string) string {
-	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
 }
@@ -1726,7 +1726,7 @@ resource "xenorchestra_vm" "bar" {
 }
 
 func testAccVmConfigWithAdditionalDisk(vmName string) string {
-	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
 }
@@ -1763,7 +1763,7 @@ resource "xenorchestra_vm" "bar" {
 }
 
 func testAccVmVifAttachedConfig(vmName string) string {
-	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
 }
@@ -1795,7 +1795,7 @@ resource "xenorchestra_vm" "bar" {
 }
 
 func testAccVmVifDetachedConfig(vmName string) string {
-	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
 }
@@ -1827,7 +1827,7 @@ resource "xenorchestra_vm" "bar" {
 }
 
 func testAccVmConfigWithMacAddress(vmName, macAddress string) string {
-	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
 }
@@ -1859,7 +1859,7 @@ resource "xenorchestra_vm" "bar" {
 }
 
 func testAccVmConfigWithTwoMacAddresses(vmName, firstMac, secondMac string) string {
-	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
 }
@@ -1896,7 +1896,7 @@ resource "xenorchestra_vm" "bar" {
 }
 
 func testAccVmConfigWithSecondVIF(vmName string) string {
-	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
 }
@@ -1935,7 +1935,7 @@ resource "xenorchestra_vm" "bar" {
 }
 
 func testAccVmConfigWithThreeVIFs(vmName string) string {
-	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
 }
@@ -1979,7 +1979,7 @@ resource "xenorchestra_vm" "bar" {
 // Terraform config that tests changes to a VM that do not require halting
 // the VM prior to applying
 func testAccVmConfigUpdateAttrsHaltIrrelevant(nameLabel, nameDescription, ha string, powerOn bool) string {
-	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", nameLabel), "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
 }
@@ -2012,7 +2012,7 @@ resource "xenorchestra_vm" "bar" {
 }
 
 func testAccVmConfigUpdateAttrsHaltIrrelevantWithAffinityHost(nameLabel, nameDescription, ha string, powerOn bool) string {
-	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", nameLabel), "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
 }
@@ -2050,7 +2050,7 @@ resource "xenorchestra_vm" "bar" {
 }
 
 func testAccVmConfigUpdateAttrsVariableCPUAndMemory(cpus, memory int, nameLabel, nameDescription, ha string, powerOn bool) string {
-	return testAccCloudConfigConfig("vm-template", "template") + fmt.Sprintf(`
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", nameLabel), "template") + fmt.Sprintf(`
 data "xenorchestra_template" "template" {
     name_label = "%s"
 }
@@ -2088,7 +2088,7 @@ resource "xenorchestra_vm" "bar" {
 }
 
 func testAccVmConfigWithResourceSet(vmName string) string {
-	return testAccCloudConfigConfig("vm-template", "template") + testAccVmResourceSet() + fmt.Sprintf(`
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccVmResourceSet() + fmt.Sprintf(`
 
 resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
@@ -2150,7 +2150,7 @@ resource "xenorchestra_resource_set" "rs" {
 }
 
 func testAccVmConfigWithoutResourceSet(vmName string) string {
-	return testAccCloudConfigConfig("vm-template", "template") + testAccVmResourceSet() + fmt.Sprintf(`
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccVmResourceSet() + fmt.Sprintf(`
 
 resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
