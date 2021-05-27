@@ -59,6 +59,10 @@ func resourceRecord() *schema.Resource {
 				Default:  false,
 				Optional: true,
 			},
+			"power_state": &schema.Schema{
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"high_availability": &schema.Schema{
 				Type:     schema.TypeString,
 				Default:  "",
@@ -144,9 +148,10 @@ func resourceRecord() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"attached": &schema.Schema{
-							Type:     schema.TypeBool,
-							Default:  true,
-							Optional: true,
+							Type:             schema.TypeBool,
+							Default:          true,
+							Optional:         true,
+							DiffSuppressFunc: suppressAttachedDiffWhenHalted,
 						},
 						"device": &schema.Schema{
 							Type:     schema.TypeString,
@@ -217,9 +222,10 @@ func resourceRecord() *schema.Resource {
 							Required: true,
 						},
 						"attached": &schema.Schema{
-							Type:     schema.TypeBool,
-							Default:  true,
-							Optional: true,
+							Type:             schema.TypeBool,
+							Default:          true,
+							Optional:         true,
+							DiffSuppressFunc: suppressAttachedDiffWhenHalted,
 						},
 						"position": &schema.Schema{
 							Type:     schema.TypeString,
@@ -781,6 +787,7 @@ func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, cd
 	d.Set("high_availability", resource.HA)
 	d.Set("auto_poweron", resource.AutoPoweron)
 	d.Set("resource_set", resource.ResourceSet)
+	d.Set("power_state", resource.PowerState)
 
 	if err := d.Set("tags", resource.Tags); err != nil {
 		return err
@@ -1049,4 +1056,15 @@ func extractIpsFromNetworks(networks map[string]string) []guestNetwork {
 	}
 	log.Printf("[DEBUG] Extracted the following network interface ips: %v\n", devices)
 	return devices
+}
+
+func suppressAttachedDiffWhenHalted(k, old, new string, d *schema.ResourceData) (suppress bool) {
+	powerState := d.Get("power_state").(string)
+	suppress = true
+
+	if powerState == "Running" {
+		suppress = false
+	}
+	log.Printf("[DEBUG] VM '%s' attribute has transitioned from '%s' to '%s' when PowerState '%s'. Suppress diff: %t", k, old, new, powerState, suppress)
+	return
 }
