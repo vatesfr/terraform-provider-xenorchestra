@@ -22,6 +22,10 @@ var validHaOptions = []string{
 	"restart",
 }
 
+var validInstallationMethods = []string{
+	"network",
+}
+
 func resourceRecord() *schema.Resource {
 	duration := 5 * time.Minute
 	return &schema.Resource{
@@ -62,6 +66,12 @@ func resourceRecord() *schema.Resource {
 			"power_state": &schema.Schema{
 				Type:     schema.TypeString,
 				Computed: true,
+			},
+			"installation_method": &schema.Schema{
+				Type:          schema.TypeString,
+				Optional:      true,
+				ValidateFunc:  internal.StringInSlice(validInstallationMethods, false),
+				ConflictsWith: []string{"cdrom"},
 			},
 			"high_availability": &schema.Schema{
 				Type:     schema.TypeString,
@@ -127,8 +137,9 @@ func resourceRecord() *schema.Resource {
 				Optional: true,
 			},
 			"cdrom": &schema.Schema{
-				Type:     schema.TypeList,
-				Optional: true,
+				Type:          schema.TypeList,
+				Optional:      true,
+				ConflictsWith: []string{"installation_method"},
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"id": &schema.Schema{
@@ -296,6 +307,12 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		installation = client.Installation{
 			Method:     "cdrom",
 			Repository: cds[0],
+		}
+	}
+
+	if installMethod := d.Get("installation_method").(string); installMethod != "" {
+		installation = client.Installation{
+			Method: "network",
 		}
 	}
 

@@ -399,6 +399,41 @@ func TestAccXenorchestraVm_createWhenWaitingForIp(t *testing.T) {
 	})
 }
 
+func TestAccXenorchestraVm_cdromAndInstallationMethodsCannotBeSpecifiedTogether(t *testing.T) {
+	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config:      testAccVmConfigConflictingCdromAndInstallMethod(vmName),
+				ExpectError: regexp.MustCompile(`config is invalid: "installation_method": conflicts with cdrom`),
+			},
+		},
+	})
+}
+
+func TestAccXenorchestraVm_createVmThatInstallsFromTheNetwork(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigPXEBoot(vmName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "installation_method", "network"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccXenorchestraVm_createAndUpdateDiskNameLabelAndNameDescription(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	nameLabel := "disk name label"
@@ -1512,6 +1547,79 @@ resource "xenorchestra_vm" "bar" {
     }
 }
 `, testTemplate.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+}
+
+func testAccVmConfigPXEBoot(vmName string) string {
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
+data "xenorchestra_template" "template" {
+    name_label = "%s"
+    pool_id = "%s"
+}
+
+data "xenorchestra_network" "network" {
+    name_label = "Lab Network (VLAN 10)"
+    pool_id = "%s"
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 4295000000
+    cpus  = 1
+    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    name_label = "%s"
+    name_description = "description"
+    template = "${data.xenorchestra_template.template.id}"
+    network {
+	network_id = "${data.xenorchestra_network.network.id}"
+    }
+    installation_method = "network"
+
+    disk {
+      sr_id = "%s"
+      name_label = "disk 1"
+      size = 20001317888
+    }
+}
+`, disklessTestTemplate.NameLabel, accTestPool.Id, accTestPool.Id, vmName, accDefaultSr.Id)
+}
+
+func testAccVmConfigConflictingCdromAndInstallMethod(vmName string) string {
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
+data "xenorchestra_template" "template" {
+    name_label = "%s"
+}
+
+data "xenorchestra_vdi" "iso" {
+    name_label = "%s"
+    pool_id = "%s"
+}
+
+data "xenorchestra_network" "network" {
+    name_label = "Pool-wide network associated with eth0"
+    pool_id = "%s"
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 4295000000
+    cpus  = 1
+    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    name_label = "%s"
+    name_description = "description"
+    template = "${data.xenorchestra_template.template.id}"
+    network {
+	network_id = "${data.xenorchestra_network.network.id}"
+    }
+    cdrom {
+	id = data.xenorchestra_vdi.iso.id
+    }
+    installation_method = "network"
+
+    disk {
+      sr_id = "%s"
+      name_label = "disk 1"
+      size = 10001317888
+    }
+}
+`, testTemplate.NameLabel, testIsoName, accTestPool.Id, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithShortTimeout(vmName string) string {

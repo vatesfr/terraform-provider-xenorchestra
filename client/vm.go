@@ -100,7 +100,7 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 
 	useExistingDisks := tmpl[0].isDiskTemplate()
 	installation := vmReq.Installation
-	if !useExistingDisks && installation.Method != "cdrom" {
+	if !useExistingDisks && installation.Method != "cdrom" && installation.Method != "network" {
 		return nil, errors.New("cannot create a VM from a diskless template without an ISO")
 	}
 
