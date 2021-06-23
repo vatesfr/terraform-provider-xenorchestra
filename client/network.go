@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 )
 
@@ -112,4 +113,26 @@ func RemoveNetworksWithNamePrefix(prefix string) func(string) error {
 		}
 		return nil
 	}
+}
+
+func FindNetworkForTests(poolId string, network *Network) {
+	netName, found := os.LookupEnv("XOA_NETWORK")
+
+	if !found {
+		fmt.Println("The XOA_NETWORK environment variable must be set")
+		os.Exit(-1)
+	}
+
+	c, err := NewClient(GetConfigFromEnv())
+	if err != nil {
+		fmt.Printf("failed to create client with error: %v", err)
+		os.Exit(-1)
+	}
+
+	net, err := c.GetNetwork(Network{
+		PoolId:    poolId,
+		NameLabel: netName,
+	})
+
+	*network = *net
 }
