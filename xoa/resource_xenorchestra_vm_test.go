@@ -415,6 +415,7 @@ func TestAccXenorchestraVm_cdromAndInstallationMethodsCannotBeSpecifiedTogether(
 }
 
 func TestAccXenorchestraVm_createVmThatInstallsFromTheNetwork(t *testing.T) {
+	t.Skip("For now this test is not implemented. See #156 for more details")
 	resourceName := "xenorchestra_vm.bar"
 	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
 	resource.ParallelTest(t, resource.TestCase{
