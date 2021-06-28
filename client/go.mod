@@ -1,6 +1,6 @@
 module github.com/ddelnano/terraform-provider-xenorchestra/client
 
-go 1.14
+go 1.16
 
 require (
 	github.com/gorilla/websocket v1.4.2

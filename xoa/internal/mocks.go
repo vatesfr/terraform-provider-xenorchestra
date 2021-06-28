@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 // failToStartAndHaltVmXOClient is a mock client used to ensure that HaltVm
