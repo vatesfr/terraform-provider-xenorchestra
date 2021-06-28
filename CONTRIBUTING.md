@@ -24,6 +24,7 @@ The following environment variables must be set:
 - XOA_TEMPLATE - A VM template that has an existing OS **already installed**
 - XOA_DISKLESS_TEMPLATE - A VM template that does not have an existing OS (found from `xe template-list`)
 - XOA_ISO - The name of an ISO that exists on the same pool as `XOA_POOL`
+- XOA_NETWORK - The name of a network that is PXE capable. If a non PXE capable network is used some tests may fail.
 
 I typically keep these in a ~/.xoa file and run the following before running the test suite
 

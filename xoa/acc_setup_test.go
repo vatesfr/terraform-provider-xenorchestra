@@ -12,6 +12,7 @@ var accTestPrefix string = "terraform-acc"
 var accTestPool client.Pool
 var accTestHost client.Host
 var accDefaultSr client.StorageRepository
+var accDefaultNetwork client.Network
 var testTemplate client.Template
 var disklessTestTemplate client.Template
 var testIsoName string
@@ -24,6 +25,7 @@ func TestMain(m *testing.M) {
 		client.FindTemplateForTests(&testTemplate, accTestPool.Id, "XOA_TEMPLATE")
 		client.FindTemplateForTests(&disklessTestTemplate, accTestPool.Id, "XOA_DISKLESS_TEMPLATE")
 		client.FindHostForTests(accTestPool.Master, &accTestHost)
+		client.FindNetworkForTests(accTestPool.Id, &accDefaultNetwork)
 		client.FindStorageRepositoryForTests(accTestPool, &accDefaultSr, accTestPrefix)
 		testIsoName = os.Getenv("XOA_ISO")
 	}

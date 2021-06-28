@@ -399,6 +399,42 @@ func TestAccXenorchestraVm_createWhenWaitingForIp(t *testing.T) {
 	})
 }
 
+func TestAccXenorchestraVm_cdromAndInstallationMethodsCannotBeSpecifiedTogether(t *testing.T) {
+	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config:      testAccVmConfigConflictingCdromAndInstallMethod(vmName),
+				ExpectError: regexp.MustCompile(`config is invalid: "installation_method": conflicts with cdrom`),
+			},
+		},
+	})
+}
+
+func TestAccXenorchestraVm_createVmThatInstallsFromTheNetwork(t *testing.T) {
+	t.Skip("For now this test is not implemented. See #156 for more details")
+	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigPXEBoot(vmName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "installation_method", "network"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccXenorchestraVm_createAndUpdateDiskNameLabelAndNameDescription(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	nameLabel := "disk name label"
@@ -1275,8 +1311,8 @@ data "xenorchestra_template" "template" {
 }
 
 data "xenorchestra_network" "network" {
-    name_label = "Pool-wide network associated with eth0"
-    pool_id = "%[2]s"
+    name_label = "%s"
+    pool_id = "%s"
 }
 
 resource "xenorchestra_vm" "bar" {
@@ -1295,7 +1331,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+`, testTemplate.NameLabel, accTestPool.Id, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithTag(vmName, tag string) string {
@@ -1305,7 +1341,7 @@ data "xenorchestra_template" "template" {
 }
 
 data "xenorchestra_network" "network" {
-    name_label = "Pool-wide network associated with eth0"
+    name_label = "%s"
     pool_id = "%s"
 }
 
@@ -1330,7 +1366,7 @@ resource "xenorchestra_vm" "bar" {
       "%s",
     ]
 }
-`, testTemplate.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id, tag)
+`, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id, tag)
 }
 
 func testAccVmConfigWithISO(vmName string) string {
@@ -1346,7 +1382,7 @@ data "xenorchestra_vdi" "iso" {
 }
 
 data "xenorchestra_network" "network" {
-    name_label = "Pool-wide network associated with eth0"
+    name_label = "%s"
     pool_id = "%s"
 }
 
@@ -1371,7 +1407,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, disklessTestTemplate.NameLabel, accTestPool.Id, testIsoName, accTestPool.Id, accTestPool.Id, vmName, accDefaultSr.Id)
+`, disklessTestTemplate.NameLabel, accTestPool.Id, testIsoName, accTestPool.Id, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithoutISO(vmName string) string {
@@ -1387,7 +1423,7 @@ data "xenorchestra_vdi" "iso" {
 }
 
 data "xenorchestra_network" "network" {
-    name_label = "Pool-wide network associated with eth0"
+    name_label = "%s"
     pool_id = "%s"
 }
 
@@ -1408,7 +1444,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, disklessTestTemplate.NameLabel, accTestPool.Id, testIsoName, accTestPool.Id, accTestPool.Id, vmName, accDefaultSr.Id)
+`, disklessTestTemplate.NameLabel, accTestPool.Id, testIsoName, accTestPool.Id, accDefaultNetwork, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithTags(vmName, tag, secondTag string) string {
@@ -1418,7 +1454,7 @@ data "xenorchestra_template" "template" {
 }
 
 data "xenorchestra_network" "network" {
-    name_label = "Pool-wide network associated with eth0"
+    name_label = "%s"
     pool_id = "%s"
 }
 
@@ -1444,7 +1480,7 @@ resource "xenorchestra_vm" "bar" {
       "%s",
     ]
 }
-`, testTemplate.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id, tag, secondTag)
+`, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id, tag, secondTag)
 }
 
 func testAccVmConfigWithAffinityHost(vmName string) string {
@@ -1458,7 +1494,7 @@ data "xenorchestra_pool" "pool" {
 }
 
 data "xenorchestra_network" "network" {
-    name_label = "Pool-wide network associated with eth0"
+    name_label = "%s"
     pool_id = "${data.xenorchestra_pool.pool.id}"
 }
 
@@ -1480,7 +1516,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accTestPool.NameLabel, vmName, accDefaultSr.Id)
+`, testTemplate.NameLabel, accTestPool.NameLabel, accDefaultNetwork.NameLabel, vmName, accDefaultSr.Id)
 }
 
 func testAccVmConfig(vmName string) string {
@@ -1490,7 +1526,7 @@ data "xenorchestra_template" "template" {
 }
 
 data "xenorchestra_network" "network" {
-    name_label = "Pool-wide network associated with eth0"
+    name_label = "%s"
     pool_id = "%s"
 }
 
@@ -1511,7 +1547,80 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+`, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+}
+
+func testAccVmConfigPXEBoot(vmName string) string {
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
+data "xenorchestra_template" "template" {
+    name_label = "%s"
+    pool_id = "%s"
+}
+
+data "xenorchestra_network" "network" {
+    name_label = "Lab Network (VLAN 10)"
+    pool_id = "%s"
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 4295000000
+    cpus  = 1
+    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    name_label = "%s"
+    name_description = "description"
+    template = "${data.xenorchestra_template.template.id}"
+    network {
+	network_id = "${data.xenorchestra_network.network.id}"
+    }
+    installation_method = "network"
+
+    disk {
+      sr_id = "%s"
+      name_label = "disk 1"
+      size = 20001317888
+    }
+}
+`, disklessTestTemplate.NameLabel, accTestPool.Id, accTestPool.Id, vmName, accDefaultSr.Id)
+}
+
+func testAccVmConfigConflictingCdromAndInstallMethod(vmName string) string {
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
+data "xenorchestra_template" "template" {
+    name_label = "%s"
+}
+
+data "xenorchestra_vdi" "iso" {
+    name_label = "%s"
+    pool_id = "%s"
+}
+
+data "xenorchestra_network" "network" {
+    name_label = "%s"
+    pool_id = "%s"
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 4295000000
+    cpus  = 1
+    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    name_label = "%s"
+    name_description = "description"
+    template = "${data.xenorchestra_template.template.id}"
+    network {
+	network_id = "${data.xenorchestra_network.network.id}"
+    }
+    cdrom {
+	id = data.xenorchestra_vdi.iso.id
+    }
+    installation_method = "network"
+
+    disk {
+      sr_id = "%s"
+      name_label = "disk 1"
+      size = 10001317888
+    }
+}
+`, testTemplate.NameLabel, testIsoName, accTestPool.Id, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithShortTimeout(vmName string) string {
@@ -1521,7 +1630,7 @@ data "xenorchestra_template" "template" {
 }
 
 data "xenorchestra_network" "network" {
-    name_label = "Pool-wide network associated with eth0"
+    name_label = "%s"
     pool_id = "%s"
 }
 
@@ -1546,7 +1655,7 @@ resource "xenorchestra_vm" "bar" {
 	create = "5s"
     }
 }
-`, testTemplate.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+`, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithCd(vmName string) string {
@@ -1561,7 +1670,7 @@ data "xenorchestra_vdi" "iso" {
 }
 
 data "xenorchestra_network" "network" {
-    name_label = "Pool-wide network associated with eth0"
+    name_label = "%s"
     pool_id = "%s"
 }
 
@@ -1586,7 +1695,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, testIsoName, accTestPool.Id, accTestPool.Id, vmName, accDefaultSr.Id)
+`, testTemplate.NameLabel, testIsoName, accTestPool.Id, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
 func testAccVmConfigWaitForIp(vmName string) string {
@@ -1596,7 +1705,7 @@ data "xenorchestra_template" "template" {
 }
 
 data "xenorchestra_network" "network" {
-    name_label = "Pool-wide network associated with eth0"
+    name_label = "%s"
     pool_id = "%s"
 }
 
@@ -1618,7 +1727,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+`, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithDiskNameLabelAndNameDescription(vmName, nameLabel, description string) string {
@@ -1628,7 +1737,7 @@ data "xenorchestra_template" "template" {
 }
 
 data "xenorchestra_network" "network" {
-    name_label = "Pool-wide network associated with eth0"
+    name_label = "%s"
     pool_id = "%s"
 }
 
@@ -1650,7 +1759,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id, nameLabel, description)
+`, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id, nameLabel, description)
 }
 
 func testAccVmConfigWithNetworkConfig(vmName string) string {
@@ -1660,7 +1769,7 @@ data "xenorchestra_template" "template" {
 }
 
 data "xenorchestra_network" "network" {
-    name_label = "Pool-wide network associated with eth0"
+    name_label = "%s"
     pool_id = "%s"
 }
 
@@ -1690,7 +1799,7 @@ EOF
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+`, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
 func testAccVmConfigDisconnectedDisk(vmName string) string {
@@ -1700,7 +1809,7 @@ data "xenorchestra_template" "template" {
 }
 
 data "xenorchestra_network" "network" {
-    name_label = "Pool-wide network associated with eth0"
+    name_label = "%s"
     pool_id = "%s"
 }
 
@@ -1722,7 +1831,7 @@ resource "xenorchestra_vm" "bar" {
       attached = false
     }
 }
-`, testTemplate.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+`, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithAdditionalDisk(vmName string) string {
@@ -1732,7 +1841,7 @@ data "xenorchestra_template" "template" {
 }
 
 data "xenorchestra_network" "network" {
-    name_label = "Pool-wide network associated with eth0"
+    name_label = "%s"
     pool_id = "%s"
 }
 
@@ -1759,7 +1868,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id, accDefaultSr.Id)
+`, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id, accDefaultSr.Id)
 }
 
 func testAccVmVifAttachedConfig(vmName string) string {
@@ -1769,7 +1878,7 @@ data "xenorchestra_template" "template" {
 }
 
 data "xenorchestra_network" "network" {
-    name_label = "Pool-wide network associated with eth0"
+    name_label = "%s"
     pool_id = "%s"
 }
 
@@ -1791,7 +1900,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+`, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
 func testAccVmVifDetachedConfig(vmName string) string {
@@ -1801,7 +1910,7 @@ data "xenorchestra_template" "template" {
 }
 
 data "xenorchestra_network" "network" {
-    name_label = "Pool-wide network associated with eth0"
+    name_label = "%s"
     pool_id = "%s"
 }
 
@@ -1823,7 +1932,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+`, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithMacAddress(vmName, macAddress string) string {
@@ -1833,7 +1942,7 @@ data "xenorchestra_template" "template" {
 }
 
 data "xenorchestra_network" "network" {
-    name_label = "Pool-wide network associated with eth0"
+    name_label = "%s"
     pool_id = "%s"
 }
 
@@ -1855,7 +1964,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accTestPool.Id, vmName, macAddress, accDefaultSr.Id)
+`, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, macAddress, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithTwoMacAddresses(vmName, firstMac, secondMac string) string {
@@ -1865,7 +1974,7 @@ data "xenorchestra_template" "template" {
 }
 
 data "xenorchestra_network" "network" {
-    name_label = "Pool-wide network associated with eth0"
+    name_label = "%s"
     pool_id = "%s"
 }
 
@@ -1892,7 +2001,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accTestPool.Id, vmName, firstMac, secondMac, accDefaultSr.Id)
+`, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, firstMac, secondMac, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithSecondVIF(vmName string) string {
@@ -1902,13 +2011,13 @@ data "xenorchestra_template" "template" {
 }
 
 data "xenorchestra_network" "network" {
-    name_label = "Pool-wide network associated with eth0"
+    name_label = "%s"
     pool_id = "%s"
 }
 
 data "xenorchestra_network" "network2" {
     name_label = "Pool-wide network associated with eth1"
-    pool_id = "%[2]s"
+    pool_id = "%[3]s"
 }
 
 resource "xenorchestra_vm" "bar" {
@@ -1931,7 +2040,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+`, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithThreeVIFs(vmName string) string {
@@ -1941,13 +2050,13 @@ data "xenorchestra_template" "template" {
 }
 
 data "xenorchestra_network" "network" {
-    name_label = "Pool-wide network associated with eth0"
+    name_label = "%s"
     pool_id = "%s"
 }
 
 data "xenorchestra_network" "network2" {
     name_label = "Pool-wide network associated with eth1"
-    pool_id = "%[2]s"
+    pool_id = "%[3]s"
 }
 
 resource "xenorchestra_vm" "bar" {
@@ -1973,7 +2082,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+`, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
 // Terraform config that tests changes to a VM that do not require halting
@@ -1985,7 +2094,7 @@ data "xenorchestra_template" "template" {
 }
 
 data "xenorchestra_network" "network" {
-    name_label = "Pool-wide network associated with eth0"
+    name_label = "%s"
     pool_id = "%s"
 }
 
@@ -2008,7 +2117,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accTestPool.Id, nameLabel, nameDescription, ha, powerOn, accDefaultSr.Id)
+`, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, nameLabel, nameDescription, ha, powerOn, accDefaultSr.Id)
 }
 
 func testAccVmConfigUpdateAttrsHaltIrrelevantWithAffinityHost(nameLabel, nameDescription, ha string, powerOn bool) string {
@@ -2022,7 +2131,7 @@ data "xenorchestra_pool" "pool" {
 }
 
 data "xenorchestra_network" "network" {
-    name_label = "Pool-wide network associated with eth0"
+    name_label = "%s"
     pool_id = data.xenorchestra_pool.pool.id
 }
 
@@ -2046,7 +2155,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accTestPool.NameLabel, nameLabel, nameDescription, ha, powerOn, accDefaultSr.Id)
+`, testTemplate.NameLabel, accTestPool.NameLabel, accDefaultNetwork.NameLabel, nameLabel, nameDescription, ha, powerOn, accDefaultSr.Id)
 }
 
 func testAccVmConfigUpdateAttrsVariableCPUAndMemory(cpus, memory int, nameLabel, nameDescription, ha string, powerOn bool) string {
@@ -2060,7 +2169,7 @@ data "xenorchestra_pool" "pool" {
 }
 
 data "xenorchestra_network" "network" {
-    name_label = "Pool-wide network associated with eth0"
+    name_label = "%s"
     pool_id = data.xenorchestra_pool.pool.id
 }
 
@@ -2084,7 +2193,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accTestPool.NameLabel, memory, cpus, nameLabel, nameDescription, ha, powerOn, accDefaultSr.Id)
+`, testTemplate.NameLabel, accTestPool.NameLabel, accDefaultNetwork.NameLabel, memory, cpus, nameLabel, nameDescription, ha, powerOn, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithResourceSet(vmName string) string {
@@ -2118,7 +2227,7 @@ data "xenorchestra_template" "template" {
 }
 
 data "xenorchestra_network" "network" {
-    name_label = "Pool-wide network associated with eth0"
+    name_label = "%s"
     pool_id = "%s"
 }
 
@@ -2146,7 +2255,7 @@ resource "xenorchestra_resource_set" "rs" {
       quantity = 12884901888
     }
 }
-`, testTemplate.NameLabel, accTestPool.Id, accDefaultSr.Id)
+`, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithoutResourceSet(vmName string) string {
