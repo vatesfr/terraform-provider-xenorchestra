@@ -408,7 +408,7 @@ func TestAccXenorchestraVm_cdromAndInstallationMethodsCannotBeSpecifiedTogether(
 		Steps: []resource.TestStep{
 			{
 				Config:      testAccVmConfigConflictingCdromAndInstallMethod(vmName),
-				ExpectError: regexp.MustCompile(`config is invalid: "installation_method": conflicts with cdrom`),
+				ExpectError: regexp.MustCompile(`"installation_method": conflicts with cdrom`),
 			},
 		},
 	})
