@@ -1312,7 +1312,7 @@ data "xenorchestra_template" "template" {
 
 data "xenorchestra_network" "network" {
     name_label = "%s"
-    pool_id = "%[3]s"
+    pool_id = "%s"
 }
 
 resource "xenorchestra_vm" "bar" {
@@ -1331,7 +1331,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+`, testTemplate.NameLabel, accTestPool.Id, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithTag(vmName, tag string) string {
