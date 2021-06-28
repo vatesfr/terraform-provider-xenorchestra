@@ -12,8 +12,7 @@ import (
 
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
 	"github.com/ddelnano/terraform-provider-xenorchestra/xoa/internal"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 var validHaOptions = []string{
@@ -877,7 +876,7 @@ func diskHash(value interface{}) int {
 		panic(fmt.Sprintf("disk cannot be hashed with type %T", t))
 	}
 	v := fmt.Sprintf("%s-%s-%s-%d-%t", nameLabel, nameDescription, srId, size, attached)
-	return hashcode.String(v)
+	return internal.String(v)
 }
 
 func vifHash(value interface{}) int {
@@ -904,7 +903,7 @@ func vifHash(value interface{}) int {
 	v := fmt.Sprintf("%s-%s-%s-%t", macAddress, networkId, device, attached)
 	log.Printf("[TRACE] Using the following as input to the VIF hash function: %s\n", v)
 
-	return hashcode.String(v)
+	return internal.String(v)
 }
 
 func shouldUpdateVif(vif client.VIF, vifs []*client.VIF) (bool, bool) {
