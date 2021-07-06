@@ -18,6 +18,10 @@ func dataSourceXoaVms() *schema.Resource {
 				Computed: true,
 				Elem:     resourceVm(),
 			},
+			"num": &schema.Schema{
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
 			"pool_id": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
@@ -31,12 +35,14 @@ func dataSourceVmsRead(d *schema.ResourceData, m interface{}) error {
 	poolId := d.Get("pool_id").(string)
 
 	vms, err := c.GetVms()
-	log.Printf("[DEBUG] found %d vms in pool\n", len(vms))
 	if err != nil {
 		return err
 	}
 
-	if err = d.Set("vms", vmToMapList(vms, c)); err != nil {
+	if err = d.Set("vms", vmToMapList(vms)); err != nil {
+		return err
+	}
+	if err = d.Set("num", len(vms)); err != nil {
 		return err
 	}
 	d.SetId(poolId)
@@ -44,8 +50,7 @@ func dataSourceVmsRead(d *schema.ResourceData, m interface{}) error {
 
 }
 
-func vmToMapList(vms []client.Vm, c client.XOClient) []map[string]interface{} {
-
+func vmToMapList(vms []client.Vm) []map[string]interface{} {
 	result := make([]map[string]interface{}, 0, len(vms))
 	for _, vm := range vms {
 		log.Printf("[DEBUG] IPS %s\n", vm.Addresses)
@@ -64,7 +69,6 @@ func vmToMapList(vms []client.Vm, c client.XOClient) []map[string]interface{} {
 			"name_label":           vm.NameLabel,
 			"cpus":                 vm.CPUs.Number,
 			"cloud_config":         vm.CloudConfig,
-			"disk":                 vm.Disks,
 			"cloud_network_config": vm.CloudNetworkConfig,
 			"tags":                 vm.Tags,
 			"memory_max":           vm.Memory.Size,
@@ -75,7 +79,6 @@ func vmToMapList(vms []client.Vm, c client.XOClient) []map[string]interface{} {
 			"resource_set":         vm.ResourceSet,
 			"ipv4_addresses":       ipv4,
 			"ipv6_addresses":       ipv6,
-			//			"pool_id":    vm.PoolId,
 		}
 		result = append(result, hostMap)
 	}
