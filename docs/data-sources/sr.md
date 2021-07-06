@@ -33,3 +33,7 @@ Ensure that your name_label, pool_id and tags identify a unique storage reposito
 * uuid - uuid of the storage repository. This is equivalent to the id.
 * pool_id - The Id of the pool the storage repository exists on.
 * sr_type - The type of storage repository (lvm, udev, iso, user, etc).
+* container - The storage container.
+* size - The storage size. 
+* physical_size - The physical storage size. 
+* usage - The current usage for this storage repository.
