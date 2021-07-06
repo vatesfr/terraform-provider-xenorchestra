@@ -7,12 +7,16 @@ import (
 )
 
 type StorageRepository struct {
-	Id        string   `json:"id"`
-	Uuid      string   `json:"uuid"`
-	NameLabel string   `json:"name_label"`
-	PoolId    string   `json:"$poolId"`
-	SRType    string   `json:"SR_type"`
-	Tags      []string `json:"tags,omitempty"`
+	Id            string   `json:"id"`
+	Uuid          string   `json:"uuid"`
+	NameLabel     string   `json:"name_label"`
+	PoolId        string   `json:"$poolId"`
+	SRType        string   `json:"SR_type"`
+	Container     string   `json:"$container"`
+	PhysicalUsage int      `json:"physical_usage"`
+	Size          int      `json:"size"`
+	Usage         int      `json:"usage"`
+	Tags          []string `json:"tags,omitempty"`
 }
 
 func (s StorageRepository) Compare(obj interface{}) bool {
