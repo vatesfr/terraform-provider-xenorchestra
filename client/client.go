@@ -28,6 +28,7 @@ type XOClient interface {
 
 	CreateVm(vmReq Vm, d time.Duration) (*Vm, error)
 	GetVm(vmReq Vm) (*Vm, error)
+	GetVms() ([]Vm, error)
 	UpdateVm(vmReq Vm) (*Vm, error)
 	DeleteVm(id string) error
 	HaltVm(vmReq Vm) error
