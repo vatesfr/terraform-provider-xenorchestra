@@ -28,6 +28,22 @@ func dataSourceXoaStorageRepository() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"container": &schema.Schema{
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"size": &schema.Schema{
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+			"physical_usage": &schema.Schema{
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+			"usage": &schema.Schema{
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
 			"tags": resourceTags(),
 		},
 	}
@@ -63,6 +79,10 @@ func dataSourceStorageRepositoryRead(d *schema.ResourceData, m interface{}) erro
 	d.Set("sr_type", sr.SRType)
 	d.Set("uuid", sr.Uuid)
 	d.Set("pool_id", sr.PoolId)
+	d.Set("size", sr.Size)
+	d.Set("physical_usage", sr.PhysicalUsage)
+	d.Set("usage", sr.Usage)
+	d.Set("container", sr.Container)
 	return nil
 }
 
