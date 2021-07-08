@@ -39,6 +39,16 @@ func resourceHostSchema() map[string]*schema.Schema {
 			Type:     schema.TypeString,
 			Computed: true,
 		},
+		"cpus": &schema.Schema{
+			Type:     schema.TypeMap,
+			Computed: true,
+			Required: false,
+			Elem:     &schema.Schema{Type: schema.TypeString},
+		},
+		"memory": &schema.Schema{
+			Type:     schema.TypeInt,
+			Computed: true,
+		},
 		"tags": resourceTags(),
 	}
 }
