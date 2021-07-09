@@ -40,6 +40,8 @@ resource "xenorchestra_vm" "vm" {
   * name_label - Name label of the host.
   * pool_id - Id of the pool that the host belongs to.
   * tags - The tags applied to the host.
+  * memory - The memory size for the host.
+  * memory_usage - The memory usage for the host.
   * cpus - Host cpu information.
     * cores - The number of cores. 
     * sockets - The number of sockets.
