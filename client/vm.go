@@ -69,10 +69,14 @@ func (v Vm) Compare(obj interface{}) bool {
 	if v.NameLabel != "" && v.NameLabel == other.NameLabel {
 		return true
 	}
-	if v.PowerState != "" && v.PowerState == other.PowerState {
+	if v.PowerState != "" && v.Container != "" {
+		if (v.PowerState == other.PowerState) && (v.Container == other.Container) {
+			return true
+		}
+		return false
+	} else if v.PowerState != "" && v.PowerState == other.PowerState {
 		return true
-	}
-	if v.Container != "" && v.Container == other.Container {
+	} else if v.Container != "" && v.Container == other.Container {
 		return true
 	}
 	tagCount := len(v.Tags)
