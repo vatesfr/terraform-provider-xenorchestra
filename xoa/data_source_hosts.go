@@ -78,12 +78,13 @@ func hostsToMapList(hosts []client.Host) []map[string]interface{} {
 			"cores":   fmt.Sprintf("%d", host.Cpus.Cores),
 		}
 		hostMap := map[string]interface{}{
-			"id":         host.Id,
-			"name_label": host.NameLabel,
-			"pool_id":    host.Pool,
-			"tags":       host.Tags,
-			"memory":     host.Memory.Size,
-			"cpus":       cpus,
+			"id":           host.Id,
+			"name_label":   host.NameLabel,
+			"pool_id":      host.Pool,
+			"tags":         host.Tags,
+			"memory":       host.Memory.Size,
+			"memory_usage": host.Memory.Usage,
+			"cpus":         cpus,
 		}
 		result = append(result, hostMap)
 	}
