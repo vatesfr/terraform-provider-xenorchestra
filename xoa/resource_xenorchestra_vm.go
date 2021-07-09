@@ -129,6 +129,10 @@ func resourceVmSchema() map[string]*schema.Schema {
 				Type: schema.TypeString,
 			},
 		},
+		"container": &schema.Schema{
+			Type:     schema.TypeString,
+			Optional: true,
+		},
 		"wait_for_ip": &schema.Schema{
 			Type:     schema.TypeBool,
 			Default:  false,

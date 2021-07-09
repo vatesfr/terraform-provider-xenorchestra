@@ -26,15 +26,27 @@ func dataSourceXoaVms() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"container": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"power_state": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 		},
 	}
 }
 
 func dataSourceVmsRead(d *schema.ResourceData, m interface{}) error {
 	c := m.(client.XOClient)
-	poolId := d.Get("pool_id").(string)
+	searchVm := client.Vm{
+		PowerState: d.Get("power_state").(string),
+		Container:  d.Get("container").(string),
+		PoolId:     d.Get("pool_id").(string),
+	}
 
-	vms, err := c.GetVms()
+	vms, err := c.GetVms(searchVm)
 	if err != nil {
 		return err
 	}
@@ -45,7 +57,11 @@ func dataSourceVmsRead(d *schema.ResourceData, m interface{}) error {
 	if err = d.Set("num", len(vms)); err != nil {
 		return err
 	}
-	d.SetId(poolId)
+	if searchVm.Container != "" {
+		d.SetId(searchVm.Container)
+		return nil
+	}
+	d.SetId(searchVm.PoolId)
 	return nil
 
 }
@@ -79,6 +95,8 @@ func vmToMapList(vms []client.Vm) []map[string]interface{} {
 			"resource_set":         vm.ResourceSet,
 			"ipv4_addresses":       ipv4,
 			"ipv6_addresses":       ipv6,
+			"power_state":          vm.PowerState,
+			"container":            vm.Container,
 		}
 		result = append(result, hostMap)
 	}
