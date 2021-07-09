@@ -76,6 +76,8 @@ func getCompositeAggregateTestFunc(resourceName, sortBy, sortOrder string) resou
 	return resource.ComposeAggregateTestCheckFunc(
 		testAccCheckXenorchestraDataSourceHosts(resourceName),
 		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttrSet(resourceName, "hosts.0.cpus.sockets"),
+		resource.TestCheckResourceAttrSet(resourceName, "hosts.0.memory"),
 		resource.TestCheckResourceAttr(resourceName, "pool_id", accTestPool.Id),
 		// Verify that there are atleast 2 hosts returned
 		// This is necessary to test the sorting logic
