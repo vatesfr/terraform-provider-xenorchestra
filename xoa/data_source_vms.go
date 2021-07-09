@@ -97,6 +97,8 @@ func vmToMapList(vms []client.Vm) []map[string]interface{} {
 			"ipv6_addresses":       ipv6,
 			"power_state":          vm.PowerState,
 			"container":            vm.Container,
+			"auto_poweron":         vm.AutoPoweron,
+			"name_description":     vm.NameDescription,
 		}
 		result = append(result, hostMap)
 	}
