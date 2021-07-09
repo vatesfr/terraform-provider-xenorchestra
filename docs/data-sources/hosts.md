@@ -36,7 +36,10 @@ resource "xenorchestra_vm" "vm" {
 ## Attributes Reference
 * master - The primary host of the pool
 * hosts - List containing the matching hosts after applying the argument filtering. 
-  * id - The id of the host
-  * name_label - Name label of the host 
-  * pool_id - Id of the pool that the host belongs to
-  * tags - The tags applied to the host
+  * id - The id of the host.
+  * name_label - Name label of the host.
+  * pool_id - Id of the pool that the host belongs to.
+  * tags - The tags applied to the host.
+  * cpus - Host cpu information.
+    * cores - The number of cores. 
+    * sockets - The number of sockets.
