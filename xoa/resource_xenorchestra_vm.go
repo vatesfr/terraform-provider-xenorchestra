@@ -13,6 +13,7 @@ import (
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
 	"github.com/ddelnano/terraform-provider-xenorchestra/xoa/internal"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 var validHaOptions = []string{
@@ -69,16 +70,14 @@ func resourceRecord() *schema.Resource {
 			"installation_method": &schema.Schema{
 				Type:          schema.TypeString,
 				Optional:      true,
-				ValidateFunc:  internal.StringInSlice(validInstallationMethods, false),
+				ValidateFunc:  validation.StringInSlice(validInstallationMethods, false),
 				ConflictsWith: []string{"cdrom"},
 			},
 			"high_availability": &schema.Schema{
-				Type:     schema.TypeString,
-				Default:  "",
-				Optional: true,
-				// TODO: Replace with validation.StringInSlice when terraform
-				// and the SDK are upgraded.
-				ValidateFunc: internal.StringInSlice(validHaOptions, false),
+				Type:         schema.TypeString,
+				Default:      "",
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice(validHaOptions, false),
 			},
 			"template": &schema.Schema{
 				Type:     schema.TypeString,

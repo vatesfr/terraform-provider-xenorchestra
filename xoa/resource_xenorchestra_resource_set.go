@@ -4,8 +4,8 @@ import (
 	"log"
 
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
-	"github.com/ddelnano/terraform-provider-xenorchestra/xoa/internal"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 var validLimitType []string = []string{"cpus", "disk", "memory"}
@@ -46,7 +46,7 @@ func resourceResourceSet() *schema.Resource {
 						"type": &schema.Schema{
 							Type:         schema.TypeString,
 							Required:     true,
-							ValidateFunc: internal.StringInSlice(validLimitType, false),
+							ValidateFunc: validation.StringInSlice(validLimitType, false),
 						},
 						"quantity": &schema.Schema{
 							Type:     schema.TypeInt,
