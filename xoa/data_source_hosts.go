@@ -48,10 +48,8 @@ func dataSourceHostsRead(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 	searchHost := client.Host{
-		Pool:   pool[0].Id,
-		Tags:   tags,
-		Cpus:   client.CpuInfo{},
-		Memory: client.HostMemoryObject{}}
+		Pool: pool[0].Id,
+		Tags: tags}
 	hosts, err := c.GetSortedHosts(searchHost, d.Get("sort_by").(string), d.Get("sort_order").(string))
 
 	log.Printf("[DEBUG] found the following hosts: %+v", hosts)

@@ -73,20 +73,15 @@ func dataSourceHostRead(d *schema.ResourceData, m interface{}) error {
 	d.Set("pool_id", hosts[0].Pool)
 	d.Set("memory", hosts[0].Memory.Size)
 	d.Set("memory_usage", hosts[0].Memory.Usage)
-	d.Set("cpus", hostCpuInfoToMapList(hosts)[0])
+	d.Set("cpus", hostCpuInfoToMapList(hosts[0]))
 	d.Set("tags", hosts[0].Tags)
 	return nil
 }
 
-func hostCpuInfoToMapList(hosts []client.Host) []map[string]interface{} {
-	result := make([]map[string]interface{}, 0, len(hosts))
-	for _, host := range hosts {
-		cpus := map[string]interface{}{
-			"sockets": fmt.Sprintf("%d", host.Cpus.Sockets),
-			"cores":   fmt.Sprintf("%d", host.Cpus.Cores),
-		}
-		result = append(result, cpus)
+func hostCpuInfoToMapList(host client.Host) map[string]interface{} {
+	cpus := map[string]interface{}{
+		"sockets": fmt.Sprintf("%d", host.Cpus.Sockets),
+		"cores":   fmt.Sprintf("%d", host.Cpus.Cores),
 	}
-
-	return result
+	return cpus
 }
