@@ -22,7 +22,7 @@ func dataSourceXoaVms() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"container": &schema.Schema{
+			"host": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
 			},
@@ -38,7 +38,7 @@ func dataSourceVmsRead(d *schema.ResourceData, m interface{}) error {
 	c := m.(client.XOClient)
 	searchVm := client.Vm{
 		PowerState: d.Get("power_state").(string),
-		Container:  d.Get("container").(string),
+		Host:       d.Get("host").(string),
 		PoolId:     d.Get("pool_id").(string),
 	}
 
@@ -50,8 +50,8 @@ func dataSourceVmsRead(d *schema.ResourceData, m interface{}) error {
 	if err = d.Set("vms", vmToMapList(vms)); err != nil {
 		return err
 	}
-	if searchVm.Container != "" {
-		d.SetId(searchVm.Container)
+	if searchVm.Host != "" {
+		d.SetId(searchVm.Host)
 		return nil
 	}
 	d.SetId(searchVm.PoolId)
@@ -89,7 +89,7 @@ func vmToMapList(vms []client.Vm) []map[string]interface{} {
 			"ipv4_addresses":       ipv4,
 			"ipv6_addresses":       ipv6,
 			"power_state":          vm.PowerState,
-			"container":            vm.Container,
+			"host":                 vm.Host,
 			"auto_poweron":         vm.AutoPoweron,
 			"name_description":     vm.NameDescription,
 		}

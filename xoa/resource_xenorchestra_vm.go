@@ -129,7 +129,7 @@ func resourceVmSchema() map[string]*schema.Schema {
 				Type: schema.TypeString,
 			},
 		},
-		"container": &schema.Schema{
+		"host": &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
 		},
