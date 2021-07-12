@@ -1141,6 +1141,43 @@ func TestAccXenorchestraVm_updatesWithoutReboot(t *testing.T) {
 	})
 }
 
+func TestAccXenorchestraVm_updatesWithoutRebootForOtherAttrs(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+
+	nameLabel := fmt.Sprintf("Terraform testing - %s", t.Name())
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigUpdateAttr(
+					nameLabel,
+					`
+				  blocked_operations = ["copy"]
+				`),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "blocked_operations.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "blocked_operations.0", "copy"),
+				),
+			},
+			{
+				Config: testAccVmConfigUpdateAttr(
+					nameLabel,
+					"",
+				),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "blocked_operations.#", "0"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccXenorchestraVm_updatesThatRequireReboot(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
@@ -2083,6 +2120,38 @@ resource "xenorchestra_vm" "bar" {
     }
 }
 `, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+}
+
+func testAccVmConfigUpdateAttr(nameLabel, attr string) string {
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", nameLabel), "template") + fmt.Sprintf(`
+data "xenorchestra_template" "template" {
+    name_label = "%s"
+}
+
+data "xenorchestra_network" "network" {
+    name_label = "%s"
+    pool_id = "%s"
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 4295000000
+    cpus  = 1
+    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    name_label = "%s"
+    template = "${data.xenorchestra_template.template.id}"
+    network {
+	network_id = "${data.xenorchestra_network.network.id}"
+    }
+
+    disk {
+      sr_id = "%s"
+      name_label = "disk 1"
+      size = 10001317888
+    }
+
+    %s
+}
+`, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, nameLabel, accDefaultSr.Id, attr)
 }
 
 // Terraform config that tests changes to a VM that do not require halting

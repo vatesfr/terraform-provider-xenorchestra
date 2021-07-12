@@ -46,6 +46,13 @@ func resourceRecord() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"blocked_operations": &schema.Schema{
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
 			"name_label": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
@@ -314,13 +321,19 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 
+	blockedOperations := map[string]string{}
+	for _, b := range d.Get("blocked_operations").(*schema.Set).List() {
+		blockedOperations[b.(string)] = "true"
+	}
+
 	vm, err := c.CreateVm(client.Vm{
-		AffinityHost:    d.Get("affinity_host").(string),
-		NameLabel:       d.Get("name_label").(string),
-		NameDescription: d.Get("name_description").(string),
-		Template:        d.Get("template").(string),
-		CloudConfig:     d.Get("cloud_config").(string),
-		ResourceSet:     d.Get("resource_set").(string),
+		AffinityHost:      d.Get("affinity_host").(string),
+		BlockedOperations: blockedOperations,
+		NameLabel:         d.Get("name_label").(string),
+		NameDescription:   d.Get("name_description").(string),
+		Template:          d.Get("template").(string),
+		CloudConfig:       d.Get("cloud_config").(string),
+		ResourceSet:       d.Get("resource_set").(string),
 		CPUs: client.CPUs{
 			Number: d.Get("cpus").(int),
 		},
@@ -635,6 +648,24 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		haltForUpdates = true
 	}
 
+	blockOperations := map[string]string{}
+	if d.HasChange("blocked_operations") {
+		o, n := d.GetChange("blocked_operations")
+		oldBlockedOps := o.(*schema.Set)
+		newBlockedOps := n.(*schema.Set)
+
+		oB := oldBlockedOps.Difference(newBlockedOps)
+		for _, removal := range oB.List() {
+			blockOperations[removal.(string)] = "false"
+		}
+
+		nB := newBlockedOps.Difference(oldBlockedOps)
+		for _, addition := range nB.List() {
+			blockOperations[addition.(string)] = "true"
+		}
+
+	}
+
 	vmReq := client.Vm{
 		Id: id,
 		CPUs: client.CPUs{
@@ -645,12 +676,13 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 				0, memoryMax,
 			},
 		},
-		NameLabel:       nameLabel,
-		NameDescription: nameDescription,
-		HA:              ha,
-		ResourceSet:     rs,
-		AutoPoweron:     autoPowerOn,
-		AffinityHost:    affinityHost,
+		NameLabel:         nameLabel,
+		NameDescription:   nameDescription,
+		HA:                ha,
+		ResourceSet:       rs,
+		AutoPoweron:       autoPowerOn,
+		AffinityHost:      affinityHost,
+		BlockedOperations: blockOperations,
 	}
 	if haltForUpdates {
 		err := c.HaltVm(vmReq)
@@ -805,6 +837,9 @@ func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, cd
 	d.Set("power_state", resource.PowerState)
 
 	if err := d.Set("tags", resource.Tags); err != nil {
+		return err
+	}
+	if err := d.Set("blocked_operations", resource.BlockedOperationsList()); err != nil {
 		return err
 	}
 
