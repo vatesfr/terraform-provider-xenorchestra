@@ -1,6 +1,6 @@
 # xenorchestra_vms
 
-Use this data source to filter Xenorchestra VMs by certain criteria (pool_id, power_state or container) for use in other resources.
+Use this data source to filter Xenorchestra VMs by certain criteria (pool_id, power_state or host) for use in other resources.
 
 ## Example Usage
 
@@ -12,7 +12,7 @@ data "xenorchestra_pool" "pool" {
 data "xenorchestra_vms" "vms" {
   pool_id = data.xenorchestra_pool.pool.id
   power_state = "Running"
-  container = data.xenorchestra_pool.pool.master
+  host = data.xenorchestra_pool.pool.master
 }
 
 output "vms_max_memory_map" {
@@ -28,8 +28,8 @@ output "vms_length" {
 ## Argument Reference
 
 * pool_id - (Required) The ID of the pool the vms belong to.
-* container - (Optional) The ID of the pool the vms belong to.
-* power_state - (Optional) The power state of the vms (Running / Halted)
+* host - (Optional) The Id of the host (container) the vms belong to.
+* power_state - (Optional) The power state of the vms ("Running" / "Halted")
 
 ## Attributes Reference
 

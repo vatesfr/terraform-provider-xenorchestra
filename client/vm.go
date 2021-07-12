@@ -43,7 +43,7 @@ type Vm struct {
 	CloudConfig        string            `json:"cloudConfig"`
 	ResourceSet        string            `json:"resourceSet,omitempty"`
 	Tags               []string          `json:"tags"`
-	Container          string            `json:"$container"`
+	Host               string            `json:"$container"`
 
 	// These fields are used for passing in disk inputs when
 	// creating Vms, however, this is not a real field as far
@@ -69,14 +69,14 @@ func (v Vm) Compare(obj interface{}) bool {
 	if v.NameLabel != "" && v.NameLabel == other.NameLabel {
 		return true
 	}
-	if v.PowerState != "" && v.Container != "" {
-		if (v.PowerState == other.PowerState) && (v.Container == other.Container) {
+	if v.PowerState != "" && v.Host != "" {
+		if (v.PowerState == other.PowerState) && (v.Host == other.Host) {
 			return true
 		}
 		return false
 	} else if v.PowerState != "" && v.PowerState == other.PowerState {
 		return true
-	} else if v.Container != "" && v.Container == other.Container {
+	} else if v.Host != "" && v.Host == other.Host {
 		return true
 	}
 	tagCount := len(v.Tags)
@@ -305,7 +305,7 @@ func (c *Client) GetVm(vmReq Vm) (*Vm, error) {
 func (c *Client) GetVms(vm Vm) ([]Vm, error) {
 	var vms []Vm
 	var response map[string]Vm
-	if vm.Container == "" && vm.PowerState == "" {
+	if vm.Host == "" && vm.PowerState == "" {
 		err := c.GetAllObjectsOfType(vm, &response)
 
 		if err != nil {
