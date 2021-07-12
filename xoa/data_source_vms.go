@@ -18,10 +18,6 @@ func dataSourceXoaVms() *schema.Resource {
 				Computed: true,
 				Elem:     resourceVm(),
 			},
-			"num": &schema.Schema{
-				Type:     schema.TypeInt,
-				Computed: true,
-			},
 			"pool_id": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
@@ -52,9 +48,6 @@ func dataSourceVmsRead(d *schema.ResourceData, m interface{}) error {
 	}
 
 	if err = d.Set("vms", vmToMapList(vms)); err != nil {
-		return err
-	}
-	if err = d.Set("num", len(vms)); err != nil {
 		return err
 	}
 	if searchVm.Container != "" {
