@@ -23,9 +23,15 @@ type MemoryObject struct {
 	Size    int   `json:"size"`
 }
 
+type Boot struct {
+	Firmware string            `json:"firmware,omitempty"`
+	Order    map[string]string `json:"order,omitempty"`
+}
+
 type Vm struct {
 	Addresses          map[string]string `json:"addresses,omitempty"`
 	BlockedOperations  map[string]string `json:"blockedOperations,omitempty"`
+	Boot               Boot              `json:"boot,omitempty"`
 	Type               string            `json:"type,omitempty"`
 	Id                 string            `json:"id,omitempty"`
 	AffinityHost       string            `json:"affinityHost,omitempty"`
@@ -161,6 +167,11 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 		"tags":              vmReq.Tags,
 	}
 
+	firmware := vmReq.Boot.Firmware
+	if firmware != "" {
+		params["hvmBootFirmware"] = firmware
+	}
+
 	// if len(vmReq.BlockedOperations) > 0 {
 	// 	blockedOperations := map[string]string{}
 	// 	for _, v := range vmReq.BlockedOperations {
@@ -249,7 +260,6 @@ func (c *Client) UpdateVm(vmReq Vm) (*Vm, error) {
 		// TODO: These need more investigation before they are implemented
 		// pv_args
 
-		// blockedOperations {"value": true|false}, set at runtime will fail if setting doesn't exist and must be explictly set to false to remove
 		// hvmBootFirware (default, bios, uefi) can be set at runtime
 
 		//  secureBoot (true, false) can be set at runtime

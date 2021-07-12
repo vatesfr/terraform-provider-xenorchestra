@@ -22,6 +22,11 @@ var validHaOptions = []string{
 	"restart",
 }
 
+var validFirmware = []string{
+	"bios",
+	"uefi",
+}
+
 var validInstallationMethods = []string{
 	"network",
 }
@@ -69,6 +74,12 @@ func resourceRecord() *schema.Resource {
 				Type:     schema.TypeBool,
 				Default:  false,
 				Optional: true,
+			},
+			"hvm_boot_firmware": &schema.Schema{
+				Type:         schema.TypeString,
+				Default:      "",
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice(validFirmware, false),
 			},
 			"power_state": &schema.Schema{
 				Type:     schema.TypeString,
@@ -329,11 +340,14 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 	vm, err := c.CreateVm(client.Vm{
 		AffinityHost:      d.Get("affinity_host").(string),
 		BlockedOperations: blockedOperations,
-		NameLabel:         d.Get("name_label").(string),
-		NameDescription:   d.Get("name_description").(string),
-		Template:          d.Get("template").(string),
-		CloudConfig:       d.Get("cloud_config").(string),
-		ResourceSet:       d.Get("resource_set").(string),
+		Boot: client.Boot{
+			Firmware: d.Get("hvm_boot_firmware").(string),
+		},
+		NameLabel:       d.Get("name_label").(string),
+		NameDescription: d.Get("name_description").(string),
+		Template:        d.Get("template").(string),
+		CloudConfig:     d.Get("cloud_config").(string),
+		ResourceSet:     d.Get("resource_set").(string),
 		CPUs: client.CPUs{
 			Number: d.Get("cpus").(int),
 		},

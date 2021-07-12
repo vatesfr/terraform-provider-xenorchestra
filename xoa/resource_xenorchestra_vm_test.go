@@ -1174,6 +1174,29 @@ func TestAccXenorchestraVm_updatesWithoutRebootForOtherAttrs(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "blocked_operations.#", "0"),
 				),
 			},
+			{
+				Config: testAccVmConfigUpdateAttr(
+					nameLabel,
+					`
+					hvm_boot_firmware = "uefi"
+				`),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "hvm_boot_firmware", "uefi"),
+				),
+			},
+			{
+				Config: testAccVmConfigUpdateAttr(
+					nameLabel,
+					"",
+				),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckNoResourceAttr(resourceName, "hvm_boot_firmware"),
+				),
+			},
 		},
 	})
 }
