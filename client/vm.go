@@ -79,6 +79,9 @@ func (v Vm) Compare(obj interface{}) bool {
 	} else if v.Host != "" && v.Host == other.Host {
 		return true
 	}
+	if v.PoolId != "" && v.PoolId == other.PoolId {
+		return true
+	}
 	tagCount := len(v.Tags)
 	if tagCount > 0 {
 		for _, tag := range v.Tags {
@@ -303,33 +306,11 @@ func (c *Client) GetVm(vmReq Vm) (*Vm, error) {
 }
 
 func (c *Client) GetVms(vm Vm) ([]Vm, error) {
-	var vms []Vm
-	var response map[string]Vm
-	if vm.Host == "" && vm.PowerState == "" {
-		err := c.GetAllObjectsOfType(vm, &response)
-
-		if err != nil {
-			return []Vm{}, err
-		}
-
-		vms = make([]Vm, 0, len(response))
-		for _, vm := range response {
-			vms = append(vms, vm)
-		}
-
-	} else {
-		obj, err := c.FindFromGetAllObjects(vm)
-
-		if err != nil {
-			return []Vm{}, err
-		}
-		iterator := obj.([]Vm)
-		vms = make([]Vm, 0, len(iterator))
-		for _, vm := range iterator {
-			vms = append(vms, vm)
-		}
-
+	obj, err := c.FindFromGetAllObjects(vm)
+	if err != nil {
+		return []Vm{}, err
 	}
+	vms := obj.([]Vm)
 	log.Printf("[DEBUG] Found vms: %+v", vms)
 	return vms, nil
 }
