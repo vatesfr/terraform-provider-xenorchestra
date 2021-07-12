@@ -15,10 +15,13 @@ data "xenorchestra_vms" "vms" {
   container = data.xenorchestra_pool.pool.master
 }
 
-output "vms" {
+output "vms_max_memory_map" {
   value = tomap({
   for k, vm in data.xenorchestra_vms.vms.vms : k => vm.memory_max
   })
+}
+output "vms_length" {
+  value = length(data.xenorchestra_vms.vms.vms)
 }
 ```
 
@@ -32,7 +35,6 @@ output "vms" {
 
 * id - The Id of the pool the storage repository exists on.
 * pool_id - The Id of the pool the storage repository exists on.
-* num - The number of vms found for this pool.
 * vms - A list of information for all vms found in this pool.
     * vms.id - The uuid for this vm.
     * vms.name_label - The name label for this vm.
