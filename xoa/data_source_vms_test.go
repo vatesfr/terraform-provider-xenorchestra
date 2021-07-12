@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"log"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -20,7 +21,8 @@ func TestAccXenorchestraDataSource_vms(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckXenorchestraDataSourceVms(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
-					resource.TestCheckResourceAttrSet(resourceName, "sum")),
+					resource.TestCheckResourceAttrSet(resourceName, "pool_id"),
+					resource.TestMatchResourceAttr(resourceName, "vms.#", regexp.MustCompile("^[1-9][0-9]*$"))),
 			},
 		},
 	},
