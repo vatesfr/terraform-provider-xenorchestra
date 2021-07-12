@@ -1,6 +1,6 @@
 # xenorchestra_vms
 
-Use this data source to filter Xenorchestra VMS by certain criteria (pool_id, power_state or container) for use in other resources.
+Use this data source to filter Xenorchestra VMs by certain criteria (pool_id, power_state or container) for use in other resources.
 
 ## Example Usage
 
@@ -44,7 +44,6 @@ output "vms" {
     * vms.affinity_host - The affinity host for this vm.
     * vms.template - The template used to create this vm.
     * vms.wait_for_ip - The wait for ip options for this vm.
-    * vms.high_availability - The high availability option for this vm.
     * vms.high_availability - The high availability option for this vm.
     * vms.resource_set - The resource sets for this vm.
     * vms.ipv4_addresses - The ipv4 addresses for this vm.
