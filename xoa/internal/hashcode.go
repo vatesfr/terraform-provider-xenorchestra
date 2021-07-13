@@ -29,8 +29,12 @@ func String(s string) int {
 func Strings(strings []string) string {
 	var buf bytes.Buffer
 
-	for _, s := range strings {
-		buf.WriteString(fmt.Sprintf("%s-", s))
+	for i, s := range strings {
+		var format = "%s"
+		if i != len(strings)-1 {
+			format = fmt.Sprint(format, "-")
+		}
+		buf.WriteString(fmt.Sprintf(format, s))
 	}
 
 	return fmt.Sprintf("%d", String(buf.String()))
