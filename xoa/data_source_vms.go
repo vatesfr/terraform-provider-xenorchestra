@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
+	"github.com/ddelnano/terraform-provider-xenorchestra/xoa/internal"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -50,11 +51,7 @@ func dataSourceVmsRead(d *schema.ResourceData, m interface{}) error {
 	if err = d.Set("vms", vmToMapList(vms)); err != nil {
 		return err
 	}
-	if searchVm.Host != "" {
-		d.SetId(searchVm.Host)
-		return nil
-	}
-	d.SetId(searchVm.PoolId)
+	d.SetId(internal.Strings([]string{searchVm.PowerState, searchVm.PoolId, searchVm.Host}))
 	return nil
 
 }
