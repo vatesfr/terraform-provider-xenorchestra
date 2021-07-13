@@ -78,10 +78,9 @@ func dataSourceHostRead(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
-func hostCpuInfoToMapList(host client.Host) map[string]interface{} {
-	cpus := map[string]interface{}{
+func hostCpuInfoToMapList(host client.Host) map[string]string {
+	return map[string]string{
 		"sockets": fmt.Sprintf("%d", host.Cpus.Sockets),
 		"cores":   fmt.Sprintf("%d", host.Cpus.Cores),
 	}
-	return cpus
 }

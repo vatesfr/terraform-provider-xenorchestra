@@ -1,7 +1,6 @@
 package xoa
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
@@ -71,10 +70,6 @@ func dataSourceHostsRead(d *schema.ResourceData, m interface{}) error {
 func hostsToMapList(hosts []client.Host) []map[string]interface{} {
 	result := make([]map[string]interface{}, 0, len(hosts))
 	for _, host := range hosts {
-		cpus := map[string]string{
-			"sockets": fmt.Sprintf("%d", host.Cpus.Sockets),
-			"cores":   fmt.Sprintf("%d", host.Cpus.Cores),
-		}
 		hostMap := map[string]interface{}{
 			"id":           host.Id,
 			"name_label":   host.NameLabel,
@@ -82,7 +77,7 @@ func hostsToMapList(hosts []client.Host) []map[string]interface{} {
 			"tags":         host.Tags,
 			"memory":       host.Memory.Size,
 			"memory_usage": host.Memory.Usage,
-			"cpus":         cpus,
+			"cpus":         hostCpuInfoToMapList(host),
 		}
 		result = append(result, hostMap)
 	}
