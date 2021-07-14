@@ -259,6 +259,25 @@ func resourceVmSchema() map[string]*schema.Schema {
 	}
 }
 
+func resourceRecord() *schema.Resource {
+	duration := 5 * time.Minute
+	return &schema.Resource{
+		Create: resourceVmCreate,
+		Read:   resourceVmRead,
+		Update: resourceVmUpdate,
+		Delete: resourceVmDelete,
+		Importer: &schema.ResourceImporter{
+			State: RecordImport,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: &duration,
+			Update: &duration,
+			Delete: &duration,
+		},
+		Schema: resourceVmSchema(),
+	}
+}
+
 func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 	c := m.(client.XOClient)
 
@@ -1085,23 +1104,4 @@ func suppressAttachedDiffWhenHalted(k, old, new string, d *schema.ResourceData) 
 	}
 	log.Printf("[DEBUG] VM '%s' attribute has transitioned from '%s' to '%s' when PowerState '%s'. Suppress diff: %t", k, old, new, powerState, suppress)
 	return
-}
-
-func resourceRecord() *schema.Resource {
-	duration := 5 * time.Minute
-	return &schema.Resource{
-		Create: resourceVmCreate,
-		Read:   resourceVmRead,
-		Update: resourceVmUpdate,
-		Delete: resourceVmDelete,
-		Importer: &schema.ResourceImporter{
-			State: RecordImport,
-		},
-		Timeouts: &schema.ResourceTimeout{
-			Create: &duration,
-			Update: &duration,
-			Delete: &duration,
-		},
-		Schema: resourceVmSchema(),
-	}
 }
