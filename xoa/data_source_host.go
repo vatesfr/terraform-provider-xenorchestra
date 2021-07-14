@@ -42,7 +42,7 @@ func resourceHostSchema() map[string]*schema.Schema {
 		"cpus": &schema.Schema{
 			Type:     schema.TypeMap,
 			Computed: true,
-			Elem:     &schema.Schema{Type: schema.TypeString},
+			Elem:     &schema.Schema{Type: schema.TypeInt},
 		},
 		"memory": &schema.Schema{
 			Type:     schema.TypeInt,
@@ -78,9 +78,9 @@ func dataSourceHostRead(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
-func hostCpuInfoToMapList(host client.Host) map[string]string {
-	return map[string]string{
-		"sockets": fmt.Sprintf("%d", host.Cpus.Sockets),
-		"cores":   fmt.Sprintf("%d", host.Cpus.Cores),
+func hostCpuInfoToMapList(host client.Host) map[string]int {
+	return map[string]int{
+		"sockets": int(host.Cpus.Sockets),
+		"cores":   int(host.Cpus.Cores),
 	}
 }
