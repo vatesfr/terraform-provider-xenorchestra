@@ -1,7 +1,10 @@
 package xoa
 
 import (
+	"fmt"
+	"github.com/ddelnano/terraform-provider-xenorchestra/xoa/internal"
 	"log"
+	"strconv"
 	"strings"
 
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
@@ -50,11 +53,10 @@ func dataSourceVmsRead(d *schema.ResourceData, m interface{}) error {
 	if err = d.Set("vms", vmToMapList(vms)); err != nil {
 		return err
 	}
-	if searchVm.Host != "" {
-		d.SetId(searchVm.Host)
-		return nil
-	}
-	d.SetId(searchVm.PoolId)
+	hash := internal.String(fmt.Sprintf(
+		"%s-%s-%s-", searchVm.PowerState, searchVm.PoolId, searchVm.Host,
+	))
+	d.SetId(strconv.Itoa(hash))
 	return nil
 
 }
