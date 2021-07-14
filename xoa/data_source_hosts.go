@@ -46,9 +46,12 @@ func dataSourceHostsRead(d *schema.ResourceData, m interface{}) error {
 	if err != nil {
 		return err
 	}
-	hosts, err := c.GetSortedHosts(client.Host{Pool: pool[0].Id, Tags: tags}, d.Get("sort_by").(string), d.Get("sort_order").(string))
+	searchHost := client.Host{
+		Pool: pool[0].Id,
+		Tags: tags}
+	hosts, err := c.GetSortedHosts(searchHost, d.Get("sort_by").(string), d.Get("sort_order").(string))
 
-	log.Printf("[DEBUG] found the following hosts: %s", hosts)
+	log.Printf("[DEBUG] found the following hosts: %+v", hosts)
 	if err != nil {
 		return err
 	}
@@ -68,10 +71,13 @@ func hostsToMapList(hosts []client.Host) []map[string]interface{} {
 	result := make([]map[string]interface{}, 0, len(hosts))
 	for _, host := range hosts {
 		hostMap := map[string]interface{}{
-			"id":         host.Id,
-			"name_label": host.NameLabel,
-			"pool_id":    host.Pool,
-			"tags":       host.Tags,
+			"id":           host.Id,
+			"name_label":   host.NameLabel,
+			"pool_id":      host.Pool,
+			"tags":         host.Tags,
+			"memory":       host.Memory.Size,
+			"memory_usage": host.Memory.Usage,
+			"cpus":         hostCpuInfoToMapList(host),
 		}
 		result = append(result, hostMap)
 	}
