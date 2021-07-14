@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -24,8 +25,7 @@ type MemoryObject struct {
 }
 
 type Boot struct {
-	Firmware string            `json:"firmware,omitempty"`
-	Order    map[string]string `json:"order,omitempty"`
+	Firmware string `json:"firmware,omitempty"`
 }
 
 type Vm struct {
@@ -38,6 +38,7 @@ type Vm struct {
 	NameDescription    string            `json:"name_description"`
 	NameLabel          string            `json:"name_label"`
 	CPUs               CPUs              `json:"CPUs"`
+	ExpNestedHvm       bool              `json:"expNestedHvm,omitempty"`
 	Memory             MemoryObject      `json:"memory"`
 	PowerState         string            `json:"power_state"`
 	VIFs               []string          `json:"VIFs"`
@@ -49,7 +50,11 @@ type Vm struct {
 	HA                 string            `json:"high_availability"`
 	CloudConfig        string            `json:"cloudConfig"`
 	ResourceSet        string            `json:"resourceSet,omitempty"`
+	SecureBoot         bool              `json:"secureBoot,omitempty"`
+	NicType            string            `json:"nicType,omitempty"`
 	Tags               []string          `json:"tags"`
+	Videoram           string            `json:"videoram,omitempty"`
+	Vga                string            `json:"vga,omitempty"`
 
 	// These fields are used for passing in disk inputs when
 	// creating Vms, however, this is not a real field as far
@@ -60,26 +65,6 @@ type Vm struct {
 	WaitForIps         bool                `json:"-"`
 	Installation       Installation        `json:"-"`
 }
-
-// func (vm *Vm) UnmarshalJSON(data []byte) error {
-// 	type Alias Vm
-// 	aux := struct {
-// 		BlockedOperations map[string]string `json:blockedOperations`
-// 		*Alias
-// 	}{
-// 		Alias: (*Alias)(vm),
-// 	}
-
-// 	if err := json.Unmarshal(data, &aux); err != nil {
-// 		return err
-// 	}
-// 	blockedOperations := []string{}
-// 	for k, _ := range aux.BlockedOperations {
-// 		blockedOperations = append(blockedOperations, k)
-// 	}
-// 	vm.BlockedOperations = blockedOperations
-// 	return nil
-// }
 
 type Installation struct {
 	Method     string `json:"-"`
@@ -162,6 +147,9 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 		"CPUs":              vmReq.CPUs.Number,
 		"memoryMax":         vmReq.Memory.Static[1],
 		"existingDisks":     existingDisks,
+		"nicType":           vmReq.NicType,
+		"secureBoot":        vmReq.SecureBoot,
+		"expNestedHvm":      vmReq.ExpNestedHvm,
 		"VDIs":              vdis,
 		"VIFs":              vmReq.VIFsMap,
 		"tags":              vmReq.Tags,
@@ -170,6 +158,16 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 	firmware := vmReq.Boot.Firmware
 	if firmware != "" {
 		params["hvmBootFirmware"] = firmware
+	}
+
+	videoram, _ := strconv.Atoi(vmReq.Videoram)
+	if videoram != 0 {
+		params["videoram"] = videoram
+	}
+
+	vga := vmReq.Vga
+	if vga != "" {
+		params["vga"] = vga
 	}
 
 	// if len(vmReq.BlockedOperations) > 0 {
@@ -257,18 +255,13 @@ func (c *Client) UpdateVm(vmReq Vm) (*Vm, error) {
 		"high_availability": vmReq.HA, // valid options are best-effort, restart, ''
 		"CPUs":              vmReq.CPUs.Number,
 		"memoryMax":         vmReq.Memory.Static[1],
+		"nicType":           vmReq.NicType,
+		"expNestedHvm":      vmReq.ExpNestedHvm,
+		"secureBoot":        vmReq.SecureBoot,
 		// TODO: These need more investigation before they are implemented
 		// pv_args
 
-		// hvmBootFirware (default, bios, uefi) can be set at runtime
-
-		//  secureBoot (true, false) can be set at runtime
-
 		// virtualizationMode hvm or pv, cannot be set after vm is created (requires conversion)
-
-		// nicType can be set to e1000 or '' for Realtek RTL8139, can be set at runtime
-
-		// expNestedHvm true or false, can be set at runtime
 
 		// can be set at runtime vga valid values (std, cirrus), videoram (= [1, 2, 4, 8, 16]) - https://github.com/vatesfr/xen-orchestra/blob/9139c5e9d6b4306ba4078e6fa128a36f65417792/packages/xo-server/src/xapi/mixins/vm.mjs#L18
 

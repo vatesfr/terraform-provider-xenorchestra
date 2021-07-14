@@ -16,6 +16,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
+var validVga = []string{
+	"",
+	"cirrus",
+	"std",
+}
+
 var validHaOptions = []string{
 	"",
 	"best-effort",
@@ -71,6 +77,11 @@ func resourceRecord() *schema.Resource {
 				Optional: true,
 			},
 			"auto_poweron": &schema.Schema{
+				Type:     schema.TypeBool,
+				Default:  false,
+				Optional: true,
+			},
+			"exp_nested_hvm": &schema.Schema{
 				Type:     schema.TypeBool,
 				Default:  false,
 				Optional: true,
@@ -150,6 +161,27 @@ func resourceRecord() *schema.Resource {
 			"wait_for_ip": &schema.Schema{
 				Type:     schema.TypeBool,
 				Default:  false,
+				Optional: true,
+			},
+			"vga": &schema.Schema{
+				Type:         schema.TypeString,
+				Default:      "",
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice(validVga, false),
+			},
+			"videoram": &schema.Schema{
+				Type:     schema.TypeInt,
+				Default:  0,
+				Optional: true,
+			},
+			"secure_boot": &schema.Schema{
+				Type:     schema.TypeBool,
+				Default:  false,
+				Optional: true,
+			},
+			"nic_type": &schema.Schema{
+				Type:     schema.TypeString,
+				Default:  "",
 				Optional: true,
 			},
 			"cdrom": &schema.Schema{
@@ -343,6 +375,7 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		Boot: client.Boot{
 			Firmware: d.Get("hvm_boot_firmware").(string),
 		},
+		ExpNestedHvm:    d.Get("exp_nested_hvm").(bool),
 		NameLabel:       d.Get("name_label").(string),
 		NameDescription: d.Get("name_description").(string),
 		Template:        d.Get("template").(string),
@@ -360,8 +393,12 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		Tags:         vmTags,
 		Disks:        ds,
 		Installation: installation,
+		SecureBoot:   d.Get("secure_boot").(bool),
+		NicType:      d.Get("nic_type").(string),
 		VIFsMap:      network_maps,
 		WaitForIps:   d.Get("wait_for_ip").(bool),
+		Videoram:     strconv.Itoa(d.Get("videoram").(int)),
+		Vga:          d.Get("vga").(string),
 	},
 		d.Timeout(schema.TimeoutCreate),
 	)
@@ -849,6 +886,22 @@ func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, cd
 	d.Set("auto_poweron", resource.AutoPoweron)
 	d.Set("resource_set", resource.ResourceSet)
 	d.Set("power_state", resource.PowerState)
+
+	if err := d.Set("secure_boot", resource.SecureBoot); err != nil {
+		return err
+	}
+
+	if err := d.Set("exp_nested_hvm", resource.ExpNestedHvm); err != nil {
+		return err
+	}
+
+	if err := d.Set("vga", resource.Vga); err != nil {
+		return err
+	}
+
+	if err := d.Set("videoram", resource.Videoram); err != nil {
+		return err
+	}
 
 	if err := d.Set("tags", resource.Tags); err != nil {
 		return err
