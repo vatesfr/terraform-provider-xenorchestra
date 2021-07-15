@@ -1,6 +1,7 @@
 package client
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -28,6 +29,30 @@ type Boot struct {
 	Firmware string `json:"firmware,omitempty"`
 }
 
+type Videoram struct {
+	Value int `json:"-"`
+}
+
+func (v Videoram) UnmarshalJSON(data []byte) (err error) {
+	s := string(data)
+	l := len(s)
+	if s[0] == '"' && s[l-1] == '"' {
+		num := 0
+		if l > 2 {
+			num, err = strconv.Atoi(s[1 : l-1])
+
+			if err != nil {
+				return err
+			}
+
+		}
+		v.Value = num
+		return nil
+	}
+
+	return json.Unmarshal(data, &v.Value)
+}
+
 type Vm struct {
 	Addresses          map[string]string `json:"addresses,omitempty"`
 	BlockedOperations  map[string]string `json:"blockedOperations,omitempty"`
@@ -53,7 +78,7 @@ type Vm struct {
 	SecureBoot         bool              `json:"secureBoot,omitempty"`
 	NicType            string            `json:"nicType,omitempty"`
 	Tags               []string          `json:"tags"`
-	Videoram           string            `json:"videoram,omitempty"`
+	Videoram           Videoram          `json:"videoram,omitempty"`
 	Vga                string            `json:"vga,omitempty"`
 
 	// These fields are used for passing in disk inputs when
@@ -160,7 +185,7 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 		params["hvmBootFirmware"] = firmware
 	}
 
-	videoram, _ := strconv.Atoi(vmReq.Videoram)
+	videoram := vmReq.Videoram.Value
 	if videoram != 0 {
 		params["videoram"] = videoram
 	}

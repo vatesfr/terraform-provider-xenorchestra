@@ -397,8 +397,10 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		NicType:      d.Get("nic_type").(string),
 		VIFsMap:      network_maps,
 		WaitForIps:   d.Get("wait_for_ip").(bool),
-		Videoram:     strconv.Itoa(d.Get("videoram").(int)),
-		Vga:          d.Get("vga").(string),
+		Videoram: client.Videoram{
+			Value: d.Get("videoram").(int),
+		},
+		Vga: d.Get("vga").(string),
 	},
 		d.Timeout(schema.TimeoutCreate),
 	)
