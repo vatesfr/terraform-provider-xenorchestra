@@ -80,6 +80,7 @@ type Vm struct {
 	Tags               []string          `json:"tags"`
 	Videoram           Videoram          `json:"videoram,omitempty"`
 	Vga                string            `json:"vga,omitempty"`
+	StartDelay         int               `json:startDelay,omitempty"`
 
 	// These fields are used for passing in disk inputs when
 	// creating Vms, however, this is not a real field as far
@@ -195,6 +196,11 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 		params["vga"] = vga
 	}
 
+	startDelay := vmReq.StartDelay
+	if startDelay != 0 {
+		params["startDelay"] = startDelay
+	}
+
 	// if len(vmReq.BlockedOperations) > 0 {
 	// 	blockedOperations := map[string]string{}
 	// 	for _, v := range vmReq.BlockedOperations {
@@ -287,8 +293,6 @@ func (c *Client) UpdateVm(vmReq Vm) (*Vm, error) {
 		// pv_args
 
 		// virtualizationMode hvm or pv, cannot be set after vm is created (requires conversion)
-
-		// can be set at runtime vga valid values (std, cirrus), videoram (= [1, 2, 4, 8, 16]) - https://github.com/vatesfr/xen-orchestra/blob/9139c5e9d6b4306ba4078e6fa128a36f65417792/packages/xo-server/src/xapi/mixins/vm.mjs#L18
 
 		// hasVendorDevice must be applied when the vm is halted and only applies to windows machines - https://github.com/xapi-project/xen-api/blob/889b83c47d46c4df65fe58b01caed284dab8dc93/ocaml/idl/datamodel_vm.ml#L1168
 

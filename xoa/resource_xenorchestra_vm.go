@@ -174,6 +174,11 @@ func resourceRecord() *schema.Resource {
 				Default:  0,
 				Optional: true,
 			},
+			"start_delay": &schema.Schema{
+				Type:     schema.TypeInt,
+				Default:  0,
+				Optional: true,
+			},
 			"secure_boot": &schema.Schema{
 				Type:     schema.TypeBool,
 				Default:  false,
@@ -396,6 +401,7 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		SecureBoot:   d.Get("secure_boot").(bool),
 		NicType:      d.Get("nic_type").(string),
 		VIFsMap:      network_maps,
+		StartDelay:   d.Get("start_delay").(int),
 		WaitForIps:   d.Get("wait_for_ip").(bool),
 		Videoram: client.Videoram{
 			Value: d.Get("videoram").(int),
@@ -902,6 +908,10 @@ func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, cd
 	}
 
 	if err := d.Set("videoram", resource.Videoram); err != nil {
+		return err
+	}
+
+	if err := d.Set("start_delay", resource.StartDelay); err != nil {
 		return err
 	}
 

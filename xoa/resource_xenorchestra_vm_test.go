@@ -1179,28 +1179,40 @@ func TestAccXenorchestraVm_updatesWithoutRebootForOtherAttrs(t *testing.T) {
 				Config: testAccVmConfigUpdateAttr(
 					nameLabel,
 					`
-					vga = "cirrus"
-					videoram = 16
+					start_delay = 1
 				`),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
-					resource.TestCheckResourceAttr(resourceName, "vga", "std"),
-					resource.TestCheckResourceAttr(resourceName, "videoram", "16"),
+					resource.TestCheckResourceAttr(resourceName, "start_delay", "1"),
 				),
 			},
-			{
-				Config: testAccVmConfigUpdateAttr(
-					nameLabel,
-					"",
-				),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccVmExists(resourceName),
-					resource.TestCheckResourceAttrSet(resourceName, "id"),
-					resource.TestCheckResourceAttr(resourceName, "vga", "cirrus"),
-					resource.TestCheckResourceAttr(resourceName, "videoram", "8"),
-				),
-			},
+			// {
+			// 	Config: testAccVmConfigUpdateAttr(
+			// 		nameLabel,
+			// 		`
+			// 		vga = "cirrus"
+			// 		videoram = 16
+			// 	`),
+			// 	Check: resource.ComposeAggregateTestCheckFunc(
+			// 		testAccVmExists(resourceName),
+			// 		resource.TestCheckResourceAttrSet(resourceName, "id"),
+			// 		resource.TestCheckResourceAttr(resourceName, "vga", "std"),
+			// 		resource.TestCheckResourceAttr(resourceName, "videoram", "16"),
+			// 	),
+			// },
+			// {
+			// 	Config: testAccVmConfigUpdateAttr(
+			// 		nameLabel,
+			// 		"",
+			// 	),
+			// 	Check: resource.ComposeAggregateTestCheckFunc(
+			// 		testAccVmExists(resourceName),
+			// 		resource.TestCheckResourceAttrSet(resourceName, "id"),
+			// 		resource.TestCheckResourceAttr(resourceName, "vga", "cirrus"),
+			// 		resource.TestCheckResourceAttr(resourceName, "videoram", "8"),
+			// 	),
+			// },
 			// {
 			// 	Config: testAccVmConfigUpdateAttr(
 			// 		nameLabel,
