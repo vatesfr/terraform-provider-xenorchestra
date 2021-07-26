@@ -77,7 +77,7 @@ func vmToMapList(vms []client.Vm) []map[string]interface{} {
 			"cloud_config":         vm.CloudConfig,
 			"cloud_network_config": vm.CloudNetworkConfig,
 			"tags":                 vm.Tags,
-			"memory_max":           vm.Memory.Size,
+			"memory_max":           vm.Memory.Static[1],
 			"affinity_host":        vm.AffinityHost,
 			"template":             vm.Template,
 			"wait_for_ip":          vm.WaitForIps,
