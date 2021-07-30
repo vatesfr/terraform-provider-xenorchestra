@@ -378,6 +378,7 @@ func TestAccXenorchestraVm_createAndPlanWithNonExistantVm(t *testing.T) {
 func TestAccXenorchestraVm_createWhenWaitingForIp(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
+	regex := regexp.MustCompile(`[1-9]*`)
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -389,9 +390,9 @@ func TestAccXenorchestraVm_createWhenWaitingForIp(t *testing.T) {
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttr(resourceName, "wait_for_ip", "true"),
-					resource.TestCheckResourceAttr(resourceName, "ipv6_addresses.#", "1"),
+					resource.TestMatchResourceAttr(resourceName, "ipv6_addresses.#", regex),
 					resource.TestCheckResourceAttrSet(resourceName, "ipv6_addresses.0"),
-					resource.TestCheckResourceAttr(resourceName, "network.0.ipv6_addresses.#", "1"),
+					resource.TestMatchResourceAttr(resourceName, "network.0.ipv6_addresses.#", regex),
 					resource.TestCheckResourceAttrSet(resourceName, "network.0.ipv6_addresses.0"),
 				),
 			},
