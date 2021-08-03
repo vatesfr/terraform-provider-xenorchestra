@@ -29,6 +29,9 @@ type Boot struct {
 	Firmware string `json:"firmware,omitempty"`
 }
 
+// The XO api sometimes returns the videoram field as an int
+// and sometimes as a string. This overrides the default json
+// unmarshalling so that we can handle both of these cases
 type Videoram struct {
 	Value int `json:"-"`
 }
