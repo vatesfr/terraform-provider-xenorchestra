@@ -37,6 +37,284 @@ var validInstallationMethods = []string{
 	"network",
 }
 
+func resourceVm() *schema.Resource {
+	vmSchema := resourceVmSchema()
+	delete(vmSchema, "cdrom")
+	delete(vmSchema, "installation_method")
+	vmSchema["id"] = &schema.Schema{
+		Type:     schema.TypeString,
+		Required: true,
+	}
+
+	return &schema.Resource{
+		Schema: vmSchema,
+	}
+}
+
+func resourceVmSchema() map[string]*schema.Schema {
+	return map[string]*schema.Schema{
+
+		"affinity_host": &schema.Schema{
+			Type:     schema.TypeString,
+			Optional: true,
+		},
+		"blocked_operations": &schema.Schema{
+			Type:     schema.TypeSet,
+			Optional: true,
+			Elem: &schema.Schema{
+				Type: schema.TypeString,
+			},
+		},
+		"name_label": &schema.Schema{
+			Type:     schema.TypeString,
+			Required: true,
+		},
+		"name_description": &schema.Schema{
+			Type:     schema.TypeString,
+			Optional: true,
+		},
+		"cloud_network_config": &schema.Schema{
+			Type:     schema.TypeString,
+			Optional: true,
+		},
+		"auto_poweron": &schema.Schema{
+			Type:     schema.TypeBool,
+			Default:  false,
+			Optional: true,
+		},
+		"exp_nested_hvm": &schema.Schema{
+			Type:     schema.TypeBool,
+			Default:  false,
+			Optional: true,
+		},
+		"hvm_boot_firmware": &schema.Schema{
+			Type:         schema.TypeString,
+			Default:      "bios",
+			Optional:     true,
+			ValidateFunc: validation.StringInSlice(validFirmware, false),
+		},
+		"power_state": &schema.Schema{
+			Type:     schema.TypeString,
+			Computed: true,
+		},
+		"installation_method": &schema.Schema{
+			Type:          schema.TypeString,
+			Optional:      true,
+			ValidateFunc:  validation.StringInSlice(validInstallationMethods, false),
+			ConflictsWith: []string{"cdrom"},
+		},
+		"high_availability": &schema.Schema{
+			Type:         schema.TypeString,
+			Default:      "",
+			Optional:     true,
+			ValidateFunc: validation.StringInSlice(validHaOptions, false),
+		},
+		"template": &schema.Schema{
+			Type:     schema.TypeString,
+			Required: true,
+			ForceNew: true,
+		},
+		"cloud_config": &schema.Schema{
+			Type:     schema.TypeString,
+			Optional: true,
+		},
+		"core_os": &schema.Schema{
+			Type:     schema.TypeBool,
+			Optional: true,
+			Default:  false,
+		},
+		"cpu_cap": &schema.Schema{
+			Type:     schema.TypeInt,
+			Optional: true,
+			Default:  0,
+		},
+		"cpu_weight": &schema.Schema{
+			Type:     schema.TypeInt,
+			Optional: true,
+			Default:  0,
+		},
+		"cpus": &schema.Schema{
+			Type:     schema.TypeInt,
+			Required: true,
+		},
+		"memory_max": &schema.Schema{
+			Type:     schema.TypeInt,
+			Required: true,
+		},
+		"resource_set": &schema.Schema{
+			Type:     schema.TypeString,
+			Optional: true,
+		},
+		"ipv4_addresses": &schema.Schema{
+			Type:     schema.TypeList,
+			Computed: true,
+			Elem: &schema.Schema{
+				Type: schema.TypeString,
+			},
+		},
+		"ipv6_addresses": &schema.Schema{
+			Type:     schema.TypeList,
+			Computed: true,
+			Elem: &schema.Schema{
+				Type: schema.TypeString,
+			},
+		},
+		"vga": &schema.Schema{
+			Type:         schema.TypeString,
+			Default:      "std",
+			Optional:     true,
+			ValidateFunc: validation.StringInSlice(validVga, false),
+		},
+		"videoram": &schema.Schema{
+			Type:     schema.TypeInt,
+			Default:  8,
+			Optional: true,
+		},
+		"start_delay": &schema.Schema{
+			Type:     schema.TypeInt,
+			Default:  0,
+			Optional: true,
+		},
+		"secure_boot": &schema.Schema{
+			Type:     schema.TypeBool,
+			Default:  false,
+			Optional: true,
+		},
+		"nic_type": &schema.Schema{
+			Type:     schema.TypeString,
+			Default:  "",
+			Optional: true,
+		},
+		"host": &schema.Schema{
+			Type:     schema.TypeString,
+			Optional: true,
+		},
+		"wait_for_ip": &schema.Schema{
+			Type:     schema.TypeBool,
+			Default:  false,
+			Optional: true,
+		},
+		"cdrom": &schema.Schema{
+			Type:          schema.TypeList,
+			Optional:      true,
+			ConflictsWith: []string{"installation_method"},
+			Elem: &schema.Resource{
+				Schema: map[string]*schema.Schema{
+					"id": &schema.Schema{
+						Type:     schema.TypeString,
+						Required: true,
+					},
+				},
+			},
+			// This should be increased but I don't understand
+			// the use cases for multiple ISOs just yet. For now
+			// limit it to a single ISO
+			MaxItems: 1,
+		},
+		"network": &schema.Schema{
+			Type:     schema.TypeList,
+			Required: true,
+			Elem: &schema.Resource{
+				Schema: map[string]*schema.Schema{
+					"attached": &schema.Schema{
+						Type:             schema.TypeBool,
+						Default:          true,
+						Optional:         true,
+						DiffSuppressFunc: suppressAttachedDiffWhenHalted,
+					},
+					"device": &schema.Schema{
+						Type:     schema.TypeString,
+						Computed: true,
+					},
+					"network_id": &schema.Schema{
+						Type:     schema.TypeString,
+						Required: true,
+					},
+					"mac_address": &schema.Schema{
+						Type:     schema.TypeString,
+						Optional: true,
+						Computed: true,
+						StateFunc: func(val interface{}) string {
+							unformattedMac := val.(string)
+							mac, err := net.ParseMAC(unformattedMac)
+							if err != nil {
+								panic(fmt.Sprintf("Mac address `%s` was not parsable. This should never happened because Terraform's validation should happen before this is stored into state", unformattedMac))
+							}
+							return mac.String()
+
+						},
+						ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
+							mac_address := val.(string)
+							if _, err := net.ParseMAC(mac_address); err != nil {
+								errs = append(errs, fmt.Errorf("%s Mac Address is invalid", mac_address))
+							}
+							return
+
+						},
+					},
+					"ipv4_addresses": &schema.Schema{
+						Type:     schema.TypeList,
+						Computed: true,
+						Elem: &schema.Schema{
+							Type: schema.TypeString,
+						},
+					},
+					"ipv6_addresses": &schema.Schema{
+						Type:     schema.TypeList,
+						Computed: true,
+						Elem: &schema.Schema{
+							Type: schema.TypeString,
+						},
+					},
+				},
+			},
+		},
+		"disk": &schema.Schema{
+			Type:     schema.TypeList,
+			Required: true,
+			Elem: &schema.Resource{
+				Schema: map[string]*schema.Schema{
+					"sr_id": &schema.Schema{
+						Type:     schema.TypeString,
+						Required: true,
+					},
+					"name_label": &schema.Schema{
+						Type:     schema.TypeString,
+						Required: true,
+					},
+					"name_description": &schema.Schema{
+						Type:     schema.TypeString,
+						Optional: true,
+					},
+					"size": &schema.Schema{
+						Type:     schema.TypeInt,
+						Required: true,
+					},
+					"attached": &schema.Schema{
+						Type:             schema.TypeBool,
+						Default:          true,
+						Optional:         true,
+						DiffSuppressFunc: suppressAttachedDiffWhenHalted,
+					},
+					"position": &schema.Schema{
+						Type:     schema.TypeString,
+						Computed: true,
+					},
+					"vdi_id": &schema.Schema{
+						Type:     schema.TypeString,
+						Computed: true,
+					},
+					"vbd_id": &schema.Schema{
+						Type:     schema.TypeString,
+						Computed: true,
+					},
+				},
+			},
+		},
+		"tags": resourceTags(),
+	}
+}
+
 func resourceRecord() *schema.Resource {
 	duration := 5 * time.Minute
 	return &schema.Resource{
@@ -52,262 +330,7 @@ func resourceRecord() *schema.Resource {
 			Update: &duration,
 			Delete: &duration,
 		},
-		Schema: map[string]*schema.Schema{
-			"affinity_host": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"blocked_operations": &schema.Schema{
-				Type:     schema.TypeSet,
-				Optional: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
-				},
-			},
-			"name_label": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-			},
-			"name_description": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"cloud_network_config": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"auto_poweron": &schema.Schema{
-				Type:     schema.TypeBool,
-				Default:  false,
-				Optional: true,
-			},
-			"exp_nested_hvm": &schema.Schema{
-				Type:     schema.TypeBool,
-				Default:  false,
-				Optional: true,
-			},
-			"hvm_boot_firmware": &schema.Schema{
-				Type:         schema.TypeString,
-				Default:      "bios",
-				Optional:     true,
-				ValidateFunc: validation.StringInSlice(validFirmware, false),
-			},
-			"power_state": &schema.Schema{
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"installation_method": &schema.Schema{
-				Type:          schema.TypeString,
-				Optional:      true,
-				ValidateFunc:  validation.StringInSlice(validInstallationMethods, false),
-				ConflictsWith: []string{"cdrom"},
-			},
-			"high_availability": &schema.Schema{
-				Type:         schema.TypeString,
-				Default:      "",
-				Optional:     true,
-				ValidateFunc: validation.StringInSlice(validHaOptions, false),
-			},
-			"template": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-			},
-			"cloud_config": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"core_os": &schema.Schema{
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
-			},
-			"cpu_cap": &schema.Schema{
-				Type:     schema.TypeInt,
-				Optional: true,
-				Default:  0,
-			},
-			"cpu_weight": &schema.Schema{
-				Type:     schema.TypeInt,
-				Optional: true,
-				Default:  0,
-			},
-			"cpus": &schema.Schema{
-				Type:     schema.TypeInt,
-				Required: true,
-			},
-			"memory_max": &schema.Schema{
-				Type:     schema.TypeInt,
-				Required: true,
-			},
-			"resource_set": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"ipv4_addresses": &schema.Schema{
-				Type:     schema.TypeList,
-				Computed: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
-				},
-			},
-			"ipv6_addresses": &schema.Schema{
-				Type:     schema.TypeList,
-				Computed: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
-				},
-			},
-			"wait_for_ip": &schema.Schema{
-				Type:     schema.TypeBool,
-				Default:  false,
-				Optional: true,
-			},
-			"vga": &schema.Schema{
-				Type:         schema.TypeString,
-				Default:      "std",
-				Optional:     true,
-				ValidateFunc: validation.StringInSlice(validVga, false),
-			},
-			"videoram": &schema.Schema{
-				Type:     schema.TypeInt,
-				Default:  8,
-				Optional: true,
-			},
-			"start_delay": &schema.Schema{
-				Type:     schema.TypeInt,
-				Default:  0,
-				Optional: true,
-			},
-			"secure_boot": &schema.Schema{
-				Type:     schema.TypeBool,
-				Default:  false,
-				Optional: true,
-			},
-			"nic_type": &schema.Schema{
-				Type:     schema.TypeString,
-				Default:  "",
-				Optional: true,
-			},
-			"cdrom": &schema.Schema{
-				Type:          schema.TypeList,
-				Optional:      true,
-				ConflictsWith: []string{"installation_method"},
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"id": &schema.Schema{
-							Type:     schema.TypeString,
-							Required: true,
-						},
-					},
-				},
-				// This should be increased but I don't understand
-				// the use cases for multiple ISOs just yet. For now
-				// limit it to a single ISO
-				MaxItems: 1,
-			},
-			"network": &schema.Schema{
-				Type:     schema.TypeList,
-				Required: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"attached": &schema.Schema{
-							Type:             schema.TypeBool,
-							Default:          true,
-							Optional:         true,
-							DiffSuppressFunc: suppressAttachedDiffWhenHalted,
-						},
-						"device": &schema.Schema{
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"network_id": &schema.Schema{
-							Type:     schema.TypeString,
-							Required: true,
-						},
-						"mac_address": &schema.Schema{
-							Type:     schema.TypeString,
-							Optional: true,
-							Computed: true,
-							StateFunc: func(val interface{}) string {
-								unformattedMac := val.(string)
-								mac, err := net.ParseMAC(unformattedMac)
-								if err != nil {
-									panic(fmt.Sprintf("Mac address `%s` was not parsable. This should never happened because Terraform's validation should happen before this is stored into state", unformattedMac))
-								}
-								return mac.String()
-
-							},
-							ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-								mac_address := val.(string)
-								if _, err := net.ParseMAC(mac_address); err != nil {
-									errs = append(errs, fmt.Errorf("%s Mac Address is invalid", mac_address))
-								}
-								return
-
-							},
-						},
-						"ipv4_addresses": &schema.Schema{
-							Type:     schema.TypeList,
-							Computed: true,
-							Elem: &schema.Schema{
-								Type: schema.TypeString,
-							},
-						},
-						"ipv6_addresses": &schema.Schema{
-							Type:     schema.TypeList,
-							Computed: true,
-							Elem: &schema.Schema{
-								Type: schema.TypeString,
-							},
-						},
-					},
-				},
-			},
-			"disk": &schema.Schema{
-				Type:     schema.TypeList,
-				Required: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"sr_id": &schema.Schema{
-							Type:     schema.TypeString,
-							Required: true,
-						},
-						"name_label": &schema.Schema{
-							Type:     schema.TypeString,
-							Required: true,
-						},
-						"name_description": &schema.Schema{
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"size": &schema.Schema{
-							Type:     schema.TypeInt,
-							Required: true,
-						},
-						"attached": &schema.Schema{
-							Type:             schema.TypeBool,
-							Default:          true,
-							Optional:         true,
-							DiffSuppressFunc: suppressAttachedDiffWhenHalted,
-						},
-						"position": &schema.Schema{
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"vdi_id": &schema.Schema{
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"vbd_id": &schema.Schema{
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-					},
-				},
-			},
-			"tags": resourceTags(),
-		},
+		Schema: resourceVmSchema(),
 	}
 }
 

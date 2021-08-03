@@ -39,6 +39,19 @@ func resourceHostSchema() map[string]*schema.Schema {
 			Type:     schema.TypeString,
 			Computed: true,
 		},
+		"cpus": &schema.Schema{
+			Type:     schema.TypeMap,
+			Computed: true,
+			Elem:     &schema.Schema{Type: schema.TypeInt},
+		},
+		"memory": &schema.Schema{
+			Type:     schema.TypeInt,
+			Computed: true,
+		},
+		"memory_usage": &schema.Schema{
+			Type:     schema.TypeInt,
+			Computed: true,
+		},
 		"tags": resourceTags(),
 	}
 }
@@ -57,6 +70,17 @@ func dataSourceHostRead(d *schema.ResourceData, m interface{}) error {
 	}
 
 	d.SetId(hosts[0].Id)
-
+	d.Set("pool_id", hosts[0].Pool)
+	d.Set("memory", hosts[0].Memory.Size)
+	d.Set("memory_usage", hosts[0].Memory.Usage)
+	d.Set("cpus", hostCpuInfoToMapList(hosts[0]))
+	d.Set("tags", hosts[0].Tags)
 	return nil
+}
+
+func hostCpuInfoToMapList(host client.Host) map[string]int {
+	return map[string]int{
+		"sockets": int(host.Cpus.Sockets),
+		"cores":   int(host.Cpus.Cores),
+	}
 }

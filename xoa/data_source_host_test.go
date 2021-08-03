@@ -21,6 +21,10 @@ func TestAccXenorchestraDataSource_host(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckXenorchestraDataSourceHost(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "cpus.cores"),
+					resource.TestCheckResourceAttrSet(resourceName, "cpus.sockets"),
+					resource.TestCheckResourceAttrSet(resourceName, "memory"),
+					resource.TestCheckResourceAttrSet(resourceName, "memory_usage"),
 					resource.TestCheckResourceAttr(resourceName, "name_label", accTestHost.NameLabel)),
 			},
 		},

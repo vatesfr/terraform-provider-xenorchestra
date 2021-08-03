@@ -84,6 +84,7 @@ type Vm struct {
 	Videoram           Videoram          `json:"videoram,omitempty"`
 	Vga                string            `json:"vga,omitempty"`
 	StartDelay         int               `json:startDelay,omitempty"`
+	Host               string            `json:"$container"`
 
 	// These fields are used for passing in disk inputs when
 	// creating Vms, however, this is not a real field as far
@@ -109,7 +110,19 @@ func (v Vm) Compare(obj interface{}) bool {
 	if v.NameLabel != "" && v.NameLabel == other.NameLabel {
 		return true
 	}
-
+	if v.PowerState != "" && v.Host != "" {
+		if (v.PowerState == other.PowerState) && (v.Host == other.Host) {
+			return true
+		}
+		return false
+	} else if v.PowerState != "" && v.PowerState == other.PowerState {
+		return true
+	} else if v.Host != "" && v.Host == other.Host {
+		return true
+	}
+	if v.PoolId != "" && v.PoolId == other.PoolId {
+		return true
+	}
 	tagCount := len(v.Tags)
 	if tagCount > 0 {
 		for _, tag := range v.Tags {
@@ -408,20 +421,12 @@ func (c *Client) GetVm(vmReq Vm) (*Vm, error) {
 	return &vms[0], nil
 }
 
-func (c *Client) GetVms() ([]Vm, error) {
-
-	var response map[string]Vm
-	err := c.GetAllObjectsOfType(Vm{PowerState: "Running"}, &response)
-
+func (c *Client) GetVms(vm Vm) ([]Vm, error) {
+	obj, err := c.FindFromGetAllObjects(vm)
 	if err != nil {
 		return []Vm{}, err
 	}
-
-	vms := make([]Vm, 0, len(response))
-	for _, vm := range response {
-		vms = append(vms, vm)
-	}
-
+	vms := obj.([]Vm)
 	log.Printf("[DEBUG] Found vms: %+v", vms)
 	return vms, nil
 }
