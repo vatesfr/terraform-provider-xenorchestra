@@ -33,7 +33,7 @@ type Videoram struct {
 	Value int `json:"-"`
 }
 
-func (v Videoram) UnmarshalJSON(data []byte) (err error) {
+func (v *Videoram) UnmarshalJSON(data []byte) (err error) {
 	s := string(data)
 	l := len(s)
 	if s[0] == '"' && s[l-1] == '"' {
@@ -161,24 +161,23 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 	}
 
 	params := map[string]interface{}{
-		"affinityHost":      vmReq.AffinityHost,
-		"blockedOperations": vmReq.BlockedOperations,
-		"bootAfterCreate":   true,
-		"name_label":        vmReq.NameLabel,
-		"name_description":  vmReq.NameDescription,
-		"template":          vmReq.Template,
-		"coreOs":            false,
-		"cpuCap":            nil,
-		"cpuWeight":         nil,
-		"CPUs":              vmReq.CPUs.Number,
-		"memoryMax":         vmReq.Memory.Static[1],
-		"existingDisks":     existingDisks,
-		"nicType":           vmReq.NicType,
-		"secureBoot":        vmReq.SecureBoot,
-		"expNestedHvm":      vmReq.ExpNestedHvm,
-		"VDIs":              vdis,
-		"VIFs":              vmReq.VIFsMap,
-		"tags":              vmReq.Tags,
+		"affinityHost":     vmReq.AffinityHost,
+		"bootAfterCreate":  true,
+		"name_label":       vmReq.NameLabel,
+		"name_description": vmReq.NameDescription,
+		"template":         vmReq.Template,
+		"coreOs":           false,
+		"cpuCap":           nil,
+		"cpuWeight":        nil,
+		"CPUs":             vmReq.CPUs.Number,
+		"memoryMax":        vmReq.Memory.Static[1],
+		"existingDisks":    existingDisks,
+		"nicType":          vmReq.NicType,
+		"secureBoot":       vmReq.SecureBoot,
+		"expNestedHvm":     vmReq.ExpNestedHvm,
+		"VDIs":             vdis,
+		"VIFs":             vmReq.VIFsMap,
+		"tags":             vmReq.Tags,
 	}
 
 	firmware := vmReq.Boot.Firmware
@@ -201,13 +200,13 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 		params["startDelay"] = startDelay
 	}
 
-	// if len(vmReq.BlockedOperations) > 0 {
-	// 	blockedOperations := map[string]string{}
-	// 	for _, v := range vmReq.BlockedOperations {
-	// 		blockedOperations[v] = "true"
-	// 	}
-	// 	params["blockedOperations"] = blockedOperations
-	// }
+	if len(vmReq.BlockedOperations) > 0 {
+		blockedOperations := map[string]string{}
+		for _, v := range vmReq.BlockedOperations {
+			blockedOperations[v] = "true"
+		}
+		params["blockedOperations"] = blockedOperations
+	}
 
 	if installation.Method != "" {
 		params["installation"] = map[string]string{
@@ -288,7 +287,9 @@ func (c *Client) UpdateVm(vmReq Vm) (*Vm, error) {
 		"memoryMax":         vmReq.Memory.Static[1],
 		"nicType":           vmReq.NicType,
 		"expNestedHvm":      vmReq.ExpNestedHvm,
-		"secureBoot":        vmReq.SecureBoot,
+		"startDelay":        vmReq.StartDelay,
+		"vga":               vmReq.Vga,
+		"videoram":          vmReq.Videoram.Value,
 		// TODO: These need more investigation before they are implemented
 		// pv_args
 
@@ -300,7 +301,27 @@ func (c *Client) UpdateVm(vmReq Vm) (*Vm, error) {
 
 		// cpusMask, cpuWeight and cpuCap can be changed at runtime to an integer value or null
 		// coresPerSocket is null or a number of cores per socket. Putting an invalid value doesn't seem to cause an error :(
-		// startDelay is a number in seconds, can be changed at runtime
+	}
+
+	secureBoot := vmReq.SecureBoot
+	if secureBoot {
+		params["secureBoot"] = true
+	}
+
+	blockedOperations := map[string]interface{}{}
+	for k, v := range vmReq.BlockedOperations {
+		if v == "false" {
+			blockedOperations[k] = nil
+
+		} else {
+			blockedOperations[k] = v
+		}
+	}
+	params["blockedOperations"] = blockedOperations
+
+	firmware := vmReq.Boot.Firmware
+	if vmReq.Boot.Firmware != "" {
+		params["hvmBootFirmware"] = firmware
 	}
 	log.Printf("[DEBUG] VM params for vm.set: %#v", params)
 

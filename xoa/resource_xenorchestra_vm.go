@@ -88,7 +88,7 @@ func resourceRecord() *schema.Resource {
 			},
 			"hvm_boot_firmware": &schema.Schema{
 				Type:         schema.TypeString,
-				Default:      "",
+				Default:      "bios",
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice(validFirmware, false),
 			},
@@ -165,13 +165,13 @@ func resourceRecord() *schema.Resource {
 			},
 			"vga": &schema.Schema{
 				Type:         schema.TypeString,
-				Default:      "",
+				Default:      "std",
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice(validVga, false),
 			},
 			"videoram": &schema.Schema{
 				Type:     schema.TypeInt,
-				Default:  0,
+				Default:  8,
 				Optional: true,
 			},
 			"start_delay": &schema.Schema{
@@ -742,6 +742,15 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		AutoPoweron:       autoPowerOn,
 		AffinityHost:      affinityHost,
 		BlockedOperations: blockOperations,
+		StartDelay:        d.Get("start_delay").(int),
+		Vga:               d.Get("vga").(string),
+		SecureBoot:        d.Get("secure_boot").(bool),
+		Boot: client.Boot{
+			Firmware: d.Get("hvm_boot_firmware").(string),
+		},
+		Videoram: client.Videoram{
+			Value: d.Get("videoram").(int),
+		},
 	}
 	if haltForUpdates {
 		err := c.HaltVm(vmReq)
@@ -899,6 +908,10 @@ func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, cd
 		return err
 	}
 
+	if err := d.Set("hvm_boot_firmware", resource.Boot.Firmware); err != nil {
+		return err
+	}
+
 	if err := d.Set("exp_nested_hvm", resource.ExpNestedHvm); err != nil {
 		return err
 	}
@@ -907,7 +920,7 @@ func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, cd
 		return err
 	}
 
-	if err := d.Set("videoram", resource.Videoram); err != nil {
+	if err := d.Set("videoram", resource.Videoram.Value); err != nil {
 		return err
 	}
 

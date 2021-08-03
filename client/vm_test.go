@@ -72,6 +72,11 @@ var vmObjectData string = `
   "$poolId": "cadf25ab-91ff-6fc0-041f-5a7033c4bc78"
 }`
 
+var vmObjectWithNumericVideoram string = `
+{
+  "videoram": 8
+}`
+
 var data string = `
 {
   "6944cce9-5ce0-a853-ee9c-bcc8281b597f": {
@@ -132,7 +137,7 @@ var data string = `
 }
 `
 
-func TestThatUnmarshalingWorks(t *testing.T) {
+func TestUnmarshal(t *testing.T) {
 	var allObjectRes allObjectResponse
 	err := json.Unmarshal([]byte(data), &allObjectRes.Objects)
 
@@ -152,6 +157,17 @@ func TestUnmarshalingVmObject(t *testing.T) {
 
 	if !validateVmObject(vmObj) {
 		t.Fatalf("VmObject has not passed validation")
+	}
+
+	var vmObjVideoramNumeric Vm
+	err = json.Unmarshal([]byte(vmObjectWithNumericVideoram), &vmObjVideoramNumeric)
+
+	if err != nil {
+		t.Fatalf("error: %v. Need to have VM object: %v", err, vmObjVideoramNumeric)
+	}
+
+	if vmObjVideoramNumeric.Videoram.Value != 8 {
+		t.Fatalf("Expected vm to Unmarshal from numerical videoram value")
 	}
 
 }
@@ -204,6 +220,10 @@ func validateVmObject(o Vm) bool {
 	}
 
 	if o.ResourceSet == "" {
+		return false
+	}
+
+	if o.Videoram.Value != 8 {
 		return false
 	}
 

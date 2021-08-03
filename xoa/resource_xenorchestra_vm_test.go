@@ -1150,37 +1150,89 @@ func TestAccXenorchestraVm_updatesWithoutRebootForOtherAttrs(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
-			// {
-			// 	Config: testAccVmConfigUpdateAttr(
-			// 		nameLabel,
-			// 		`
-			// 	  blocked_operations = ["copy"]
-			// 	`),
-			// 	Check: resource.ComposeAggregateTestCheckFunc(
-			// 		testAccVmExists(resourceName),
-			// 		resource.TestCheckResourceAttrSet(resourceName, "id"),
-			// 		resource.TestCheckResourceAttr(resourceName, "blocked_operations.#", "1"),
-			// 		resource.TestCheckResourceAttr(resourceName, "blocked_operations.0", "copy"),
-			// 	),
-			// },
-			// {
-			// 	Config: testAccVmConfigUpdateAttr(
-			// 		nameLabel,
-			// 		"",
-			// 	),
-			// 	Check: resource.ComposeAggregateTestCheckFunc(
-			// 		testAccVmExists(resourceName),
-			// 		resource.TestCheckResourceAttrSet(resourceName, "id"),
-			// 		resource.TestCheckResourceAttr(resourceName, "blocked_operations.#", "0"),
-			// 	),
-			// },
-			// This fails to boot but will work once a VM was created
+			{
+				Config: testAccVmConfigUpdateAttr(
+					nameLabel,
+					"",
+				),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+				),
+			},
 			{
 				Config: testAccVmConfigUpdateAttr(
 					nameLabel,
 					`
-					start_delay = 1
-				`),
+                                    hvm_boot_firmware = "uefi"
+                            `),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "hvm_boot_firmware", "uefi"),
+				),
+			},
+			{
+				Config: testAccVmConfigUpdateAttr(
+					nameLabel,
+					`
+                                    hvm_boot_firmware = "uefi"
+                                    secure_boot = true
+                            `),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "hvm_boot_firmware", "uefi"),
+					resource.TestCheckResourceAttr(resourceName, "secure_boot", "true"),
+				),
+			},
+
+			{
+				Config: testAccVmConfigUpdateAttr(
+					nameLabel,
+					`
+                              blocked_operations = ["copy"]
+                            `),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "blocked_operations.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "blocked_operations.0", "copy"),
+				),
+			},
+
+			{
+				Config: testAccVmConfigUpdateAttr(
+					nameLabel,
+					`
+                                    vga = "cirrus"
+                                    videoram = 16
+                            `),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "vga", "cirrus"),
+					resource.TestCheckResourceAttr(resourceName, "videoram", "16"),
+				),
+			},
+			{
+				Config: testAccVmConfigUpdateAttr(
+					nameLabel,
+					`
+                                    nic_type = "e1000"
+                            `),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "nic_type", "e1000"),
+				),
+			},
+			{
+				Config: testAccVmConfigUpdateAttr(
+					nameLabel,
+					`
+				    start_delay = 1
+			`),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -1191,118 +1243,10 @@ func TestAccXenorchestraVm_updatesWithoutRebootForOtherAttrs(t *testing.T) {
 			// 	Config: testAccVmConfigUpdateAttr(
 			// 		nameLabel,
 			// 		`
-			// 		vga = "cirrus"
-			// 		videoram = 16
-			// 	`),
+			// `),
 			// 	Check: resource.ComposeAggregateTestCheckFunc(
 			// 		testAccVmExists(resourceName),
 			// 		resource.TestCheckResourceAttrSet(resourceName, "id"),
-			// 		resource.TestCheckResourceAttr(resourceName, "vga", "std"),
-			// 		resource.TestCheckResourceAttr(resourceName, "videoram", "16"),
-			// 	),
-			// },
-			// {
-			// 	Config: testAccVmConfigUpdateAttr(
-			// 		nameLabel,
-			// 		"",
-			// 	),
-			// 	Check: resource.ComposeAggregateTestCheckFunc(
-			// 		testAccVmExists(resourceName),
-			// 		resource.TestCheckResourceAttrSet(resourceName, "id"),
-			// 		resource.TestCheckResourceAttr(resourceName, "vga", "cirrus"),
-			// 		resource.TestCheckResourceAttr(resourceName, "videoram", "8"),
-			// 	),
-			// },
-			// {
-			// 	Config: testAccVmConfigUpdateAttr(
-			// 		nameLabel,
-			// 		`
-			// 		exp_nested_hvm = true
-			// 	`),
-			// 	Check: resource.ComposeAggregateTestCheckFunc(
-			// 		testAccVmExists(resourceName),
-			// 		resource.TestCheckResourceAttrSet(resourceName, "id"),
-			// 		resource.TestCheckResourceAttr(resourceName, "exp_nested_hvm", "true"),
-			// 	),
-			// },
-			// {
-			// 	Config: testAccVmConfigUpdateAttr(
-			// 		nameLabel,
-			// 		"",
-			// 	),
-			// 	Check: resource.ComposeAggregateTestCheckFunc(
-			// 		testAccVmExists(resourceName),
-			// 		resource.TestCheckResourceAttrSet(resourceName, "id"),
-			// 		resource.TestCheckResourceAttr(resourceName, "exp_nested_hvm", "false"),
-			// 	),
-			// },
-			// {
-			// 	Config: testAccVmConfigUpdateAttr(
-			// 		nameLabel,
-			// 		`
-			// 		nic_type = "e1000"
-			// 	`),
-			// 	Check: resource.ComposeAggregateTestCheckFunc(
-			// 		testAccVmExists(resourceName),
-			// 		resource.TestCheckResourceAttrSet(resourceName, "id"),
-			// 		resource.TestCheckResourceAttr(resourceName, "nic_type", "e1000"),
-			// 	),
-			// },
-			// {
-			// 	Config: testAccVmConfigUpdateAttr(
-			// 		nameLabel,
-			// 		"",
-			// 	),
-			// 	Check: resource.ComposeAggregateTestCheckFunc(
-			// 		testAccVmExists(resourceName),
-			// 		resource.TestCheckResourceAttrSet(resourceName, "id"),
-			// 		resource.TestCheckResourceAttr(resourceName, "nic_type", ""),
-			// 	),
-			// },
-			// {
-			// 	Config: testAccVmConfigUpdateAttr(
-			// 		nameLabel,
-			// 		`
-			// 		secure_boot = true
-			// 	`),
-			// 	Check: resource.ComposeAggregateTestCheckFunc(
-			// 		testAccVmExists(resourceName),
-			// 		resource.TestCheckResourceAttrSet(resourceName, "id"),
-			// 		resource.TestCheckResourceAttr(resourceName, "secure_boot", "true"),
-			// 	),
-			// },
-			// {
-			// 	Config: testAccVmConfigUpdateAttr(
-			// 		nameLabel,
-			// 		"",
-			// 	),
-			// 	Check: resource.ComposeAggregateTestCheckFunc(
-			// 		testAccVmExists(resourceName),
-			// 		resource.TestCheckResourceAttrSet(resourceName, "id"),
-			// 		resource.TestCheckResourceAttr(resourceName, "secure_boot", "false"),
-			// 	),
-			// },
-			// {
-			// 	Config: testAccVmConfigUpdateAttr(
-			// 		nameLabel,
-			// 		`
-			// 		hvm_boot_firmware = "uefi"
-			// 	`),
-			// 	Check: resource.ComposeAggregateTestCheckFunc(
-			// 		testAccVmExists(resourceName),
-			// 		resource.TestCheckResourceAttrSet(resourceName, "id"),
-			// 		resource.TestCheckResourceAttr(resourceName, "hvm_boot_firmware", "uefi"),
-			// 	),
-			// },
-			// {
-			// 	Config: testAccVmConfigUpdateAttr(
-			// 		nameLabel,
-			// 		"",
-			// 	),
-			// 	Check: resource.ComposeAggregateTestCheckFunc(
-			// 		testAccVmExists(resourceName),
-			// 		resource.TestCheckResourceAttrSet(resourceName, "id"),
-			// 		resource.TestCheckResourceAttr(resourceName, "hvm_boot_firmware", ""),
 			// 	),
 			// },
 		},
@@ -1640,7 +1584,7 @@ resource "xenorchestra_vm" "bar" {
     disk {
       sr_id = "%s"
       name_label = "disk 1"
-      size = 10001317888
+      size = 10737418240
     }
 
     tags = [
@@ -2277,7 +2221,7 @@ resource "xenorchestra_vm" "bar" {
     disk {
       sr_id = "%s"
       name_label = "disk 1"
-      size = 10001317888
+      size = 10737418240
     }
 
     %s
