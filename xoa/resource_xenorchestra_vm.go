@@ -954,7 +954,7 @@ func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, cd
 	if err := d.Set("tags", resource.Tags); err != nil {
 		return err
 	}
-	if err := d.Set("blocked_operations", resource.BlockedOperationsList()); err != nil {
+	if err := d.Set("blocked_operations", vmBlockedOperationsToList(resource)); err != nil {
 		return err
 	}
 
@@ -1000,6 +1000,15 @@ func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, cd
 	}
 
 	return nil
+}
+
+func vmBlockedOperationsToList(v client.Vm) []string {
+	blockedOperations := []string{}
+	for k, _ := range v.BlockedOperations {
+		blockedOperations = append(blockedOperations, k)
+	}
+
+	return blockedOperations
 }
 
 func diskHash(value interface{}) int {
