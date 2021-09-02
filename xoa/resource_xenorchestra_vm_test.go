@@ -1185,7 +1185,7 @@ func TestAccXenorchestraVm_updatesWithoutRebootForOtherAttrs(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "hvm_boot_firmware", "uefi"),
 				),
 			},
-			// TODO: () Uncomment once the issues with secure_boot are figured out
+			// TODO: (#145) Uncomment this once issues with secure_boot have been figured out
 			// {
 			// 	Config: testAccVmConfigUpdateAttr(
 			// 		nameLabel,

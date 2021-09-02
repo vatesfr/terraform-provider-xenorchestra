@@ -78,13 +78,14 @@ type Vm struct {
 	HA                 string            `json:"high_availability"`
 	CloudConfig        string            `json:"cloudConfig"`
 	ResourceSet        string            `json:"resourceSet,omitempty"`
-	SecureBoot         bool              `json:"secureBoot,omitempty"`
-	NicType            string            `json:"nicType,omitempty"`
-	Tags               []string          `json:"tags"`
-	Videoram           Videoram          `json:"videoram,omitempty"`
-	Vga                string            `json:"vga,omitempty"`
-	StartDelay         int               `json:startDelay,omitempty"`
-	Host               string            `json:"$container"`
+	// TODO: (#145) Uncomment this once issues with secure_boot have been figured out
+	// SecureBoot         bool              `json:"secureBoot,omitempty"`
+	NicType    string   `json:"nicType,omitempty"`
+	Tags       []string `json:"tags"`
+	Videoram   Videoram `json:"videoram,omitempty"`
+	Vga        string   `json:"vga,omitempty"`
+	StartDelay int      `json:startDelay,omitempty"`
+	Host       string   `json:"$container"`
 
 	// These fields are used for passing in disk inputs when
 	// creating Vms, however, this is not a real field as far
@@ -190,11 +191,12 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 		"memoryMax":        vmReq.Memory.Static[1],
 		"existingDisks":    existingDisks,
 		"nicType":          vmReq.NicType,
-		"secureBoot":       vmReq.SecureBoot,
-		"expNestedHvm":     vmReq.ExpNestedHvm,
-		"VDIs":             vdis,
-		"VIFs":             vmReq.VIFsMap,
-		"tags":             vmReq.Tags,
+		// TODO: (#145) Uncomment this once issues with secure_boot have been figured out
+		// "secureBoot":       vmReq.SecureBoot,
+		"expNestedHvm": vmReq.ExpNestedHvm,
+		"VDIs":         vdis,
+		"VIFs":         vmReq.VIFsMap,
+		"tags":         vmReq.Tags,
 	}
 
 	videoram := vmReq.Videoram.Value
@@ -307,10 +309,11 @@ func (c *Client) UpdateVm(vmReq Vm) (*Vm, error) {
 		// coresPerSocket is null or a number of cores per socket. Putting an invalid value doesn't seem to cause an error :(
 	}
 
-	secureBoot := vmReq.SecureBoot
-	if secureBoot {
-		params["secureBoot"] = true
-	}
+	// TODO: (#145) Uncomment this once issues with secure_boot have been figured out
+	// secureBoot := vmReq.SecureBoot
+	// if secureBoot {
+	// 	params["secureBoot"] = true
+	// }
 
 	blockedOperations := map[string]interface{}{}
 	for k, v := range vmReq.BlockedOperations {
