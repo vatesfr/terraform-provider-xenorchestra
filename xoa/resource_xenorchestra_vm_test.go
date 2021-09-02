@@ -1588,7 +1588,7 @@ resource "xenorchestra_vm" "bar" {
     disk {
       sr_id = "%s"
       name_label = "disk 1"
-      size = 10737418240
+      size = 10001317888
     }
 
     tags = [
@@ -2225,7 +2225,7 @@ resource "xenorchestra_vm" "bar" {
     disk {
       sr_id = "%s"
       name_label = "disk 1"
-      size = 10737418240
+      size = 10001317888
     }
 
     %s
