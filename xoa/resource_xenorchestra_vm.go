@@ -29,6 +29,7 @@ var validHaOptions = []string{
 }
 
 var validFirmware = []string{
+	"",
 	"bios",
 	"uefi",
 }
@@ -89,7 +90,7 @@ func resourceVmSchema() map[string]*schema.Schema {
 		},
 		"hvm_boot_firmware": &schema.Schema{
 			Type:         schema.TypeString,
-			Default:      "bios",
+			Default:      "",
 			Optional:     true,
 			ValidateFunc: validation.StringInSlice(validFirmware, false),
 		},
@@ -765,6 +766,7 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		AutoPoweron:       autoPowerOn,
 		AffinityHost:      affinityHost,
 		BlockedOperations: blockOperations,
+		ExpNestedHvm:      d.Get("exp_nested_hvm").(bool),
 		StartDelay:        d.Get("start_delay").(int),
 		Vga:               d.Get("vga").(string),
 		SecureBoot:        d.Get("secure_boot").(bool),

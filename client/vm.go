@@ -181,6 +181,7 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 		"bootAfterCreate":  true,
 		"name_label":       vmReq.NameLabel,
 		"name_description": vmReq.NameDescription,
+		"hvmBootFirmware":  vmReq.Boot.Firmware,
 		"template":         vmReq.Template,
 		"coreOs":           false,
 		"cpuCap":           nil,
@@ -194,11 +195,6 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 		"VDIs":             vdis,
 		"VIFs":             vmReq.VIFsMap,
 		"tags":             vmReq.Tags,
-	}
-
-	firmware := vmReq.Boot.Firmware
-	if firmware != "" {
-		params["hvmBootFirmware"] = firmware
 	}
 
 	videoram := vmReq.Videoram.Value
@@ -287,6 +283,7 @@ func (c *Client) UpdateVm(vmReq Vm) (*Vm, error) {
 		"affinityHost":      vmReq.AffinityHost,
 		"name_label":        vmReq.NameLabel,
 		"name_description":  vmReq.NameDescription,
+		"hvmBootFirmware":   vmReq.Boot.Firmware,
 		"auto_poweron":      vmReq.AutoPoweron,
 		"resourceSet":       resourceSet,
 		"high_availability": vmReq.HA, // valid options are best-effort, restart, ''
@@ -326,10 +323,6 @@ func (c *Client) UpdateVm(vmReq Vm) (*Vm, error) {
 	}
 	params["blockedOperations"] = blockedOperations
 
-	firmware := vmReq.Boot.Firmware
-	if vmReq.Boot.Firmware != "" {
-		params["hvmBootFirmware"] = firmware
-	}
 	log.Printf("[DEBUG] VM params for vm.set: %#v", params)
 
 	var success bool
