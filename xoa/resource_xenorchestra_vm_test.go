@@ -1165,6 +1165,18 @@ func TestAccXenorchestraVm_updatesWithoutRebootForOtherAttrs(t *testing.T) {
 				Config: testAccVmConfigUpdateAttr(
 					nameLabel,
 					`
+                                    exp_nested_hvm = true
+                            `),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "exp_nested_hvm", "true"),
+				),
+			},
+			{
+				Config: testAccVmConfigUpdateAttr(
+					nameLabel,
+					`
                                     hvm_boot_firmware = "uefi"
                             `),
 				Check: resource.ComposeAggregateTestCheckFunc(
