@@ -1,10 +1,12 @@
 package client
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -23,14 +25,48 @@ type MemoryObject struct {
 	Size    int   `json:"size"`
 }
 
+type Boot struct {
+	Firmware string `json:"firmware,omitempty"`
+}
+
+// The XO api sometimes returns the videoram field as an int
+// and sometimes as a string. This overrides the default json
+// unmarshalling so that we can handle both of these cases
+type Videoram struct {
+	Value int `json:"-"`
+}
+
+func (v *Videoram) UnmarshalJSON(data []byte) (err error) {
+	s := string(data)
+	l := len(s)
+	if s[0] == '"' && s[l-1] == '"' {
+		num := 0
+		if l > 2 {
+			num, err = strconv.Atoi(s[1 : l-1])
+
+			if err != nil {
+				return err
+			}
+
+		}
+		v.Value = num
+		return nil
+	}
+
+	return json.Unmarshal(data, &v.Value)
+}
+
 type Vm struct {
 	Addresses          map[string]string `json:"addresses,omitempty"`
+	BlockedOperations  map[string]string `json:"blockedOperations,omitempty"`
+	Boot               Boot              `json:"boot,omitempty"`
 	Type               string            `json:"type,omitempty"`
 	Id                 string            `json:"id,omitempty"`
 	AffinityHost       string            `json:"affinityHost,omitempty"`
 	NameDescription    string            `json:"name_description"`
 	NameLabel          string            `json:"name_label"`
 	CPUs               CPUs              `json:"CPUs"`
+	ExpNestedHvm       bool              `json:"expNestedHvm,omitempty"`
 	Memory             MemoryObject      `json:"memory"`
 	PowerState         string            `json:"power_state"`
 	VIFs               []string          `json:"VIFs"`
@@ -42,8 +78,14 @@ type Vm struct {
 	HA                 string            `json:"high_availability"`
 	CloudConfig        string            `json:"cloudConfig"`
 	ResourceSet        string            `json:"resourceSet,omitempty"`
-	Tags               []string          `json:"tags"`
-	Host               string            `json:"$container"`
+	// TODO: (#145) Uncomment this once issues with secure_boot have been figured out
+	// SecureBoot         bool              `json:"secureBoot,omitempty"`
+	NicType    string   `json:"nicType,omitempty"`
+	Tags       []string `json:"tags"`
+	Videoram   Videoram `json:"videoram,omitempty"`
+	Vga        string   `json:"vga,omitempty"`
+	StartDelay int      `json:startDelay,omitempty"`
+	Host       string   `json:"$container"`
 
 	// These fields are used for passing in disk inputs when
 	// creating Vms, however, this is not a real field as far
@@ -140,6 +182,7 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 		"bootAfterCreate":  true,
 		"name_label":       vmReq.NameLabel,
 		"name_description": vmReq.NameDescription,
+		"hvmBootFirmware":  vmReq.Boot.Firmware,
 		"template":         vmReq.Template,
 		"coreOs":           false,
 		"cpuCap":           nil,
@@ -147,9 +190,36 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 		"CPUs":             vmReq.CPUs.Number,
 		"memoryMax":        vmReq.Memory.Static[1],
 		"existingDisks":    existingDisks,
-		"VDIs":             vdis,
-		"VIFs":             vmReq.VIFsMap,
-		"tags":             vmReq.Tags,
+		"nicType":          vmReq.NicType,
+		// TODO: (#145) Uncomment this once issues with secure_boot have been figured out
+		// "secureBoot":       vmReq.SecureBoot,
+		"expNestedHvm": vmReq.ExpNestedHvm,
+		"VDIs":         vdis,
+		"VIFs":         vmReq.VIFsMap,
+		"tags":         vmReq.Tags,
+	}
+
+	videoram := vmReq.Videoram.Value
+	if videoram != 0 {
+		params["videoram"] = videoram
+	}
+
+	vga := vmReq.Vga
+	if vga != "" {
+		params["vga"] = vga
+	}
+
+	startDelay := vmReq.StartDelay
+	if startDelay != 0 {
+		params["startDelay"] = startDelay
+	}
+
+	if len(vmReq.BlockedOperations) > 0 {
+		blockedOperations := map[string]string{}
+		for _, v := range vmReq.BlockedOperations {
+			blockedOperations[v] = "true"
+		}
+		params["blockedOperations"] = blockedOperations
 	}
 
 	if installation.Method != "" {
@@ -215,14 +285,47 @@ func (c *Client) UpdateVm(vmReq Vm) (*Vm, error) {
 		"affinityHost":      vmReq.AffinityHost,
 		"name_label":        vmReq.NameLabel,
 		"name_description":  vmReq.NameDescription,
+		"hvmBootFirmware":   vmReq.Boot.Firmware,
 		"auto_poweron":      vmReq.AutoPoweron,
 		"resourceSet":       resourceSet,
 		"high_availability": vmReq.HA, // valid options are best-effort, restart, ''
 		"CPUs":              vmReq.CPUs.Number,
 		"memoryMax":         vmReq.Memory.Static[1],
+		"nicType":           vmReq.NicType,
+		"expNestedHvm":      vmReq.ExpNestedHvm,
+		"startDelay":        vmReq.StartDelay,
+		"vga":               vmReq.Vga,
+		"videoram":          vmReq.Videoram.Value,
 		// TODO: These need more investigation before they are implemented
-		// pv_args, cpuMask cpuWeight cpuCap vga videoram coresPerSocket hasVendorDevice expNestedHvm share startDelay nicType hvmBootFirmware virtualizationMode
+		// pv_args
+
+		// virtualizationMode hvm or pv, cannot be set after vm is created (requires conversion)
+
+		// hasVendorDevice must be applied when the vm is halted and only applies to windows machines - https://github.com/xapi-project/xen-api/blob/889b83c47d46c4df65fe58b01caed284dab8dc93/ocaml/idl/datamodel_vm.ml#L1168
+
+		// share relates to resource sets. This can be accomplished with the resource set resource so supporting it isn't necessary
+
+		// cpusMask, cpuWeight and cpuCap can be changed at runtime to an integer value or null
+		// coresPerSocket is null or a number of cores per socket. Putting an invalid value doesn't seem to cause an error :(
 	}
+
+	// TODO: (#145) Uncomment this once issues with secure_boot have been figured out
+	// secureBoot := vmReq.SecureBoot
+	// if secureBoot {
+	// 	params["secureBoot"] = true
+	// }
+
+	blockedOperations := map[string]interface{}{}
+	for k, v := range vmReq.BlockedOperations {
+		if v == "false" {
+			blockedOperations[k] = nil
+
+		} else {
+			blockedOperations[k] = v
+		}
+	}
+	params["blockedOperations"] = blockedOperations
+
 	log.Printf("[DEBUG] VM params for vm.set: %#v", params)
 
 	var success bool

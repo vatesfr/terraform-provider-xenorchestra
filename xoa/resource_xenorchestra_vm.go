@@ -16,10 +16,22 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
+var validVga = []string{
+	"",
+	"cirrus",
+	"std",
+}
+
 var validHaOptions = []string{
 	"",
 	"best-effort",
 	"restart",
+}
+
+var validFirmware = []string{
+	"",
+	"bios",
+	"uefi",
 }
 
 var validInstallationMethods = []string{
@@ -42,9 +54,17 @@ func resourceVm() *schema.Resource {
 
 func resourceVmSchema() map[string]*schema.Schema {
 	return map[string]*schema.Schema{
+
 		"affinity_host": &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
+		},
+		"blocked_operations": &schema.Schema{
+			Type:     schema.TypeSet,
+			Optional: true,
+			Elem: &schema.Schema{
+				Type: schema.TypeString,
+			},
 		},
 		"name_label": &schema.Schema{
 			Type:     schema.TypeString,
@@ -62,6 +82,17 @@ func resourceVmSchema() map[string]*schema.Schema {
 			Type:     schema.TypeBool,
 			Default:  false,
 			Optional: true,
+		},
+		"exp_nested_hvm": &schema.Schema{
+			Type:     schema.TypeBool,
+			Default:  false,
+			Optional: true,
+		},
+		"hvm_boot_firmware": &schema.Schema{
+			Type:         schema.TypeString,
+			Default:      "",
+			Optional:     true,
+			ValidateFunc: validation.StringInSlice(validFirmware, false),
 		},
 		"power_state": &schema.Schema{
 			Type:     schema.TypeString,
@@ -128,6 +159,33 @@ func resourceVmSchema() map[string]*schema.Schema {
 			Elem: &schema.Schema{
 				Type: schema.TypeString,
 			},
+		},
+		"vga": &schema.Schema{
+			Type:         schema.TypeString,
+			Default:      "std",
+			Optional:     true,
+			ValidateFunc: validation.StringInSlice(validVga, false),
+		},
+		"videoram": &schema.Schema{
+			Type:     schema.TypeInt,
+			Default:  8,
+			Optional: true,
+		},
+		"start_delay": &schema.Schema{
+			Type:     schema.TypeInt,
+			Default:  0,
+			Optional: true,
+		},
+		// TODO: (#145) Uncomment this once issues with secure_boot have been figured out
+		// "secure_boot": &schema.Schema{
+		// 	Type:     schema.TypeBool,
+		// 	Default:  false,
+		// 	Optional: true,
+		// },
+		"nic_type": &schema.Schema{
+			Type:     schema.TypeString,
+			Default:  "",
+			Optional: true,
 		},
 		"host": &schema.Schema{
 			Type:     schema.TypeString,
@@ -336,8 +394,18 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 
+	blockedOperations := map[string]string{}
+	for _, b := range d.Get("blocked_operations").(*schema.Set).List() {
+		blockedOperations[b.(string)] = "true"
+	}
+
 	vm, err := c.CreateVm(client.Vm{
-		AffinityHost:    d.Get("affinity_host").(string),
+		AffinityHost:      d.Get("affinity_host").(string),
+		BlockedOperations: blockedOperations,
+		Boot: client.Boot{
+			Firmware: d.Get("hvm_boot_firmware").(string),
+		},
+		ExpNestedHvm:    d.Get("exp_nested_hvm").(bool),
 		NameLabel:       d.Get("name_label").(string),
 		NameDescription: d.Get("name_description").(string),
 		Template:        d.Get("template").(string),
@@ -355,8 +423,16 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		Tags:         vmTags,
 		Disks:        ds,
 		Installation: installation,
-		VIFsMap:      network_maps,
-		WaitForIps:   d.Get("wait_for_ip").(bool),
+		// TODO: (#145) Uncomment this once issues with secure_boot have been figured out
+		// SecureBoot:   d.Get("secure_boot").(bool),
+		NicType:    d.Get("nic_type").(string),
+		VIFsMap:    network_maps,
+		StartDelay: d.Get("start_delay").(int),
+		WaitForIps: d.Get("wait_for_ip").(bool),
+		Videoram: client.Videoram{
+			Value: d.Get("videoram").(int),
+		},
+		Vga: d.Get("vga").(string),
 	},
 		d.Timeout(schema.TimeoutCreate),
 	)
@@ -657,6 +733,24 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		haltForUpdates = true
 	}
 
+	blockOperations := map[string]string{}
+	if d.HasChange("blocked_operations") {
+		o, n := d.GetChange("blocked_operations")
+		oldBlockedOps := o.(*schema.Set)
+		newBlockedOps := n.(*schema.Set)
+
+		oB := oldBlockedOps.Difference(newBlockedOps)
+		for _, removal := range oB.List() {
+			blockOperations[removal.(string)] = "false"
+		}
+
+		nB := newBlockedOps.Difference(oldBlockedOps)
+		for _, addition := range nB.List() {
+			blockOperations[addition.(string)] = "true"
+		}
+
+	}
+
 	vmReq := client.Vm{
 		Id: id,
 		CPUs: client.CPUs{
@@ -667,12 +761,24 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 				0, memoryMax,
 			},
 		},
-		NameLabel:       nameLabel,
-		NameDescription: nameDescription,
-		HA:              ha,
-		ResourceSet:     rs,
-		AutoPoweron:     autoPowerOn,
-		AffinityHost:    affinityHost,
+		NameLabel:         nameLabel,
+		NameDescription:   nameDescription,
+		HA:                ha,
+		ResourceSet:       rs,
+		AutoPoweron:       autoPowerOn,
+		AffinityHost:      affinityHost,
+		BlockedOperations: blockOperations,
+		ExpNestedHvm:      d.Get("exp_nested_hvm").(bool),
+		StartDelay:        d.Get("start_delay").(int),
+		Vga:               d.Get("vga").(string),
+		// TODO: (#145) Uncomment this once issues with secure_boot have been figured out
+		// SecureBoot:        d.Get("secure_boot").(bool),
+		Boot: client.Boot{
+			Firmware: d.Get("hvm_boot_firmware").(string),
+		},
+		Videoram: client.Videoram{
+			Value: d.Get("videoram").(int),
+		},
 	}
 	if haltForUpdates {
 		err := c.HaltVm(vmReq)
@@ -826,7 +932,35 @@ func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, cd
 	d.Set("resource_set", resource.ResourceSet)
 	d.Set("power_state", resource.PowerState)
 
+	// TODO: (#145) Uncomment this once issues with secure_boot have been figured out
+	// if err := d.Set("secure_boot", resource.SecureBoot); err != nil {
+	// 	return err
+	// }
+
+	if err := d.Set("hvm_boot_firmware", resource.Boot.Firmware); err != nil {
+		return err
+	}
+
+	if err := d.Set("exp_nested_hvm", resource.ExpNestedHvm); err != nil {
+		return err
+	}
+
+	if err := d.Set("vga", resource.Vga); err != nil {
+		return err
+	}
+
+	if err := d.Set("videoram", resource.Videoram.Value); err != nil {
+		return err
+	}
+
+	if err := d.Set("start_delay", resource.StartDelay); err != nil {
+		return err
+	}
+
 	if err := d.Set("tags", resource.Tags); err != nil {
+		return err
+	}
+	if err := d.Set("blocked_operations", vmBlockedOperationsToList(resource)); err != nil {
 		return err
 	}
 
@@ -872,6 +1006,15 @@ func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, cd
 	}
 
 	return nil
+}
+
+func vmBlockedOperationsToList(v client.Vm) []string {
+	blockedOperations := []string{}
+	for k, _ := range v.BlockedOperations {
+		blockedOperations = append(blockedOperations, k)
+	}
+
+	return blockedOperations
 }
 
 func diskHash(value interface{}) int {

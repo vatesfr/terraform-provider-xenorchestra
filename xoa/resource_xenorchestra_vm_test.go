@@ -1142,6 +1142,121 @@ func TestAccXenorchestraVm_updatesWithoutReboot(t *testing.T) {
 	})
 }
 
+func TestAccXenorchestraVm_updatesWithoutRebootForOtherAttrs(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+
+	nameLabel := fmt.Sprintf("Terraform testing - %s", t.Name())
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigUpdateAttr(
+					nameLabel,
+					"",
+				),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+				),
+			},
+			{
+				Config: testAccVmConfigUpdateAttr(
+					nameLabel,
+					`
+                                    exp_nested_hvm = true
+                            `),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "exp_nested_hvm", "true"),
+				),
+			},
+			{
+				Config: testAccVmConfigUpdateAttr(
+					nameLabel,
+					`
+                                    hvm_boot_firmware = "uefi"
+                            `),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "hvm_boot_firmware", "uefi"),
+				),
+			},
+			// TODO: (#145) Uncomment this once issues with secure_boot have been figured out
+			// {
+			// 	Config: testAccVmConfigUpdateAttr(
+			// 		nameLabel,
+			// 		`
+			// hvm_boot_firmware = "uefi"
+			// secure_boot = true
+			// `),
+			// 	Check: resource.ComposeAggregateTestCheckFunc(
+			// 		testAccVmExists(resourceName),
+			// 		resource.TestCheckResourceAttrSet(resourceName, "id"),
+			// 		resource.TestCheckResourceAttr(resourceName, "hvm_boot_firmware", "uefi"),
+			// 		resource.TestCheckResourceAttr(resourceName, "secure_boot", "true"),
+			// 	),
+			// },
+
+			{
+				Config: testAccVmConfigUpdateAttr(
+					nameLabel,
+					`
+                              blocked_operations = ["copy"]
+                            `),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "blocked_operations.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "blocked_operations.0", "copy"),
+				),
+			},
+
+			{
+				Config: testAccVmConfigUpdateAttr(
+					nameLabel,
+					`
+                                    vga = "cirrus"
+                                    videoram = 16
+                            `),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "vga", "cirrus"),
+					resource.TestCheckResourceAttr(resourceName, "videoram", "16"),
+				),
+			},
+			{
+				Config: testAccVmConfigUpdateAttr(
+					nameLabel,
+					`
+                                    nic_type = "e1000"
+                            `),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "nic_type", "e1000"),
+				),
+			},
+			{
+				Config: testAccVmConfigUpdateAttr(
+					nameLabel,
+					`
+				    start_delay = 1
+			`),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "start_delay", "1"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccXenorchestraVm_updatesThatRequireReboot(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
@@ -2084,6 +2199,38 @@ resource "xenorchestra_vm" "bar" {
     }
 }
 `, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+}
+
+func testAccVmConfigUpdateAttr(nameLabel, attr string) string {
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", nameLabel), "template") + fmt.Sprintf(`
+data "xenorchestra_template" "template" {
+    name_label = "%s"
+}
+
+data "xenorchestra_network" "network" {
+    name_label = "%s"
+    pool_id = "%s"
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 4295000000
+    cpus  = 1
+    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    name_label = "%s"
+    template = "${data.xenorchestra_template.template.id}"
+    network {
+	network_id = "${data.xenorchestra_network.network.id}"
+    }
+
+    disk {
+      sr_id = "%s"
+      name_label = "disk 1"
+      size = 10001317888
+    }
+
+    %s
+}
+`, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, nameLabel, accDefaultSr.Id, attr)
 }
 
 // Terraform config that tests changes to a VM that do not require halting
