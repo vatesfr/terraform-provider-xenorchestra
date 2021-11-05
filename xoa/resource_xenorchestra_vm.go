@@ -592,10 +592,50 @@ func resourceVmRead(d *schema.ResourceData, m interface{}) error {
 	return recordToData(*vm, vifs, disks, cdroms, d)
 }
 
+type VmField int
+
+const (
+	NAME_LABEL VmField = iota
+	AFFINITY_HOST
+	NAME_DESCRIPTION
+	CPUS
+	AUTO_POWER_ON
+	HIGH_AVAILABILITY
+	RESOURCE_SET
+	MEMORY_MAX
+	fieldLimit
+)
+
+type VmFieldMapping struct {
+	TfKey string
+	XoKey string
+}
+
 func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 	c := m.(client.XOClient)
 
 	id := d.Id()
+
+	mappings := map[VmField]VmFieldMapping{
+		NAME_LABEL:        {"name_label", "name_label"},
+		AFFINITY_HOST:     {"affinity_host", "affinityHost"},
+		NAME_DESCRIPTION:  {"name_description", "name_description"},
+		CPUS:              {"cpus", "CPUs"},
+		AUTO_POWER_ON:     {"auto_poweron", "auto_poweron"},
+		HIGH_AVAILABILITY: {"high_availability", "high_availability"},
+		RESOURCE_SET:      {"resource_set", "resourceSet"},
+		MEMORY_MAX:        {"memory_max", "memoryMax"},
+	}
+
+	params := map[string]interface{}{}
+	params["id"] = id
+	for field := VmField(0); field < fieldLimit; field++ {
+		fieldMapping := mappings[field]
+		if d.HasChange(string(fieldMapping.TfKey)) {
+			params[fieldMapping.XoKey] = d.Get(string(fieldMapping.TfKey))
+		}
+	}
+
 	nameLabel := d.Get("name_label").(string)
 	affinityHost := d.Get("affinity_host").(string)
 	nameDescription := d.Get("name_description").(string)
@@ -787,7 +827,7 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 			return err
 		}
 	}
-	vm, err = c.UpdateVm(vmReq)
+	vm, err = c.UpdateVm(vmReq, params)
 
 	if haltForUpdates {
 		err := c.StartVm(vmReq.Id)

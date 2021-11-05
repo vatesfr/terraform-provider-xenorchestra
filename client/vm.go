@@ -275,39 +275,39 @@ func createVdiMap(disk Disk) map[string]interface{} {
 	}
 }
 
-func (c *Client) UpdateVm(vmReq Vm) (*Vm, error) {
-	var resourceSet interface{} = vmReq.ResourceSet
-	if vmReq.ResourceSet == "" {
-		resourceSet = nil
-	}
-	params := map[string]interface{}{
-		"id":                vmReq.Id,
-		"affinityHost":      vmReq.AffinityHost,
-		"name_label":        vmReq.NameLabel,
-		"name_description":  vmReq.NameDescription,
-		"hvmBootFirmware":   vmReq.Boot.Firmware,
-		"auto_poweron":      vmReq.AutoPoweron,
-		"resourceSet":       resourceSet,
-		"high_availability": vmReq.HA, // valid options are best-effort, restart, ''
-		"CPUs":              vmReq.CPUs.Number,
-		"memoryMax":         vmReq.Memory.Static[1],
-		"nicType":           vmReq.NicType,
-		"expNestedHvm":      vmReq.ExpNestedHvm,
-		"startDelay":        vmReq.StartDelay,
-		"vga":               vmReq.Vga,
-		"videoram":          vmReq.Videoram.Value,
-		// TODO: These need more investigation before they are implemented
-		// pv_args
+func (c *Client) UpdateVm(vmReq Vm, params map[string]interface{}) (*Vm, error) {
+	// var resourceSet interface{} = vmReq.ResourceSet
+	// if vmReq.ResourceSet == "" {
+	// 	resourceSet = nil
+	// }
+	// params := map[string]interface{}{
+	// 	"id":                vmReq.Id,
+	// 	"affinityHost":      vmReq.AffinityHost,
+	// 	"name_label":        vmReq.NameLabel,
+	// 	"name_description":  vmReq.NameDescription,
+	// 	"hvmBootFirmware":   vmReq.Boot.Firmware,
+	// 	"auto_poweron":      vmReq.AutoPoweron,
+	// 	"resourceSet":       resourceSet,
+	// 	"high_availability": vmReq.HA, // valid options are best-effort, restart, ''
+	// 	"CPUs":              vmReq.CPUs.Number,
+	// 	"memoryMax":         vmReq.Memory.Static[1],
+	// 	"nicType":           vmReq.NicType,
+	// 	"expNestedHvm":      vmReq.ExpNestedHvm,
+	// 	"startDelay":        vmReq.StartDelay,
+	// 	"vga":               vmReq.Vga,
+	// 	"videoram":          vmReq.Videoram.Value,
+	// TODO: These need more investigation before they are implemented
+	// pv_args
 
-		// virtualizationMode hvm or pv, cannot be set after vm is created (requires conversion)
+	// virtualizationMode hvm or pv, cannot be set after vm is created (requires conversion)
 
-		// hasVendorDevice must be applied when the vm is halted and only applies to windows machines - https://github.com/xapi-project/xen-api/blob/889b83c47d46c4df65fe58b01caed284dab8dc93/ocaml/idl/datamodel_vm.ml#L1168
+	// hasVendorDevice must be applied when the vm is halted and only applies to windows machines - https://github.com/xapi-project/xen-api/blob/889b83c47d46c4df65fe58b01caed284dab8dc93/ocaml/idl/datamodel_vm.ml#L1168
 
-		// share relates to resource sets. This can be accomplished with the resource set resource so supporting it isn't necessary
+	// share relates to resource sets. This can be accomplished with the resource set resource so supporting it isn't necessary
 
-		// cpusMask, cpuWeight and cpuCap can be changed at runtime to an integer value or null
-		// coresPerSocket is null or a number of cores per socket. Putting an invalid value doesn't seem to cause an error :(
-	}
+	// cpusMask, cpuWeight and cpuCap can be changed at runtime to an integer value or null
+	// coresPerSocket is null or a number of cores per socket. Putting an invalid value doesn't seem to cause an error :(
+	// }
 
 	// TODO: (#145) Uncomment this once issues with secure_boot have been figured out
 	// secureBoot := vmReq.SecureBoot

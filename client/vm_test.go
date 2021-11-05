@@ -180,7 +180,11 @@ func TestUpdateVmWithUpdatesThatRequireHalt(t *testing.T) {
 
 	prevCPUs := accVm.CPUs.Number
 	updatedCPUs := prevCPUs + 1
-	vm, err := c.UpdateVm(Vm{Id: accVm.Id, CPUs: CPUs{Number: updatedCPUs}, NameLabel: "terraform testing", Memory: MemoryObject{Static: []int{0, 4294967296}}})
+	params := map[string]interface{}{
+		"id":   accVm.Id,
+		"CPUs": updatedCPUs,
+	}
+	vm, err := c.UpdateVm(Vm{Id: accVm.Id, CPUs: CPUs{Number: updatedCPUs}, NameLabel: "terraform testing", Memory: MemoryObject{Static: []int{0, 4294967296}}}, params)
 
 	if err != nil {
 		t.Fatalf("failed to update vm with error: %v", err)
