@@ -1420,12 +1420,7 @@ func testAccVmExists(resourceName string) resource.TestCheckFunc {
 }
 
 func testAccVmWithoutCloudInitConfig(vmName string) string {
-	return fmt.Sprintf(`
-data "xenorchestra_template" "template" {
-    name_label = "%s"
-    pool_id = "%s"
-}
-
+	return testAccTemplateConfig() + fmt.Sprintf(`
 data "xenorchestra_network" "network" {
     name_label = "%s"
     pool_id = "%s"
@@ -1447,15 +1442,11 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accTestPool.Id, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithTag(vmName, tag string) string {
-	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
-data "xenorchestra_template" "template" {
-    name_label = "%s"
-}
-
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
 data "xenorchestra_network" "network" {
     name_label = "%s"
     pool_id = "%s"
@@ -1482,16 +1473,11 @@ resource "xenorchestra_vm" "bar" {
       "%s",
     ]
 }
-`, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id, tag)
+`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id, tag)
 }
 
 func testAccVmConfigWithISO(vmName string) string {
-	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
-data "xenorchestra_template" "template" {
-    name_label = "%s"
-    pool_id = "%s"
-}
-
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccNonDefaultTemplateConfig(disklessTestTemplate.NameLabel) + fmt.Sprintf(`
 data "xenorchestra_vdi" "iso" {
     name_label = "%s"
     pool_id = "%s"
@@ -1523,15 +1509,11 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, disklessTestTemplate.NameLabel, accTestPool.Id, testIsoName, accTestPool.Id, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+`, testIsoName, accTestPool.Id, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithoutISO(vmName string) string {
-	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
-data "xenorchestra_template" "template" {
-    name_label = "%s"
-    pool_id = "%s"
-}
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccNonDefaultTemplateConfig(disklessTestTemplate.NameLabel) + fmt.Sprintf(`
 
 data "xenorchestra_vdi" "iso" {
     name_label = "%s"
@@ -1560,15 +1542,11 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, disklessTestTemplate.NameLabel, accTestPool.Id, testIsoName, accTestPool.Id, accDefaultNetwork, accTestPool.Id, vmName, accDefaultSr.Id)
+`, testIsoName, accTestPool.Id, accDefaultNetwork, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithTags(vmName, tag, secondTag string) string {
-	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
-data "xenorchestra_template" "template" {
-    name_label = "%s"
-}
-
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
 data "xenorchestra_network" "network" {
     name_label = "%s"
     pool_id = "%s"
@@ -1596,15 +1574,11 @@ resource "xenorchestra_vm" "bar" {
       "%s",
     ]
 }
-`, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id, tag, secondTag)
+`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id, tag, secondTag)
 }
 
 func testAccVmConfigWithAffinityHost(vmName string) string {
-	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
-data "xenorchestra_template" "template" {
-    name_label = "%s"
-}
-
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
 data "xenorchestra_pool" "pool" {
     name_label = "%s"
 }
@@ -1632,15 +1606,11 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accTestPool.NameLabel, accDefaultNetwork.NameLabel, vmName, accDefaultSr.Id)
+`, accTestPool.NameLabel, accDefaultNetwork.NameLabel, vmName, accDefaultSr.Id)
 }
 
 func testAccVmConfig(vmName string) string {
-	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
-data "xenorchestra_template" "template" {
-    name_label = "%s"
-}
-
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
 data "xenorchestra_network" "network" {
     name_label = "%s"
     pool_id = "%s"
@@ -1663,16 +1633,11 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
 func testAccVmConfigPXEBoot(vmName string) string {
-	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
-data "xenorchestra_template" "template" {
-    name_label = "%s"
-    pool_id = "%s"
-}
-
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccNonDefaultTemplateConfig(disklessTestTemplate.NameLabel) + fmt.Sprintf(`
 data "xenorchestra_network" "network" {
     name_label = "Lab Network (VLAN 10)"
     pool_id = "%s"
@@ -1696,15 +1661,11 @@ resource "xenorchestra_vm" "bar" {
       size = 20001317888
     }
 }
-`, disklessTestTemplate.NameLabel, accTestPool.Id, accTestPool.Id, vmName, accDefaultSr.Id)
+`, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
 func testAccVmConfigConflictingCdromAndInstallMethod(vmName string) string {
-	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
-data "xenorchestra_template" "template" {
-    name_label = "%s"
-}
-
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
 data "xenorchestra_vdi" "iso" {
     name_label = "%s"
     pool_id = "%s"
@@ -1736,15 +1697,11 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, testIsoName, accTestPool.Id, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+`, testIsoName, accTestPool.Id, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithShortTimeout(vmName string) string {
-	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
-data "xenorchestra_template" "template" {
-    name_label = "%s"
-}
-
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
 data "xenorchestra_network" "network" {
     name_label = "%s"
     pool_id = "%s"
@@ -1771,15 +1728,11 @@ resource "xenorchestra_vm" "bar" {
 	create = "5s"
     }
 }
-`, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithCd(vmName string) string {
-	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
-data "xenorchestra_template" "template" {
-    name_label = "%s"
-}
-
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
 data "xenorchestra_vdi" "iso" {
     name_label = "%s"
     pool_id = "%s"
@@ -1811,15 +1764,11 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, testIsoName, accTestPool.Id, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+`, testIsoName, accTestPool.Id, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
 func testAccVmConfigWaitForIp(vmName string) string {
-	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
-data "xenorchestra_template" "template" {
-    name_label = "%s"
-}
-
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
 data "xenorchestra_network" "network" {
     name_label = "%s"
     pool_id = "%s"
@@ -1843,15 +1792,11 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithDiskNameLabelAndNameDescription(vmName, nameLabel, description string) string {
-	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
-data "xenorchestra_template" "template" {
-    name_label = "%s"
-}
-
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
 data "xenorchestra_network" "network" {
     name_label = "%s"
     pool_id = "%s"
@@ -1875,15 +1820,11 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id, nameLabel, description)
+`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id, nameLabel, description)
 }
 
 func testAccVmConfigWithNetworkConfig(vmName string) string {
-	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
-data "xenorchestra_template" "template" {
-    name_label = "%s"
-}
-
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
 data "xenorchestra_network" "network" {
     name_label = "%s"
     pool_id = "%s"
@@ -1915,15 +1856,11 @@ EOF
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
 func testAccVmConfigDisconnectedDisk(vmName string) string {
-	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
-data "xenorchestra_template" "template" {
-    name_label = "%s"
-}
-
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
 data "xenorchestra_network" "network" {
     name_label = "%s"
     pool_id = "%s"
@@ -1947,15 +1884,11 @@ resource "xenorchestra_vm" "bar" {
       attached = false
     }
 }
-`, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithAdditionalDisk(vmName string) string {
-	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
-data "xenorchestra_template" "template" {
-    name_label = "%s"
-}
-
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
 data "xenorchestra_network" "network" {
     name_label = "%s"
     pool_id = "%s"
@@ -1984,15 +1917,11 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id, accDefaultSr.Id)
+`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id, accDefaultSr.Id)
 }
 
 func testAccVmVifAttachedConfig(vmName string) string {
-	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
-data "xenorchestra_template" "template" {
-    name_label = "%s"
-}
-
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
 data "xenorchestra_network" "network" {
     name_label = "%s"
     pool_id = "%s"
@@ -2016,15 +1945,11 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
 func testAccVmVifDetachedConfig(vmName string) string {
-	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
-data "xenorchestra_template" "template" {
-    name_label = "%s"
-}
-
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
 data "xenorchestra_network" "network" {
     name_label = "%s"
     pool_id = "%s"
@@ -2048,15 +1973,11 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithMacAddress(vmName, macAddress string) string {
-	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
-data "xenorchestra_template" "template" {
-    name_label = "%s"
-}
-
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
 data "xenorchestra_network" "network" {
     name_label = "%s"
     pool_id = "%s"
@@ -2080,15 +2001,11 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, macAddress, accDefaultSr.Id)
+`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, macAddress, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithTwoMacAddresses(vmName, firstMac, secondMac string) string {
-	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
-data "xenorchestra_template" "template" {
-    name_label = "%s"
-}
-
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
 data "xenorchestra_network" "network" {
     name_label = "%s"
     pool_id = "%s"
@@ -2117,15 +2034,11 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, firstMac, secondMac, accDefaultSr.Id)
+`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, firstMac, secondMac, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithSecondVIF(vmName string) string {
-	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
-data "xenorchestra_template" "template" {
-    name_label = "%s"
-}
-
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
 data "xenorchestra_network" "network" {
     name_label = "%s"
     pool_id = "%s"
@@ -2133,7 +2046,7 @@ data "xenorchestra_network" "network" {
 
 data "xenorchestra_network" "network2" {
     name_label = "Pool-wide network associated with eth1"
-    pool_id = "%[3]s"
+    pool_id = "%[2]s"
 }
 
 resource "xenorchestra_vm" "bar" {
@@ -2156,15 +2069,11 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithThreeVIFs(vmName string) string {
-	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
-data "xenorchestra_template" "template" {
-    name_label = "%s"
-}
-
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
 data "xenorchestra_network" "network" {
     name_label = "%s"
     pool_id = "%s"
@@ -2172,7 +2081,7 @@ data "xenorchestra_network" "network" {
 
 data "xenorchestra_network" "network2" {
     name_label = "Pool-wide network associated with eth1"
-    pool_id = "%[3]s"
+    pool_id = "%[2]s"
 }
 
 resource "xenorchestra_vm" "bar" {
@@ -2198,15 +2107,11 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
 func testAccVmConfigUpdateAttr(nameLabel, attr string) string {
-	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", nameLabel), "template") + fmt.Sprintf(`
-data "xenorchestra_template" "template" {
-    name_label = "%s"
-}
-
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", nameLabel), "template") + testAccTemplateConfig() + fmt.Sprintf(`
 data "xenorchestra_network" "network" {
     name_label = "%s"
     pool_id = "%s"
@@ -2230,17 +2135,13 @@ resource "xenorchestra_vm" "bar" {
 
     %s
 }
-`, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, nameLabel, accDefaultSr.Id, attr)
+`, accDefaultNetwork.NameLabel, accTestPool.Id, nameLabel, accDefaultSr.Id, attr)
 }
 
 // Terraform config that tests changes to a VM that do not require halting
 // the VM prior to applying
 func testAccVmConfigUpdateAttrsHaltIrrelevant(nameLabel, nameDescription, ha string, powerOn bool) string {
-	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", nameLabel), "template") + fmt.Sprintf(`
-data "xenorchestra_template" "template" {
-    name_label = "%s"
-}
-
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", nameLabel), "template") + testAccTemplateConfig() + fmt.Sprintf(`
 data "xenorchestra_network" "network" {
     name_label = "%s"
     pool_id = "%s"
@@ -2265,15 +2166,11 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, nameLabel, nameDescription, ha, powerOn, accDefaultSr.Id)
+`, accDefaultNetwork.NameLabel, accTestPool.Id, nameLabel, nameDescription, ha, powerOn, accDefaultSr.Id)
 }
 
 func testAccVmConfigUpdateAttrsHaltIrrelevantWithAffinityHost(nameLabel, nameDescription, ha string, powerOn bool) string {
-	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", nameLabel), "template") + fmt.Sprintf(`
-data "xenorchestra_template" "template" {
-    name_label = "%s"
-}
-
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", nameLabel), "template") + testAccTemplateConfig() + fmt.Sprintf(`
 data "xenorchestra_pool" "pool" {
     name_label = "%s"
 }
@@ -2303,15 +2200,11 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accTestPool.NameLabel, accDefaultNetwork.NameLabel, nameLabel, nameDescription, ha, powerOn, accDefaultSr.Id)
+`, accTestPool.NameLabel, accDefaultNetwork.NameLabel, nameLabel, nameDescription, ha, powerOn, accDefaultSr.Id)
 }
 
 func testAccVmConfigUpdateAttrsVariableCPUAndMemory(cpus, memory int, nameLabel, nameDescription, ha string, powerOn bool) string {
-	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", nameLabel), "template") + fmt.Sprintf(`
-data "xenorchestra_template" "template" {
-    name_label = "%s"
-}
-
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", nameLabel), "template") + testAccTemplateConfig() + fmt.Sprintf(`
 data "xenorchestra_pool" "pool" {
     name_label = "%s"
 }
@@ -2341,7 +2234,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testTemplate.NameLabel, accTestPool.NameLabel, accDefaultNetwork.NameLabel, memory, cpus, nameLabel, nameDescription, ha, powerOn, accDefaultSr.Id)
+`, accTestPool.NameLabel, accDefaultNetwork.NameLabel, memory, cpus, nameLabel, nameDescription, ha, powerOn, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithResourceSet(vmName string) string {
@@ -2369,11 +2262,7 @@ resource "xenorchestra_vm" "bar" {
 }
 
 func testAccVmResourceSet() string {
-	return fmt.Sprintf(`
-data "xenorchestra_template" "template" {
-    name_label = "%s"
-}
-
+	return testAccTemplateConfig() + fmt.Sprintf(`
 data "xenorchestra_network" "network" {
     name_label = "%s"
     pool_id = "%s"
@@ -2403,7 +2292,7 @@ resource "xenorchestra_resource_set" "rs" {
       quantity = 12884901888
     }
 }
-`, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, accDefaultSr.Id)
+`, accDefaultNetwork.NameLabel, accTestPool.Id, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithoutResourceSet(vmName string) string {
@@ -2427,4 +2316,22 @@ resource "xenorchestra_vm" "bar" {
     }
 }
 `, vmName, accDefaultSr.Id)
+}
+
+func testAccTemplateConfig() string {
+	return fmt.Sprintf(`
+data "xenorchestra_template" "template" {
+    name_label = "%s"
+    pool_id = "%s"
+}
+`, testTemplate.NameLabel, accTestPool.Id)
+}
+
+func testAccNonDefaultTemplateConfig(templateName string) string {
+	return fmt.Sprintf(`
+data "xenorchestra_template" "template" {
+    name_label = "%s"
+    pool_id = "%s"
+}
+`, templateName, accTestPool.Id)
 }
