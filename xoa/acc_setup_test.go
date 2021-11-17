@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ddelnano/terraform-provider-xenorchestra/client"
+	"github.com/vatesfr/xo-sdk-go/client"
 )
 
 var testObjectIndex int = 1

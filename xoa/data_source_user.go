@@ -3,8 +3,8 @@ package xoa
 import (
 	"log"
 
-	"github.com/ddelnano/terraform-provider-xenorchestra/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/vatesfr/xo-sdk-go/client"
 )
 
 func dataSourceXoaUser() *schema.Resource {
