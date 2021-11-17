@@ -7,4 +7,4 @@ require (
 	github.com/vatesfr/xo-sdk-go v0.0.0-20211117083644-f5fff1f340a0
 )
 
-replace github.com/vatesfr/xo-sdk-go => ../xo-sdk-go
+// replace github.com/vatesfr/xo-sdk-go => ../xo-sdk-go
