@@ -4,9 +4,9 @@ import (
 	"log"
 	"strings"
 
-	"github.com/ddelnano/terraform-provider-xenorchestra/client"
 	"github.com/ddelnano/terraform-provider-xenorchestra/xoa/internal"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/vatesfr/xo-sdk-go/client"
 )
 
 func dataSourceXoaVms() *schema.Resource {

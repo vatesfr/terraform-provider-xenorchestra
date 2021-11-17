@@ -10,10 +10,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/ddelnano/terraform-provider-xenorchestra/client"
 	"github.com/ddelnano/terraform-provider-xenorchestra/xoa/internal"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/vatesfr/xo-sdk-go/client"
 )
 
 var validVga = []string{
