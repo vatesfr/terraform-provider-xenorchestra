@@ -588,14 +588,14 @@ func resourceVmRead(d *schema.ResourceData, m interface{}) error {
 type VmField int
 
 const (
-	NAME_LABEL VmField = iota
-	AFFINITY_HOST
+	AFFINITY_HOST VmField = iota
+	NAME_LABEL 
 	NAME_DESCRIPTION
 	HVM_BOOT_FIRMWARE
-	CPUS
 	AUTO_POWER_ON
-	HIGH_AVAILABILITY
 	RESOURCE_SET
+	HIGH_AVAILABILITY
+	CPUS
 	MEMORY_MAX
 	EXP_NESTED_HVM
 	START_DELAY
@@ -615,14 +615,14 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 	id := d.Id()
 
 	mappings := map[VmField]VmFieldMapping{
-		NAME_LABEL:        {"name_label", "name_label"},
 		AFFINITY_HOST:     {"affinity_host", "affinityHost"},
+		NAME_LABEL:        {"name_label", "name_label"},
 		NAME_DESCRIPTION:  {"name_description", "name_description"},
 		HVM_BOOT_FIRMWARE: {"hvm_boot_firmware", "hvmBootFirmware"},
-		CPUS:              {"cpus", "CPUs"},
 		AUTO_POWER_ON:     {"auto_poweron", "auto_poweron"},
-		HIGH_AVAILABILITY: {"high_availability", "high_availability"},
 		RESOURCE_SET:      {"resource_set", "resourceSet"},
+		HIGH_AVAILABILITY: {"high_availability", "high_availability"},
+		CPUS:              {"cpus", "CPUs"},
 		MEMORY_MAX:        {"memory_max", "memoryMax"},
 		EXP_NESTED_HVM:    {"exp_nested_hvm", "expNestedHvm"},
 		START_DELAY:       {"start_delay", "startDelay"},
