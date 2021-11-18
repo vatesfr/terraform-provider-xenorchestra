@@ -107,7 +107,6 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 * `tags` - (Optional) List of labels (strings) that are used to identify and organize resources. These are equivalent to Xenserver [tags](https://docs.citrix.com/en-us/xencenter/7-1/resources-tagging.html).
 * `vga` - (Optional) The video adapter the VM should use. Possible values include std and cirrus.
 * `videoram` - (Optional) The videoram option the VM should use. Possible values include 1, 2, 4, 8, 16
-* `nic_type` - (Optional) The NIC type the VM should use. Possible options are '' (Realtek RTL8139) and e1000.
 * `start_delay` - (Optional) Number of seconds the VM should be delayed from starting
 
 ## Attributes Reference

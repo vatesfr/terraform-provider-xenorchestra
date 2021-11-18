@@ -29,7 +29,6 @@ var validHaOptions = []string{
 }
 
 var validFirmware = []string{
-	"",
 	"bios",
 	"uefi",
 }
@@ -90,7 +89,7 @@ func resourceVmSchema() map[string]*schema.Schema {
 		},
 		"hvm_boot_firmware": &schema.Schema{
 			Type:         schema.TypeString,
-			Default:      "",
+			Default:      "bios",
 			Optional:     true,
 			ValidateFunc: validation.StringInSlice(validFirmware, false),
 		},
@@ -182,11 +181,6 @@ func resourceVmSchema() map[string]*schema.Schema {
 		// 	Default:  false,
 		// 	Optional: true,
 		// },
-		"nic_type": &schema.Schema{
-			Type:     schema.TypeString,
-			Default:  "",
-			Optional: true,
-		},
 		"host": &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
@@ -425,7 +419,6 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		Installation: installation,
 		// TODO: (#145) Uncomment this once issues with secure_boot have been figured out
 		// SecureBoot:   d.Get("secure_boot").(bool),
-		NicType:    d.Get("nic_type").(string),
 		VIFsMap:    network_maps,
 		StartDelay: d.Get("start_delay").(int),
 		WaitForIps: d.Get("wait_for_ip").(bool),
@@ -598,11 +591,16 @@ const (
 	NAME_LABEL VmField = iota
 	AFFINITY_HOST
 	NAME_DESCRIPTION
+	HVM_BOOT_FIRMWARE
 	CPUS
 	AUTO_POWER_ON
 	HIGH_AVAILABILITY
 	RESOURCE_SET
 	MEMORY_MAX
+	EXP_NESTED_HVM
+	START_DELAY
+	VGA
+	VIDEORAM
 	fieldLimit
 )
 
@@ -620,11 +618,16 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		NAME_LABEL:        {"name_label", "name_label"},
 		AFFINITY_HOST:     {"affinity_host", "affinityHost"},
 		NAME_DESCRIPTION:  {"name_description", "name_description"},
+		HVM_BOOT_FIRMWARE: {"hvm_boot_firmware", "hvmBootFirmware"},
 		CPUS:              {"cpus", "CPUs"},
 		AUTO_POWER_ON:     {"auto_poweron", "auto_poweron"},
 		HIGH_AVAILABILITY: {"high_availability", "high_availability"},
 		RESOURCE_SET:      {"resource_set", "resourceSet"},
 		MEMORY_MAX:        {"memory_max", "memoryMax"},
+		EXP_NESTED_HVM:    {"exp_nested_hvm", "expNestedHvm"},
+		START_DELAY:       {"start_delay", "startDelay"},
+		VGA:               {"vga", "vga"},
+		VIDEORAM:          {"videoram", "videoram"},
 	}
 
 	params := map[string]interface{}{}
