@@ -181,6 +181,7 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 		"bootAfterCreate":  true,
 		"name_label":       vmReq.NameLabel,
 		"name_description": vmReq.NameDescription,
+		"hvmBootFirmware":  vmReq.Boot.Firmware,
 		"template":         vmReq.Template,
 		"coreOs":           false,
 		"cpuCap":           nil,
@@ -195,9 +196,7 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 		"VIFs":         vmReq.VIFsMap,
 		"tags":         vmReq.Tags,
 	}
-	if vmReq.Boot.Firmware != "" {
-		params["hvmBootFirmware"] = vmReq.Boot.Firmware
-	}
+
 	videoram := vmReq.Videoram.Value
 	if videoram != 0 {
 		params["videoram"] = videoram
@@ -284,6 +283,7 @@ func (c *Client) UpdateVm(vmReq Vm) (*Vm, error) {
 		"affinityHost":      vmReq.AffinityHost,
 		"name_label":        vmReq.NameLabel,
 		"name_description":  vmReq.NameDescription,
+		"hvmBootFirmware":   vmReq.Boot.Firmware,
 		"auto_poweron":      vmReq.AutoPoweron,
 		"resourceSet":       resourceSet,
 		"high_availability": vmReq.HA, // valid options are best-effort, restart, ''
@@ -311,10 +311,6 @@ func (c *Client) UpdateVm(vmReq Vm) (*Vm, error) {
 	// if secureBoot {
 	// 	params["secureBoot"] = true
 	// }
-
-	if vmReq.Boot.Firmware != "" {
-		params["hvmBootFirmware"] = vmReq.Boot.Firmware
-	}
 
 	blockedOperations := map[string]interface{}{}
 	for k, v := range vmReq.BlockedOperations {
