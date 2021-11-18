@@ -80,7 +80,6 @@ type Vm struct {
 	ResourceSet        string            `json:"resourceSet,omitempty"`
 	// TODO: (#145) Uncomment this once issues with secure_boot have been figured out
 	// SecureBoot         bool              `json:"secureBoot,omitempty"`
-	NicType    string   `json:"nicType,omitempty"`
 	Tags       []string `json:"tags"`
 	Videoram   Videoram `json:"videoram,omitempty"`
 	Vga        string   `json:"vga,omitempty"`
@@ -190,7 +189,6 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 		"CPUs":             vmReq.CPUs.Number,
 		"memoryMax":        vmReq.Memory.Static[1],
 		"existingDisks":    existingDisks,
-		"nicType":          vmReq.NicType,
 		// TODO: (#145) Uncomment this once issues with secure_boot have been figured out
 		// "secureBoot":       vmReq.SecureBoot,
 		"expNestedHvm": vmReq.ExpNestedHvm,
@@ -291,7 +289,6 @@ func (c *Client) UpdateVm(vmReq Vm) (*Vm, error) {
 		"high_availability": vmReq.HA, // valid options are best-effort, restart, ''
 		"CPUs":              vmReq.CPUs.Number,
 		"memoryMax":         vmReq.Memory.Static[1],
-		"nicType":           vmReq.NicType,
 		"expNestedHvm":      vmReq.ExpNestedHvm,
 		"startDelay":        vmReq.StartDelay,
 		"vga":               vmReq.Vga,
