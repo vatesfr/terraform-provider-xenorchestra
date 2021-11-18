@@ -29,7 +29,6 @@ var validHaOptions = []string{
 }
 
 var validFirmware = []string{
-	"",
 	"bios",
 	"uefi",
 }
@@ -90,7 +89,7 @@ func resourceVmSchema() map[string]*schema.Schema {
 		},
 		"hvm_boot_firmware": &schema.Schema{
 			Type:         schema.TypeString,
-			Default:      "",
+			Default:      "bios",
 			Optional:     true,
 			ValidateFunc: validation.StringInSlice(validFirmware, false),
 		},
@@ -182,11 +181,6 @@ func resourceVmSchema() map[string]*schema.Schema {
 		// 	Default:  false,
 		// 	Optional: true,
 		// },
-		"nic_type": &schema.Schema{
-			Type:     schema.TypeString,
-			Default:  "",
-			Optional: true,
-		},
 		"host": &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
@@ -425,7 +419,6 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		Installation: installation,
 		// TODO: (#145) Uncomment this once issues with secure_boot have been figured out
 		// SecureBoot:   d.Get("secure_boot").(bool),
-		NicType:    d.Get("nic_type").(string),
 		VIFsMap:    network_maps,
 		StartDelay: d.Get("start_delay").(int),
 		WaitForIps: d.Get("wait_for_ip").(bool),

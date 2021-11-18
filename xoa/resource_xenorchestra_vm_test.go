@@ -1233,18 +1233,6 @@ func TestAccXenorchestraVm_updatesWithoutRebootForOtherAttrs(t *testing.T) {
 				Config: testAccVmConfigUpdateAttr(
 					nameLabel,
 					`
-                                    nic_type = "e1000"
-                            `),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccVmExists(resourceName),
-					resource.TestCheckResourceAttrSet(resourceName, "id"),
-					resource.TestCheckResourceAttr(resourceName, "nic_type", "e1000"),
-				),
-			},
-			{
-				Config: testAccVmConfigUpdateAttr(
-					nameLabel,
-					`
 				    start_delay = 1
 			`),
 				Check: resource.ComposeAggregateTestCheckFunc(
