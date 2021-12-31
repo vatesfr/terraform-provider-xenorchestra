@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 )
 
@@ -146,4 +147,25 @@ func RemoveUsersWithPrefix(usernamePrefix string) func(string) error {
 		}
 		return nil
 	}
+}
+
+func CreateUser(user *User) {
+	c, err := NewClient(GetConfigFromEnv())
+
+	if err != nil {
+		fmt.Printf("failed to created client with error: %v", err)
+		os.Exit(-1)
+	}
+
+	u, err := c.CreateUser(User{
+		Email:    user.Email,
+		Password: "password",
+	})
+
+	if err != nil {
+		fmt.Printf("failed to create user for acceptance tests with error: %v", err)
+		os.Exit(-1)
+	}
+
+	*user = *u
 }
