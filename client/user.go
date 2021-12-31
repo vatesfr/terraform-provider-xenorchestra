@@ -60,6 +60,7 @@ func (c *Client) GetAllUsers() ([]User, error) {
 		"dummy": "dummy",
 	}
 	users := []User{}
+	log.Printf("[DEBUG] Calling user.getAll\n")
 	err := c.Call("user.getAll", params, &users)
 
 	log.Printf("[DEBUG] Found the following users: %v\n", users)

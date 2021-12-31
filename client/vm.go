@@ -274,10 +274,6 @@ func createVdiMap(disk Disk) map[string]interface{} {
 }
 
 func (c *Client) UpdateVm(vmReq Vm) (*Vm, error) {
-	var resourceSet interface{} = vmReq.ResourceSet
-	if vmReq.ResourceSet == "" {
-		resourceSet = nil
-	}
 	params := map[string]interface{}{
 		"id":                vmReq.Id,
 		"affinityHost":      vmReq.AffinityHost,
@@ -285,7 +281,6 @@ func (c *Client) UpdateVm(vmReq Vm) (*Vm, error) {
 		"name_description":  vmReq.NameDescription,
 		"hvmBootFirmware":   vmReq.Boot.Firmware,
 		"auto_poweron":      vmReq.AutoPoweron,
-		"resourceSet":       resourceSet,
 		"high_availability": vmReq.HA, // valid options are best-effort, restart, ''
 		"CPUs":              vmReq.CPUs.Number,
 		"memoryMax":         vmReq.Memory.Static[1],
@@ -304,6 +299,10 @@ func (c *Client) UpdateVm(vmReq Vm) (*Vm, error) {
 
 		// cpusMask, cpuWeight and cpuCap can be changed at runtime to an integer value or null
 		// coresPerSocket is null or a number of cores per socket. Putting an invalid value doesn't seem to cause an error :(
+	}
+
+	if vmReq.ResourceSet != "" {
+		params["resourceSet"] = vmReq.ResourceSet
 	}
 
 	// TODO: (#145) Uncomment this once issues with secure_boot have been figured out

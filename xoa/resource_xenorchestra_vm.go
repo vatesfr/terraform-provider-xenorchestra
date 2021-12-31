@@ -595,7 +595,10 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 	cpus := d.Get("cpus").(int)
 	autoPowerOn := d.Get("auto_poweron").(bool)
 	ha := d.Get("high_availability").(string)
-	rs := d.Get("resource_set").(string)
+	rs := ""
+	if d.HasChange("resource_set") {
+		rs = d.Get("resource_set").(string)
+	}
 	memoryMax := d.Get("memory_max").(int)
 
 	vm, err := c.GetVm(client.Vm{Id: id})
