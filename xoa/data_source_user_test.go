@@ -31,6 +31,26 @@ func TestAccXenorchestraDataSource_user(t *testing.T) {
 	)
 }
 
+func TestAccXenorchestraDataSource_userInCurrentSession(t *testing.T) {
+	resourceName := "data.xenorchestra_user.user"
+	username := fmt.Sprintf("%s-username2", accTestPrefix)
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				PreConfig: createUser(t, username),
+				Config:    testAccXenorchestraDataSourceUserInCurrentSessionConfig(username),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckXenorchestraDataSourceUser(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "username", username)),
+			},
+		},
+	},
+	)
+}
+
 func TestAccXenorchestraDataSource_userNotFound(t *testing.T) {
 	resourceName := "data.xenorchestra_user.user"
 	resource.Test(t, resource.TestCase{
@@ -73,6 +93,20 @@ data "xenorchestra_user" "user" {
 `, username)
 }
 
+func testAccXenorchestraDataSourceUserInCurrentSessionConfig(username string) string {
+	return fmt.Sprintf(`
+provider "xenorchestra" {
+    username = "%s"
+    password = "password"
+}
+
+data "xenorchestra_user" "user" {
+    username = "%s"
+    search_in_session = true
+}
+`, username, username)
+}
+
 func createUser(t *testing.T, username string) func() {
 	return func() {
 		c, err := client.NewClient(client.GetConfigFromEnv())
@@ -82,7 +116,8 @@ func createUser(t *testing.T, username string) func() {
 		}
 
 		_, err = c.CreateUser(client.User{
-			Email: username,
+			Email:    username,
+			Password: "password",
 		})
 
 		if err != nil {

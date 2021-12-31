@@ -1,6 +1,7 @@
 package client
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -36,4 +37,20 @@ func TestGetUser(t *testing.T) {
 	if err != nil {
 		t.Errorf("failed to find user by id `%s` with error: %v", user.Id, err)
 	}
+}
+
+func TestGetCurrentUser(t *testing.T) {
+	c, err := NewClient(GetConfigFromEnv())
+
+	if err != nil {
+		t.Fatalf("failed to create client with error: %v", err)
+	}
+
+	user, err := c.GetCurrentUser()
+
+	if err != nil {
+		t.Fatalf("failed to retrieve the current user with error: %v", err)
+	}
+
+	fmt.Printf("Found user: %v", user)
 }

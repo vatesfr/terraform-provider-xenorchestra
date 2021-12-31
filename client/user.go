@@ -68,6 +68,20 @@ func (c *Client) GetAllUsers() ([]User, error) {
 	return users, nil
 }
 
+func (c *Client) GetCurrentUser() (*User, error) {
+	params := map[string]interface{}{
+		"dummy": "dummy",
+	}
+	user := User{}
+	err := c.Call("session.getUser", params, &user)
+
+	log.Printf("[DEBUG] Found the following user: %v with error: %v\n", user, err)
+	if err != nil {
+		return nil, err
+	}
+	return &user, err
+}
+
 func (c *Client) GetUser(userReq User) (*User, error) {
 	users, err := c.GetAllUsers()
 	if err != nil {

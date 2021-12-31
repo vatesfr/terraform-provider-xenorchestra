@@ -63,6 +63,7 @@ type XOClient interface {
 	CreateUser(user User) (*User, error)
 	GetAllUsers() ([]User, error)
 	GetUser(userReq User) (*User, error)
+	GetCurrentUser() (*User, error)
 	DeleteUser(userReq User) error
 
 	CreateNetwork(netReq Network) (*Network, error)
