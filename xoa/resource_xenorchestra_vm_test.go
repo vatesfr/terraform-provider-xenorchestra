@@ -2,6 +2,7 @@ package xoa
 
 import (
 	"fmt"
+	"os"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -395,6 +396,58 @@ func TestAccXenorchestraVm_createWhenWaitingForIp(t *testing.T) {
 					resource.TestMatchResourceAttr(resourceName, "network.0.ipv6_addresses.#", regex),
 					resource.TestCheckResourceAttrSet(resourceName, "network.0.ipv6_addresses.0"),
 				),
+			},
+		},
+	})
+}
+
+func TestAccXenorchestraVm_ensureResourceSetsCanBeViewedByNonAdminUsers(t *testing.T) {
+	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
+	adminUser := os.Getenv("XOA_USER")
+	adminPassword := os.Getenv("XOA_PASSWORD")
+	// TODO: Create an unprivileged for the test rather than relying on an existing user
+	regularUser := "ddelnano-resource-set-test"
+	regularPassword := os.Getenv("XOA_PASSWORD")
+	// var resourceSetId string
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmResourceSet(vmName) + testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template"),
+			},
+			{
+				Config: testAccVmConfigWithResourceSetUserAndPassword(vmName, regularUser, regularPassword),
+			},
+			{
+				// PreConfig: func() {
+				// 	c, err := client.NewClient(client.GetConfigFromEnv())
+				// 	if err != nil {
+				// 		t.Fatalf("failed to create client with error: %v", err)
+				// 	}
+
+				// 	resourceSets, err := c.GetResourceSet(client.ResourceSet{
+				// 		Name: fmt.Sprintf("terraform-vm-acceptance-test-%s", vmName),
+				// 	})
+
+				// 	if err != nil {
+				// 		t.Fatalf("failed to find resource set with error: %v", err)
+				// 	}
+
+				// 	if len(resourceSets) > 1 {
+				// 		t.Fatalf("not expecting more than 1 resource set. a previous test run must have failed to clean up")
+				// 	}
+				// 	if len(resourceSets) < 1 {
+				// 		t.Fatalf("failed to find expected resource set with results: %v", resourceSets)
+				// 	}
+				// 	resourceSetId = resourceSets[0].Id
+				// },
+				// Config: testAccVmConfigWithoutResourceSetUserAndPassword(vmName, regularUser, regularPassword, resourceSetId),
+				Config: testAccVmConfigWithResourceSetUserAndPasswordWithDiff(vmName, regularUser, regularPassword),
+			},
+			{
+				Config: testAccVmConfigWithResourceSetUserAndPassword(vmName, adminUser, adminPassword),
 			},
 		},
 	})
@@ -1325,7 +1378,7 @@ func TestAccXenorchestraVm_createAndUpdateWithResourceSet(t *testing.T) {
 					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
 			},
 			{
-				Config: testAccVmConfigWithoutResourceSet(vmName),
+				Config: testAccVmConfigWithoutResourceSet2(vmName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -2225,8 +2278,71 @@ resource "xenorchestra_vm" "bar" {
 `, accTestPool.NameLabel, accDefaultNetwork.NameLabel, memory, cpus, nameLabel, nameDescription, ha, powerOn, accDefaultSr.Id)
 }
 
+func testAccVmConfigWithResourceSetUserAndPassword(vmName, user, password string) string {
+	return fmt.Sprintf(`
+provider "xenorchestra" {
+  username = "%s"
+  password = "%s"
+}
+
+`, user, password) + testAccVmConfigWithResourceSet(vmName)
+}
+
+func testAccVmConfigWithResourceSetUserAndPasswordWithDiff(vmName, user, password string) string {
+	return fmt.Sprintf(`
+provider "xenorchestra" {
+  username = "%s"
+  password = "%s"
+}
+
+`, user, password) + testAccVmConfigWithResourceSetWithDiff(vmName)
+}
+
+func testAccVmConfigWithoutResourceSetUserAndPassword(vmName, user, password, rsId string) string {
+	return fmt.Sprintf(`
+provider "xenorchestra" {
+  username = "%s"
+  password = "%s"
+}
+
+`, user, password) + testAccVmConfigWithoutResourceSet(vmName, rsId)
+}
+
+func testAccVmConfigWithoutResourceSet(vmName, rsId string) string {
+	return testAccTemplateConfig() + testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
+
+data "xenorchestra_network" "network" {
+    name_label = "%s"
+    pool_id = "%s"
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 4295000000
+    cpus  = 1
+    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    name_label = "%s"
+    name_description = "description"
+    template = "${data.xenorchestra_template.template.id}"
+    resource_set = "%s"
+    network {
+	network_id = "${data.xenorchestra_network.network.id}"
+    }
+
+    disk {
+      sr_id = "%s"
+      name_label = "disk 1"
+      size = 10001317888
+    }
+}
+`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, rsId, accDefaultSr.Id)
+}
+
 func testAccVmConfigWithResourceSet(vmName string) string {
-	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccVmResourceSet() + fmt.Sprintf(`
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccVmResourceSet(vmName) + fmt.Sprintf(`
+
+// data "xenorchestra_user" "unprivliged" {
+//    username = "ddelnano-resource-set-test"
+// }
 
 resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
@@ -2249,7 +2365,35 @@ resource "xenorchestra_vm" "bar" {
 `, vmName, accDefaultSr.Id)
 }
 
-func testAccVmResourceSet() string {
+func testAccVmConfigWithResourceSetWithDiff(vmName string) string {
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccVmResourceSet(vmName) + fmt.Sprintf(`
+
+// data "xenorchestra_user" "unprivliged" {
+//    username = "ddelnano-resource-set-test"
+// }
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 4295000000
+    cpus  = 1
+    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    name_label = "%s"
+    name_description = "description testing"
+    template = "${data.xenorchestra_template.template.id}"
+    resource_set = "${xenorchestra_resource_set.rs.id}"
+    network {
+	network_id = "${data.xenorchestra_network.network.id}"
+    }
+
+    disk {
+      sr_id = "%s"
+      name_label = "disk 1"
+      size = 10001317888
+    }
+}
+`, vmName, accDefaultSr.Id)
+}
+
+func testAccVmResourceSet(vmName string) string {
 	return testAccTemplateConfig() + fmt.Sprintf(`
 data "xenorchestra_network" "network" {
     name_label = "%s"
@@ -2257,8 +2401,14 @@ data "xenorchestra_network" "network" {
 }
 
 resource "xenorchestra_resource_set" "rs" {
-    name = "terraform-vm-acceptance-test"
-    subjects = []
+    name = "terraform-vm-acceptance-test-%s"
+    subjects = [
+	"60f3d51f-43f2-495d-80e1-8939633c468d",
+    ]
+    // TODO: Templating user via data source causes permission
+    // issues for an unprivileged user. Find a way to address this
+
+    // "${data.xenorchestra_user.unprivliged.id}",
     objects = [
 	"${data.xenorchestra_template.template.id}",
 	"%s",
@@ -2280,11 +2430,11 @@ resource "xenorchestra_resource_set" "rs" {
       quantity = 12884901888
     }
 }
-`, accDefaultNetwork.NameLabel, accTestPool.Id, accDefaultSr.Id)
+`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
-func testAccVmConfigWithoutResourceSet(vmName string) string {
-	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccVmResourceSet() + fmt.Sprintf(`
+func testAccVmConfigWithoutResourceSet2(vmName string) string {
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccVmResourceSet(vmName) + fmt.Sprintf(`
 
 resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
@@ -2294,7 +2444,7 @@ resource "xenorchestra_vm" "bar" {
     name_description = "description"
     template = "${data.xenorchestra_template.template.id}"
     network {
-	network_id = "${data.xenorchestra_network.network.id}"
+       network_id = "${data.xenorchestra_network.network.id}"
     }
 
     disk {
