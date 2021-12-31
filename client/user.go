@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 )
 
@@ -66,6 +67,20 @@ func (c *Client) GetAllUsers() ([]User, error) {
 		return nil, err
 	}
 	return users, nil
+}
+
+func (c *Client) GetCurrentUser() (*User, error) {
+	params := map[string]interface{}{
+		"dummy": "dummy",
+	}
+	user := User{}
+	err := c.Call("session.getUser", params, &user)
+
+	log.Printf("[DEBUG] Found the following user: %v with error: %v\n", user, err)
+	if err != nil {
+		return nil, err
+	}
+	return &user, err
 }
 
 func (c *Client) GetUser(userReq User) (*User, error) {
@@ -132,4 +147,25 @@ func RemoveUsersWithPrefix(usernamePrefix string) func(string) error {
 		}
 		return nil
 	}
+}
+
+func CreateUser(user *User) {
+	c, err := NewClient(GetConfigFromEnv())
+
+	if err != nil {
+		fmt.Printf("failed to created client with error: %v", err)
+		os.Exit(-1)
+	}
+
+	u, err := c.CreateUser(User{
+		Email:    user.Email,
+		Password: "password",
+	})
+
+	if err != nil {
+		fmt.Printf("failed to create user for acceptance tests with error: %v", err)
+		os.Exit(-1)
+	}
+
+	*user = *u
 }

@@ -6,25 +6,40 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/ddelnano/terraform-provider-xenorchestra/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 func TestAccXenorchestraDataSource_user(t *testing.T) {
 	resourceName := "data.xenorchestra_user.user"
-	username := fmt.Sprintf("%s-username", accTestPrefix)
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				PreConfig: createUser(t, username),
-				Config:    testAccXenorchestraDataSourceUserConfig(username),
+				Config: testAccXenorchestraDataSourceUserConfig(accUser.Email),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckXenorchestraDataSourceUser(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
-					resource.TestCheckResourceAttr(resourceName, "username", username)),
+					resource.TestCheckResourceAttr(resourceName, "username", accUser.Email)),
+			},
+		},
+	},
+	)
+}
+
+func TestAccXenorchestraDataSource_userInCurrentSession(t *testing.T) {
+	resourceName := "data.xenorchestra_user.user"
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccXenorchestraDataSourceUserInCurrentSessionConfig(accUser.Email),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckXenorchestraDataSourceUser(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "username", accUser.Email)),
 			},
 		},
 	},
@@ -73,20 +88,16 @@ data "xenorchestra_user" "user" {
 `, username)
 }
 
-func createUser(t *testing.T, username string) func() {
-	return func() {
-		c, err := client.NewClient(client.GetConfigFromEnv())
+func testAccXenorchestraDataSourceUserInCurrentSessionConfig(username string) string {
+	return fmt.Sprintf(`
+provider "xenorchestra" {
+    username = "%s"
+    password = "password"
+}
 
-		if err != nil {
-			t.Fatalf("failed to created client with error: %v", err)
-		}
-
-		_, err = c.CreateUser(client.User{
-			Email: username,
-		})
-
-		if err != nil {
-			t.Fatalf("failed to create user for test with error: %v", err)
-		}
-	}
+data "xenorchestra_user" "user" {
+    username = "%s"
+    search_in_session = true
+}
+`, username, username)
 }

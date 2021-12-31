@@ -15,6 +15,11 @@ func dataSourceXoaUser() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"search_in_session": &schema.Schema{
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
 		},
 	}
 }
@@ -23,16 +28,23 @@ func dataSourceUserRead(d *schema.ResourceData, m interface{}) error {
 	c := m.(client.XOClient)
 
 	username := d.Get("username").(string)
+	searchInSession := d.Get("search_in_session").(bool)
 
-	user, err := c.GetUser(client.User{
-		Email: username,
-	})
+	var user *client.User
+	var err error
+	if searchInSession {
+		user, err = c.GetCurrentUser()
+	} else {
+		user, err = c.GetUser(client.User{
+			Email: username,
+		})
+	}
 
 	if err != nil {
 		return err
 	}
 
-	log.Printf("[DEBUG] Found user with %+v", user)
+	log.Printf("[DEBUG] Found user with %+v", *user)
 
 	d.SetId(user.Id)
 	if err := d.Set("username", user.Email); err != nil {

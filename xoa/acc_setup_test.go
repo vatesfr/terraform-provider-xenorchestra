@@ -1,6 +1,7 @@
 package xoa
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -13,6 +14,7 @@ var accTestPool client.Pool
 var accTestHost client.Host
 var accDefaultSr client.StorageRepository
 var accDefaultNetwork client.Network
+var accUser client.User = client.User{Email: fmt.Sprintf("%s-%s", accTestPrefix, "regular-user")}
 var testTemplate client.Template
 var disklessTestTemplate client.Template
 var testIsoName string
@@ -27,6 +29,7 @@ func TestMain(m *testing.M) {
 		client.FindHostForTests(accTestPool.Master, &accTestHost)
 		client.FindNetworkForTests(accTestPool.Id, &accDefaultNetwork)
 		client.FindStorageRepositoryForTests(accTestPool, &accDefaultSr, accTestPrefix)
+		client.CreateUser(&accUser)
 		testIsoName = os.Getenv("XOA_ISO")
 	}
 
