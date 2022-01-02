@@ -401,14 +401,11 @@ func TestAccXenorchestraVm_createWhenWaitingForIp(t *testing.T) {
 	})
 }
 
-func TestAccXenorchestraVm_ensureResourceSetsCanBeViewedByNonAdminUsers(t *testing.T) {
+func TestAccXenorchestraVm_ensureVmsInResourceSetsCanBeUpdatedByNonAdminUsers(t *testing.T) {
 	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
 	adminUser := os.Getenv("XOA_USER")
 	adminPassword := os.Getenv("XOA_PASSWORD")
-	// TODO: Create an unprivileged for the test rather than relying on an existing user
-	regularUser := "ddelnano-resource-set-test"
-	regularPassword := os.Getenv("XOA_PASSWORD")
-	// var resourceSetId string
+	accUserPassword := "password"
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -418,33 +415,10 @@ func TestAccXenorchestraVm_ensureResourceSetsCanBeViewedByNonAdminUsers(t *testi
 				Config: testAccVmResourceSet(vmName) + testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template"),
 			},
 			{
-				Config: testAccVmConfigWithResourceSetUserAndPassword(vmName, regularUser, regularPassword),
+				Config: testAccVmConfigWithResourceSetUserAndPassword(vmName, accUser.Email, accUserPassword),
 			},
 			{
-				// PreConfig: func() {
-				// 	c, err := client.NewClient(client.GetConfigFromEnv())
-				// 	if err != nil {
-				// 		t.Fatalf("failed to create client with error: %v", err)
-				// 	}
-
-				// 	resourceSets, err := c.GetResourceSet(client.ResourceSet{
-				// 		Name: fmt.Sprintf("terraform-vm-acceptance-test-%s", vmName),
-				// 	})
-
-				// 	if err != nil {
-				// 		t.Fatalf("failed to find resource set with error: %v", err)
-				// 	}
-
-				// 	if len(resourceSets) > 1 {
-				// 		t.Fatalf("not expecting more than 1 resource set. a previous test run must have failed to clean up")
-				// 	}
-				// 	if len(resourceSets) < 1 {
-				// 		t.Fatalf("failed to find expected resource set with results: %v", resourceSets)
-				// 	}
-				// 	resourceSetId = resourceSets[0].Id
-				// },
-				// Config: testAccVmConfigWithoutResourceSetUserAndPassword(vmName, regularUser, regularPassword, resourceSetId),
-				Config: testAccVmConfigWithResourceSetUserAndPasswordWithDiff(vmName, regularUser, regularPassword),
+				Config: testAccVmConfigWithResourceSetUserAndDescription(vmName, "new description", accUser.Email, accUserPassword),
 			},
 			{
 				Config: testAccVmConfigWithResourceSetUserAndPassword(vmName, adminUser, adminPassword),
@@ -2288,14 +2262,14 @@ provider "xenorchestra" {
 `, user, password) + testAccVmConfigWithResourceSet(vmName)
 }
 
-func testAccVmConfigWithResourceSetUserAndPasswordWithDiff(vmName, user, password string) string {
+func testAccVmConfigWithResourceSetUserAndDescription(vmName, description, user, password string) string {
 	return fmt.Sprintf(`
 provider "xenorchestra" {
   username = "%s"
   password = "%s"
 }
 
-`, user, password) + testAccVmConfigWithResourceSetWithDiff(vmName)
+`, user, password) + testAccVmConfigWithResourceSetWithDescription(vmName, description)
 }
 
 func testAccVmConfigWithoutResourceSetUserAndPassword(vmName, user, password, rsId string) string {
@@ -2338,18 +2312,18 @@ resource "xenorchestra_vm" "bar" {
 }
 
 func testAccVmConfigWithResourceSet(vmName string) string {
-	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccVmResourceSet(vmName) + fmt.Sprintf(`
+	return testAccVmConfigWithResourceSetWithDescription(vmName, "")
+}
 
-// data "xenorchestra_user" "unprivliged" {
-//    username = "ddelnano-resource-set-test"
-// }
+func testAccVmConfigWithResourceSetWithDescription(vmName, nameDescription string) string {
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccVmResourceSet(vmName) + fmt.Sprintf(`
 
 resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
     name_label = "%s"
-    name_description = "description"
+    name_description = "%s"
     template = "${data.xenorchestra_template.template.id}"
     resource_set = "${xenorchestra_resource_set.rs.id}"
     network {
@@ -2362,35 +2336,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, vmName, accDefaultSr.Id)
-}
-
-func testAccVmConfigWithResourceSetWithDiff(vmName string) string {
-	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccVmResourceSet(vmName) + fmt.Sprintf(`
-
-// data "xenorchestra_user" "unprivliged" {
-//    username = "ddelnano-resource-set-test"
-// }
-
-resource "xenorchestra_vm" "bar" {
-    memory_max = 4295000000
-    cpus  = 1
-    cloud_config = "${xenorchestra_cloud_config.bar.template}"
-    name_label = "%s"
-    name_description = "description testing"
-    template = "${data.xenorchestra_template.template.id}"
-    resource_set = "${xenorchestra_resource_set.rs.id}"
-    network {
-	network_id = "${data.xenorchestra_network.network.id}"
-    }
-
-    disk {
-      sr_id = "%s"
-      name_label = "disk 1"
-      size = 10001317888
-    }
-}
-`, vmName, accDefaultSr.Id)
+`, vmName, nameDescription, accDefaultSr.Id)
 }
 
 func testAccVmResourceSet(vmName string) string {
@@ -2402,13 +2348,12 @@ data "xenorchestra_network" "network" {
 
 resource "xenorchestra_resource_set" "rs" {
     name = "terraform-vm-acceptance-test-%s"
+    // This adds a non admin user to the resource set
     subjects = [
-	"60f3d51f-43f2-495d-80e1-8939633c468d",
+	"%s",
     ]
-    // TODO: Templating user via data source causes permission
-    // issues for an unprivileged user. Find a way to address this
 
-    // "${data.xenorchestra_user.unprivliged.id}",
+    // Add the template, storage repository and network to the resource set
     objects = [
 	"${data.xenorchestra_template.template.id}",
 	"%s",
@@ -2430,7 +2375,7 @@ resource "xenorchestra_resource_set" "rs" {
       quantity = 12884901888
     }
 }
-`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accUser.Id, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithoutResourceSet2(vmName string) string {
