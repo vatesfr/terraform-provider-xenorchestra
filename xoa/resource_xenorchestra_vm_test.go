@@ -411,15 +411,19 @@ func TestAccXenorchestraVm_ensureVmsInResourceSetsCanBeUpdatedByNonAdminUsers(t 
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
+			// Create a resource set and cloud config template with an admin user
 			{
 				Config: testAccVmResourceSet(vmName) + testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template"),
 			},
+			// Create a VM using the resource set from the previous step
 			{
 				Config: testAccVmConfigWithResourceSetUserAndPassword(vmName, accUser.Email, accUserPassword),
 			},
+			// Verify that the non admin user can update the VM. This is the main assertion of the test
 			{
 				Config: testAccVmConfigWithResourceSetUserAndDescription(vmName, "new description", accUser.Email, accUserPassword),
 			},
+			// Re-run with the admin user so that it can delete the resource set and cloud config
 			{
 				Config: testAccVmConfigWithResourceSetUserAndPassword(vmName, adminUser, adminPassword),
 			},
