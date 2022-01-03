@@ -417,15 +417,18 @@ func TestAccXenorchestraVm_ensureVmsInResourceSetsCanBeUpdatedByNonAdminUsers(t 
 			},
 			// Create a VM using the resource set from the previous step
 			{
-				Config: testAccVmConfigWithResourceSetUserAndPassword(vmName, accUser.Email, accUserPassword),
+				Config: providerCredentials(accUser.Email, accUserPassword) +
+					testAccVmManagedResourceSetConfig(vmName),
 			},
 			// Verify that the non admin user can update the VM. This is the main assertion of the test
 			{
-				Config: testAccVmConfigWithResourceSetUserAndDescription(vmName, "new description", accUser.Email, accUserPassword),
+				Config: providerCredentials(accUser.Email, accUserPassword) +
+					testAccVmManagedResourceSetWithDescriptionConfig(vmName, "new description"),
 			},
 			// Re-run with the admin user so that it can delete the resource set and cloud config
 			{
-				Config: testAccVmConfigWithResourceSetUserAndPassword(vmName, adminUser, adminPassword),
+				Config: providerCredentials(adminUser, adminPassword) +
+					testAccVmManagedResourceSetConfig(vmName),
 			},
 		},
 	})
@@ -1348,7 +1351,7 @@ func TestAccXenorchestraVm_createAndUpdateWithResourceSet(t *testing.T) {
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccVmConfigWithResourceSet(vmName),
+				Config: testAccVmManagedResourceSetConfig(vmName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -1356,7 +1359,7 @@ func TestAccXenorchestraVm_createAndUpdateWithResourceSet(t *testing.T) {
 					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
 			},
 			{
-				Config: testAccVmConfigWithoutResourceSet2(vmName),
+				Config: testAccVmConfigWithoutResourceSet(vmName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -2256,70 +2259,20 @@ resource "xenorchestra_vm" "bar" {
 `, accTestPool.NameLabel, accDefaultNetwork.NameLabel, memory, cpus, nameLabel, nameDescription, ha, powerOn, accDefaultSr.Id)
 }
 
-func testAccVmConfigWithResourceSetUserAndPassword(vmName, user, password string) string {
+func providerCredentials(username, password string) string {
 	return fmt.Sprintf(`
 provider "xenorchestra" {
   username = "%s"
   password = "%s"
 }
-
-`, user, password) + testAccVmConfigWithResourceSet(vmName)
+`, username, password)
 }
 
-func testAccVmConfigWithResourceSetUserAndDescription(vmName, description, user, password string) string {
-	return fmt.Sprintf(`
-provider "xenorchestra" {
-  username = "%s"
-  password = "%s"
+func testAccVmManagedResourceSetConfig(vmName string) string {
+	return testAccVmManagedResourceSetWithDescriptionConfig(vmName, "")
 }
 
-`, user, password) + testAccVmConfigWithResourceSetWithDescription(vmName, description)
-}
-
-func testAccVmConfigWithoutResourceSetUserAndPassword(vmName, user, password, rsId string) string {
-	return fmt.Sprintf(`
-provider "xenorchestra" {
-  username = "%s"
-  password = "%s"
-}
-
-`, user, password) + testAccVmConfigWithoutResourceSet(vmName, rsId)
-}
-
-func testAccVmConfigWithoutResourceSet(vmName, rsId string) string {
-	return testAccTemplateConfig() + testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + fmt.Sprintf(`
-
-data "xenorchestra_network" "network" {
-    name_label = "%s"
-    pool_id = "%s"
-}
-
-resource "xenorchestra_vm" "bar" {
-    memory_max = 4295000000
-    cpus  = 1
-    cloud_config = "${xenorchestra_cloud_config.bar.template}"
-    name_label = "%s"
-    name_description = "description"
-    template = "${data.xenorchestra_template.template.id}"
-    resource_set = "%s"
-    network {
-	network_id = "${data.xenorchestra_network.network.id}"
-    }
-
-    disk {
-      sr_id = "%s"
-      name_label = "disk 1"
-      size = 10001317888
-    }
-}
-`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, rsId, accDefaultSr.Id)
-}
-
-func testAccVmConfigWithResourceSet(vmName string) string {
-	return testAccVmConfigWithResourceSetWithDescription(vmName, "")
-}
-
-func testAccVmConfigWithResourceSetWithDescription(vmName, nameDescription string) string {
+func testAccVmManagedResourceSetWithDescriptionConfig(vmName, nameDescription string) string {
 	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccVmResourceSet(vmName) + fmt.Sprintf(`
 
 resource "xenorchestra_vm" "bar" {
@@ -2382,7 +2335,7 @@ resource "xenorchestra_resource_set" "rs" {
 `, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accUser.Id, accDefaultSr.Id)
 }
 
-func testAccVmConfigWithoutResourceSet2(vmName string) string {
+func testAccVmConfigWithoutResourceSet(vmName string) string {
 	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccVmResourceSet(vmName) + fmt.Sprintf(`
 
 resource "xenorchestra_vm" "bar" {

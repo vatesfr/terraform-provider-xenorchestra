@@ -1,6 +1,7 @@
 package client
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -56,6 +57,27 @@ func (v *Videoram) UnmarshalJSON(data []byte) (err error) {
 	return json.Unmarshal(data, &v.Value)
 }
 
+// This resource set type is used to allow differentiating between when a
+// user wants to remove a resource set from a VM (during an update) and when
+// a resource set parameter should be omitted from a vm.set RPC call.
+type FlatResourceSet struct {
+	Id string
+}
+
+func (rs *FlatResourceSet) UnmarshalJSON(data []byte) (err error) {
+	return json.Unmarshal(data, &rs.Id)
+}
+
+func (rs *FlatResourceSet) MarshalJSON() ([]byte, error) {
+	if len(rs.Id) == 0 {
+		var buf bytes.Buffer
+		buf.WriteString(`null`)
+		return buf.Bytes(), nil
+	} else {
+		return json.Marshal(rs.Id)
+	}
+}
+
 type Vm struct {
 	Addresses          map[string]string `json:"addresses,omitempty"`
 	BlockedOperations  map[string]string `json:"blockedOperations,omitempty"`
@@ -77,7 +99,7 @@ type Vm struct {
 	AutoPoweron        bool              `json:"auto_poweron"`
 	HA                 string            `json:"high_availability"`
 	CloudConfig        string            `json:"cloudConfig"`
-	ResourceSet        string            `json:"resourceSet,omitempty"`
+	ResourceSet        *FlatResourceSet  `json:"resourceSet"`
 	// TODO: (#145) Uncomment this once issues with secure_boot have been figured out
 	// SecureBoot         bool              `json:"secureBoot,omitempty"`
 	Tags       []string `json:"tags"`
@@ -233,7 +255,7 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 	}
 
 	resourceSet := vmReq.ResourceSet
-	if resourceSet != "" {
+	if resourceSet != nil {
 		params["resourceSet"] = resourceSet
 	}
 
@@ -301,7 +323,7 @@ func (c *Client) UpdateVm(vmReq Vm) (*Vm, error) {
 		// coresPerSocket is null or a number of cores per socket. Putting an invalid value doesn't seem to cause an error :(
 	}
 
-	if vmReq.ResourceSet != "" {
+	if vmReq.ResourceSet != nil {
 		params["resourceSet"] = vmReq.ResourceSet
 	}
 

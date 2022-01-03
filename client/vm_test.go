@@ -2,6 +2,7 @@ package client
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 )
 
@@ -172,6 +173,60 @@ func TestUnmarshalingVmObject(t *testing.T) {
 
 }
 
+func TestFlatResourceSetMarshalling(t *testing.T) {
+	rs := &FlatResourceSet{
+		Id: "id",
+	}
+
+	b, err := json.Marshal(rs)
+
+	if err != nil {
+		t.Fatalf("failed to marshal resource set with error: %v", err)
+	}
+
+	expected := fmt.Sprintf(`"%s"`, rs.Id)
+	if s := string(b); s != expected {
+		t.Errorf("expected '%s' to equal '%s' after marshalling", s, expected)
+	}
+}
+
+func TestFlatResourceSetMarshallingForEmptyString(t *testing.T) {
+	rs := &FlatResourceSet{
+		Id: "",
+	}
+
+	b, err := json.Marshal(rs)
+
+	if err != nil {
+		t.Fatalf("failed to marshal resource set with error: %v", err)
+	}
+
+	expected := `null`
+	if s := string(b); s != expected {
+		t.Errorf("expected '%s' to equal '%s' after marshalling", s, expected)
+	}
+}
+
+func TestFlatResourceSetUnmarshalling(t *testing.T) {
+	id := "id"
+	s := struct {
+		ResourceSet *FlatResourceSet `json:"resourceSet,omitempty"`
+	}{
+		ResourceSet: &FlatResourceSet{},
+	}
+	data := []byte(fmt.Sprintf(`{"resourceSet": "%s"}`, id))
+	err := json.Unmarshal(data, &s)
+
+	if err != nil {
+		t.Fatalf("failed to unmarshal into FlatResourceSet with error: %v", err)
+	}
+
+	rs := s.ResourceSet
+	if rs.Id != id {
+		t.Errorf("expected '%s' but received resource set '%v' with actual value '%s'", id, rs, rs.Id)
+	}
+}
+
 func TestUpdateVmWithUpdatesThatRequireHalt(t *testing.T) {
 	c, err := NewClient(GetConfigFromEnv())
 	if err != nil {
@@ -219,7 +274,7 @@ func validateVmObject(o Vm) bool {
 		return false
 	}
 
-	if o.ResourceSet == "" {
+	if o.ResourceSet.Id == "" {
 		return false
 	}
 

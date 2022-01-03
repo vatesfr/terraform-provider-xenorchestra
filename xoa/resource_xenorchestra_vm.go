@@ -404,7 +404,9 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		NameDescription: d.Get("name_description").(string),
 		Template:        d.Get("template").(string),
 		CloudConfig:     d.Get("cloud_config").(string),
-		ResourceSet:     d.Get("resource_set").(string),
+		ResourceSet: &client.FlatResourceSet{
+			Id: d.Get("resource_set").(string),
+		},
 		CPUs: client.CPUs{
 			Number: d.Get("cpus").(int),
 		},
@@ -595,9 +597,11 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 	cpus := d.Get("cpus").(int)
 	autoPowerOn := d.Get("auto_poweron").(bool)
 	ha := d.Get("high_availability").(string)
-	rs := ""
+	var rs *client.FlatResourceSet
 	if d.HasChange("resource_set") {
-		rs = d.Get("resource_set").(string)
+		rs = &client.FlatResourceSet{
+			Id: d.Get("resource_set").(string),
+		}
 	}
 	memoryMax := d.Get("memory_max").(int)
 
@@ -925,7 +929,11 @@ func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, cd
 	d.Set("name_description", resource.NameDescription)
 	d.Set("high_availability", resource.HA)
 	d.Set("auto_poweron", resource.AutoPoweron)
-	d.Set("resource_set", resource.ResourceSet)
+	if resource.ResourceSet != nil {
+		d.Set("resource_set", resource.ResourceSet.Id)
+	} else {
+		d.Set("resource_set", "")
+	}
 	d.Set("power_state", resource.PowerState)
 
 	// TODO: (#145) Uncomment this once issues with secure_boot have been figured out
