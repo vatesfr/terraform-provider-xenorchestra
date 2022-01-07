@@ -64,6 +64,15 @@ type FlatResourceSet struct {
 	Id string
 }
 
+// This ensures when a FlatResourceSet is printed in debug logs
+// that the string value of the Id is used rather than the pointer
+// value. Since the purpose of this struct is to flatten resource
+// sets to a string, it makes the logs properly reflect what is
+// being logged.
+func (rs *FlatResourceSet) String() string {
+	return rs.Id
+}
+
 func (rs *FlatResourceSet) UnmarshalJSON(data []byte) (err error) {
 	return json.Unmarshal(data, &rs.Id)
 }

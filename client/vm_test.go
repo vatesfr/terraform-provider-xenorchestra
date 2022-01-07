@@ -173,6 +173,16 @@ func TestUnmarshalingVmObject(t *testing.T) {
 
 }
 
+func TestFlatResourceSetStringerInterface(t *testing.T) {
+	rs := &FlatResourceSet{
+		Id: "id",
+	}
+	v := fmt.Sprintf("%s", rs)
+	if v != rs.Id {
+		t.Errorf("expected FlatResourceSet to print Id '%s' value rather than value '%s'", rs.Id, v)
+	}
+}
+
 func TestFlatResourceSetMarshalling(t *testing.T) {
 	rs := &FlatResourceSet{
 		Id: "id",
