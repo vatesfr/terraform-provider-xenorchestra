@@ -54,6 +54,11 @@ resource "xenorchestra_vm" "bar" {
       "Ubuntu",
       "Bionic",
     ]
+
+    // Override the default create timeout from 5 mins to 20.
+    timeouts {
+      create = "20m"
+    }
 }
 ```
 
@@ -108,6 +113,11 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 * `vga` - (Optional) The video adapter the VM should use. Possible values include std and cirrus.
 * `videoram` - (Optional) The videoram option the VM should use. Possible values include 1, 2, 4, 8, 16
 * `start_delay` - (Optional) Number of seconds the VM should be delayed from starting
+
+## Timeouts
+
+`xenorchestra_vm` provides the following [timeouts configuration](https://www.terraform.io/docs/configuration/blocks/resources/syntax.html?_ga=2.8367217.2118548466.1641880494-646239468.1641441667#operation-timeouts) options:
+* `create` - (Default `5 minutes`) Used when creating VMs for the first time
 
 ## Attributes Reference
 In addition to all the arguments above, the following attributes are exported:
