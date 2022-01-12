@@ -20,3 +20,4 @@ using the data source.
 
 ## Attributes Reference
 * id - Id of the resource set.
+* template - The contents of the cloud-config.
