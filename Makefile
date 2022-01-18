@@ -28,10 +28,13 @@ plan: build
 apply:
 	terraform apply
 
+sweep:
+	TF_ACC=1 $(TF_LOG) go test -sweep=true
+
 test: testclient testacc
 
 testclient:
 	cd client; go test $(TEST) -v -count 1
 
-testacc:
+testacc: sweep
 	TF_ACC=1 $(TF_LOG) go test $(TEST) -parallel $(GOMAXPROCS) -v -count 1 -timeout $(TIMEOUT)

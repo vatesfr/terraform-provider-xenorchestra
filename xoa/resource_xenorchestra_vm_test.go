@@ -14,6 +14,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
+func init() {
+	resource.AddTestSweepers("xenorchestra_vm", &resource.Sweeper{
+		Name:         "xenorchestra_vm",
+		F:            client.RemoveVmsWithNamePrefix(accTestPrefix),
+		Dependencies: []string{"xenorchestra_resource_set", "xenorchestra_cloud_config"},
+	})
+}
+
 func Test_extractIpsFromNetworks(t *testing.T) {
 	ipv4 := "169.254.169.254"
 	secondIpv4 := "169.254.255.254"
@@ -2257,7 +2265,8 @@ data "xenorchestra_network" "network" {
 }
 
 resource "xenorchestra_resource_set" "rs" {
-    name = "terraform-vm-acceptance-test"
+    # TODO: Change this to use accTestPrefix during #179
+    name = "terraform-acc"
     subjects = []
     objects = [
 	"${data.xenorchestra_template.template.id}",

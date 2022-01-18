@@ -20,6 +20,8 @@ var disklessTestTemplate client.Template
 var testIsoName string
 
 func TestMain(m *testing.M) {
+	// TODO: Call terraform-plugin-sdk's TestMain if we detect that the sweeper
+	// flag was provided
 	_, runSetup := os.LookupEnv("TF_ACC")
 
 	if runSetup {
