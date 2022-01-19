@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -563,4 +564,30 @@ func FindOrCreateVmForTests(vm *Vm, poolId, srId, templateName, tag string) {
 	}
 
 	*vm = *vmRes
+}
+
+func RemoveVmsWithNamePrefix(prefix string) func(string) error {
+	return func(_ string) error {
+		fmt.Println("[DEBUG] Running vm sweeper")
+		c, err := NewClient(GetConfigFromEnv())
+		if err != nil {
+			return fmt.Errorf("error getting client: %s", err)
+		}
+
+		var vmsMap map[string]Vm
+		err = c.GetAllObjectsOfType(Vm{}, &vmsMap)
+		if err != nil {
+			return fmt.Errorf("error getting vms: %s", err)
+		}
+		for _, vm := range vmsMap {
+			if strings.HasPrefix(vm.NameLabel, prefix) {
+				fmt.Printf("[DEBUG] Deleting vm `%s`\n", vm.NameLabel)
+				err := c.DeleteVm(vm.Id)
+				if err != nil {
+					log.Printf("error destroying vm `%s` during sweep: %s", vm.NameLabel, err)
+				}
+			}
+		}
+		return nil
+	}
 }

@@ -9,6 +9,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
+func init() {
+	resource.AddTestSweepers("xenorchestra_cloud_config", &resource.Sweeper{
+		Name: "xenorchestra_cloud_config",
+		F:    client.RemoveCloudConfigsWithPrefix(accTestPrefix),
+	})
+}
+
 func TestAccXenorchestraCloudConfig_readAfterDelete(t *testing.T) {
 	templateName := "testing"
 	templateText := "template body"
