@@ -574,18 +574,18 @@ func RemoveVmsWithNamePrefix(prefix string) func(string) error {
 			return fmt.Errorf("error getting client: %s", err)
 		}
 
-		vms, err := c.GetVms(Vm{})
+		var vmsMap map[string]Vm
+		err = c.GetAllObjectsOfType(Vm{}, &vmsMap)
 		if err != nil {
 			return fmt.Errorf("error getting vms: %s", err)
 		}
-		for _, vm := range vms {
+		for _, vm := range vmsMap {
 			if strings.HasPrefix(vm.NameLabel, prefix) {
-				fmt.Println(fmt.Sprintf("[DEBUG] Would have deleted VM `%s`", vm.NameLabel))
-				// TODO: uncomment once this is tested
-				// err := c.DeleteVm(vm.Id)
-				// if err != nil {
-				// 	log.Printf("error destroying vm `%s` during sweep: %s", vm.NameLabel, err)
-				// }
+				fmt.Printf("[DEBUG] Deleting vm `%s`\n", vm.NameLabel)
+				err := c.DeleteVm(vm.Id)
+				if err != nil {
+					log.Printf("error destroying vm `%s` during sweep: %s", vm.NameLabel, err)
+				}
 			}
 		}
 		return nil

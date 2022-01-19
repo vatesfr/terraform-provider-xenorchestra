@@ -29,7 +29,7 @@ apply:
 	terraform apply
 
 sweep:
-	TF_ACC=1 $(TF_LOG) go test -sweep=true
+	TF_ACC=1 $(TF_LOG) go test $(TEST) -sweep=true -v
 
 test: testclient testacc
 

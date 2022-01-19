@@ -9,8 +9,8 @@ import (
 // is run
 
 func init() {
-	resource.AddTestSweepers("user", &resource.Sweeper{
-		Name: "user",
+	resource.AddTestSweepers("xenorchestra_user", &resource.Sweeper{
+		Name: "xenorchestra_user",
 		F:    client.RemoveUsersWithPrefix(accTestPrefix),
 	})
 }
