@@ -4,7 +4,17 @@ Creates a Xen Orchestra vm resource.
 
 ## Example Usage
 
+```
+# cloud_config.tftpl file used by the cloudinit templating.
+
+#cloud-config
+hostname: ${hostname}
+fqdn: ${hostname}.${domain}
+package_upgrade: true
+```
+
 ```hcl
+# Content of the terraform files
 data "xenorchestra_pool" "pool" {
     name_label = "pool name"
 }
@@ -19,15 +29,11 @@ data "xenorchestra_network" "net" {
 
 resource "xenorchestra_cloud_config" "bar" {
   name = "cloud config name"
-  template = <<EOF
-#cloud-config
-
-runcmd:
- - [ ls, -l, / ]
- - [ sh, -xc, "echo $(date) ': hello world!'" ]
- - [ sh, -c, echo "=========hello world'=========" ]
- - ls -l /root
-EOF
+  # Template the cloudinit if needed
+  template = templatefile("cloud_config.tftpl", {
+    hostname = "your-hostname"
+    domain = "your.domain.com"
+  })
 }
 
 resource "xenorchestra_vm" "bar" {
@@ -54,8 +60,22 @@ resource "xenorchestra_vm" "bar" {
       "Ubuntu",
       "Bionic",
     ]
+
+    // Override the default create timeout from 5 mins to 20.
+    timeouts {
+      create = "20m"
+    }
 }
 ```
+
+## Cloudinit
+
+Xen Orchestra allows templating cloudinit config through its own custom mechanism:
+* `{name}` is replaced with the VM's name
+* `%` is replaced with the VM's index
+
+This does not work in terraform since that is applied on Xen Orchestra's client side (Javascript). Terraform provides a `templatefile` function that allows for a similar substitution. Please see the example above for more details.
+
 
 ## Argument Reference
 * `blocked_operations` - (Optional) List of operations on a VM that are not permitted. Examples include: clean_reboot, clean_shutdown, hard_reboot, hard_shutdown, pause, shutdown, suspend, destroy. This can be used to prevent a VM from being destroyed. The entire list can be found here
@@ -108,6 +128,11 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 * `vga` - (Optional) The video adapter the VM should use. Possible values include std and cirrus.
 * `videoram` - (Optional) The videoram option the VM should use. Possible values include 1, 2, 4, 8, 16
 * `start_delay` - (Optional) Number of seconds the VM should be delayed from starting
+
+## Timeouts
+
+`xenorchestra_vm` provides the following [timeouts configuration](https://www.terraform.io/docs/configuration/blocks/resources/syntax.html?_ga=2.8367217.2118548466.1641880494-646239468.1641441667#operation-timeouts) options:
+* `create` - (Default `5 minutes`) Used when creating VMs for the first time
 
 ## Attributes Reference
 In addition to all the arguments above, the following attributes are exported:

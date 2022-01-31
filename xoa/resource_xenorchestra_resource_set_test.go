@@ -10,12 +10,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-var rsName string = "terraform-acc-resource-set-resource"
+var rsName string = fmt.Sprintf("%s-resource-set-resource", accTestPrefix)
 
 func init() {
-	resource.AddTestSweepers("resource_set", &resource.Sweeper{
-		Name: "resource_set",
-		F:    client.RemoveResourceSetsWithNamePrefix("terraform-acc"),
+	resource.AddTestSweepers("xenorchestra_resource_set", &resource.Sweeper{
+		Name: "xenorchestra_resource_set",
+		F:    client.RemoveResourceSetsWithNamePrefix(accTestPrefix),
 	})
 }
 

@@ -15,6 +15,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
+func init() {
+	resource.AddTestSweepers("xenorchestra_vm", &resource.Sweeper{
+		Name:         "xenorchestra_vm",
+		F:            client.RemoveVmsWithNamePrefix(accTestPrefix),
+		Dependencies: []string{"xenorchestra_resource_set", "xenorchestra_cloud_config"},
+	})
+}
+
 func Test_extractIpsFromNetworks(t *testing.T) {
 	ipv4 := "169.254.169.254"
 	secondIpv4 := "169.254.255.254"
@@ -317,7 +325,7 @@ func Test_shouldUpdateVif(t *testing.T) {
 }
 
 func TestAccXenorchestraVm_createWithShorterResourceTimeout(t *testing.T) {
-	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -333,7 +341,7 @@ func TestAccXenorchestraVm_createWithShorterResourceTimeout(t *testing.T) {
 
 func TestAccXenorchestraVm_createAndPlanWithNonExistantVm(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
-	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	removeVm := func() {
 		c, err := client.NewClient(client.GetConfigFromEnv())
 		if err != nil {
@@ -378,7 +386,7 @@ func TestAccXenorchestraVm_createAndPlanWithNonExistantVm(t *testing.T) {
 
 func TestAccXenorchestraVm_createWhenWaitingForIp(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
-	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	regex := regexp.MustCompile(`[1-9]*`)
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -435,7 +443,7 @@ func TestAccXenorchestraVm_ensureVmsInResourceSetsCanBeUpdatedByNonAdminUsers(t 
 }
 
 func TestAccXenorchestraVm_cdromAndInstallationMethodsCannotBeSpecifiedTogether(t *testing.T) {
-	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -452,7 +460,7 @@ func TestAccXenorchestraVm_cdromAndInstallationMethodsCannotBeSpecifiedTogether(
 func TestAccXenorchestraVm_createVmThatInstallsFromTheNetwork(t *testing.T) {
 	t.Skip("For now this test is not implemented. See #156 for more details")
 	resourceName := "xenorchestra_vm.bar"
-	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -476,7 +484,7 @@ func TestAccXenorchestraVm_createAndUpdateDiskNameLabelAndNameDescription(t *tes
 	description := "disk description"
 	updatedNameLabel := "updated disk name label"
 	updatedDescription := "updated description"
-	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -505,7 +513,7 @@ func TestAccXenorchestraVm_createAndUpdateDiskNameLabelAndNameDescription(t *tes
 
 func TestAccXenorchestraVm_createWithTags(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
-	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	tag1 := "tag1"
 	tag2 := "tag2"
 	resource.ParallelTest(t, resource.TestCase{
@@ -549,7 +557,7 @@ func TestAccXenorchestraVm_createWithTags(t *testing.T) {
 
 func TestAccXenorchestraVm_createWithDisklessTemplateAndISO(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
-	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -570,7 +578,7 @@ func TestAccXenorchestraVm_createWithDisklessTemplateAndISO(t *testing.T) {
 
 func TestAccXenorchestraVm_insertAndEjectCd(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
-	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -606,7 +614,7 @@ func TestAccXenorchestraVm_insertAndEjectCd(t *testing.T) {
 
 func TestAccXenorchestraVm_createWithAffinityHost(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
-	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	affinityHost := accTestPool.Master
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -626,7 +634,7 @@ func TestAccXenorchestraVm_createWithAffinityHost(t *testing.T) {
 
 func TestAccXenorchestraVm_createWithoutCloudConfig(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
-	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -645,7 +653,7 @@ func TestAccXenorchestraVm_createWithoutCloudConfig(t *testing.T) {
 
 func TestAccXenorchestraVm_createWithCloudInitNetworkConfig(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
-	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -665,7 +673,7 @@ func TestAccXenorchestraVm_createWithCloudInitNetworkConfig(t *testing.T) {
 
 func TestAccXenorchestraVm_createWithDashedMacAddress(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
-	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	macWithDashes := "00-0a-83-b1-c0-01"
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -690,7 +698,7 @@ func TestAccXenorchestraVm_createWithDashedMacAddress(t *testing.T) {
 
 func TestAccXenorchestraVm_createAndUpdateWithMacAddress(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
-	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	macAddress := "00:0a:83:b1:c0:83"
 	otherMacAddress := "00:0a:83:b1:c0:00"
 	macWithDashes := "00-0a-83-b1-c0-01"
@@ -739,7 +747,7 @@ func TestAccXenorchestraVm_createAndUpdateWithMacAddress(t *testing.T) {
 
 func TestAccXenorchestraVm_disconnectAttachedVif(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
-	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -771,7 +779,7 @@ func TestAccXenorchestraVm_disconnectAttachedVif(t *testing.T) {
 
 func TestAccXenorchestraVm_attachDisconnectedVif(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
-	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	removeVif := func() {
 		c, err := client.NewClient(client.GetConfigFromEnv())
 		if err != nil {
@@ -825,7 +833,7 @@ func TestAccXenorchestraVm_attachDisconnectedVif(t *testing.T) {
 
 func TestAccXenorchestraVm_attachDisconnectedDisk(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
-	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	disconnectDisk := func() {
 		c, err := client.NewClient(client.GetConfigFromEnv())
 		if err != nil {
@@ -900,7 +908,7 @@ func TestAccXenorchestraVm_attachDisconnectedDisk(t *testing.T) {
 
 func TestAccXenorchestraVm_disconnectAttachedDisk(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
-	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -933,7 +941,7 @@ func TestAccXenorchestraVm_disconnectAttachedDisk(t *testing.T) {
 
 func TestAccXenorchestraVm_createWithMutipleDisks(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
-	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -954,7 +962,7 @@ func TestAccXenorchestraVm_createWithMutipleDisks(t *testing.T) {
 
 func TestAccXenorchestraVm_addAndRemoveDisksToVm(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
-	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -996,7 +1004,7 @@ func TestAccXenorchestraVm_addAndRemoveDisksToVm(t *testing.T) {
 
 func TestAccXenorchestraVm_import(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
-	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	checkFn := func(s []*terraform.InstanceState) error {
 		attrs := []string{"id", "name_label"}
 		for _, attr := range attrs {
@@ -1061,7 +1069,7 @@ func testAccCheckXenorchestraVmDestroy(s *terraform.State) error {
 
 func TestAccXenorchestraVm_addVifAndRemoveVif(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
-	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -1106,7 +1114,7 @@ func TestAccXenorchestraVm_replaceExistingVifs(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	firstMacAddress := "02:00:00:00:00:00"
 	secondMacAddress := "02:00:00:00:00:11"
-	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -1281,7 +1289,7 @@ func TestAccXenorchestraVm_updatesWithoutRebootForOtherAttrs(t *testing.T) {
 
 func TestAccXenorchestraVm_updatesThatRequireReboot(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
-	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -1311,7 +1319,7 @@ func TestAccXenorchestraVm_updatesThatRequireReboot(t *testing.T) {
 
 func TestAccXenorchestraVm_updatingCpusInsideMaxCpuAndMemInsideStaticMaxDoesNotRequireReboot(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
-	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { testAccPreCheck(t) },
 		// Use a provider that has a XO client that will error if StartVm
@@ -1344,7 +1352,7 @@ func TestAccXenorchestraVm_updatingCpusInsideMaxCpuAndMemInsideStaticMaxDoesNotR
 
 func TestAccXenorchestraVm_createAndUpdateWithResourceSet(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
-	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -1372,7 +1380,7 @@ func TestAccXenorchestraVm_createAndUpdateWithResourceSet(t *testing.T) {
 
 func TestAccXenorchestraVm_diskAndNetworkAttachmentIgnoredWhenHalted(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
-	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	shutdownVm := func() {
 		c, err := client.NewClient(client.GetConfigFromEnv())
 		if err != nil {
@@ -2304,7 +2312,7 @@ data "xenorchestra_network" "network" {
 }
 
 resource "xenorchestra_resource_set" "rs" {
-    name = "terraform-vm-acceptance-test-%s"
+    name = "%s-%s"
     // This adds a non admin user to the resource set
     subjects = [
 	"%s",
@@ -2332,7 +2340,7 @@ resource "xenorchestra_resource_set" "rs" {
       quantity = 12884901888
     }
 }
-`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accUser.Id, accDefaultSr.Id)
+`, accDefaultNetwork.NameLabel, accTestPool.Id, accTestPrefix, vmName, accUser.Id, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithoutResourceSet(vmName string) string {

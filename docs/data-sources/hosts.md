@@ -5,7 +5,7 @@ Use this data source to filter Xenorchestra hosts by certain criteria (name_labe
 ## Example Usage
 
 ```hcl
-data "xenorchestra_hosts" "hosts" {
+data "xenorchestra_hosts" "pool1" {
   pool_id = data.xenorchestra_pool.pool.id
 
   sort_by = "name_label"
@@ -19,9 +19,9 @@ data "xenorchestra_hosts" "hosts" {
 }
 
 resource "xenorchestra_vm" "vm" {
-  count = length(data.xenorchestra_hosts.hosts)
+  count = length(data.xenorchestra_hosts.pool1.hosts)
 
-  affinity_host = data.xenorchestra_hosts.hosts[count.index].id
+  affinity_host = data.xenorchestra_hosts.pool1.hosts[count.index].id
   ...
   ...
 }
@@ -43,5 +43,5 @@ resource "xenorchestra_vm" "vm" {
   * memory - The memory size for the host.
   * memory_usage - The memory usage for the host.
   * cpus - Host cpu information.
-    * cores - The number of cores. 
+    * cores - The number of cores.
     * sockets - The number of sockets.
