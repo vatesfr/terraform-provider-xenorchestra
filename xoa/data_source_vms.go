@@ -82,13 +82,15 @@ func vmToMapList(vms []client.Vm) []map[string]interface{} {
 			"template":             vm.Template,
 			"wait_for_ip":          vm.WaitForIps,
 			"high_availability":    vm.HA,
-			"resource_set":         vm.ResourceSet,
 			"ipv4_addresses":       ipv4,
 			"ipv6_addresses":       ipv6,
 			"power_state":          vm.PowerState,
 			"host":                 vm.Host,
 			"auto_poweron":         vm.AutoPoweron,
 			"name_description":     vm.NameDescription,
+		}
+		if vm.ResourceSet != nil {
+			hostMap["resource_set"] = vm.ResourceSet.Id
 		}
 		result = append(result, hostMap)
 	}

@@ -393,6 +393,12 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		blockedOperations[b.(string)] = "true"
 	}
 
+	var rs *client.FlatResourceSet
+	if rsId, ok := d.GetOk("resource_set"); ok {
+		rs = &client.FlatResourceSet{
+			Id: rsId.(string),
+		}
+	}
 	vm, err := c.CreateVm(client.Vm{
 		AffinityHost:      d.Get("affinity_host").(string),
 		BlockedOperations: blockedOperations,
@@ -404,9 +410,7 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		NameDescription: d.Get("name_description").(string),
 		Template:        d.Get("template").(string),
 		CloudConfig:     d.Get("cloud_config").(string),
-		ResourceSet: &client.FlatResourceSet{
-			Id: d.Get("resource_set").(string),
-		},
+		ResourceSet:     rs,
 		CPUs: client.CPUs{
 			Number: d.Get("cpus").(int),
 		},
