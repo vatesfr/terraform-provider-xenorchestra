@@ -1,6 +1,7 @@
 package client
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -57,6 +58,36 @@ func (v *Videoram) UnmarshalJSON(data []byte) (err error) {
 	return json.Unmarshal(data, &v.Value)
 }
 
+// This resource set type is used to allow differentiating between when a
+// user wants to remove a resource set from a VM (during an update) and when
+// a resource set parameter should be omitted from a vm.set RPC call.
+type FlatResourceSet struct {
+	Id string
+}
+
+// This ensures when a FlatResourceSet is printed in debug logs
+// that the string value of the Id is used rather than the pointer
+// value. Since the purpose of this struct is to flatten resource
+// sets to a string, it makes the logs properly reflect what is
+// being logged.
+func (rs *FlatResourceSet) String() string {
+	return rs.Id
+}
+
+func (rs *FlatResourceSet) UnmarshalJSON(data []byte) (err error) {
+	return json.Unmarshal(data, &rs.Id)
+}
+
+func (rs *FlatResourceSet) MarshalJSON() ([]byte, error) {
+	if len(rs.Id) == 0 {
+		var buf bytes.Buffer
+		buf.WriteString(`null`)
+		return buf.Bytes(), nil
+	} else {
+		return json.Marshal(rs.Id)
+	}
+}
+
 type Vm struct {
 	Addresses          map[string]string `json:"addresses,omitempty"`
 	BlockedOperations  map[string]string `json:"blockedOperations,omitempty"`
@@ -78,7 +109,7 @@ type Vm struct {
 	AutoPoweron        bool              `json:"auto_poweron"`
 	HA                 string            `json:"high_availability"`
 	CloudConfig        string            `json:"cloudConfig"`
-	ResourceSet        string            `json:"resourceSet,omitempty"`
+	ResourceSet        *FlatResourceSet  `json:"resourceSet"`
 	// TODO: (#145) Uncomment this once issues with secure_boot have been figured out
 	// SecureBoot         bool              `json:"secureBoot,omitempty"`
 	Tags       []string `json:"tags"`
@@ -234,7 +265,7 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 	}
 
 	resourceSet := vmReq.ResourceSet
-	if resourceSet != "" {
+	if resourceSet != nil {
 		params["resourceSet"] = resourceSet
 	}
 
@@ -275,10 +306,6 @@ func createVdiMap(disk Disk) map[string]interface{} {
 }
 
 func (c *Client) UpdateVm(vmReq Vm) (*Vm, error) {
-	var resourceSet interface{} = vmReq.ResourceSet
-	if vmReq.ResourceSet == "" {
-		resourceSet = nil
-	}
 	params := map[string]interface{}{
 		"id":                vmReq.Id,
 		"affinityHost":      vmReq.AffinityHost,
@@ -286,7 +313,6 @@ func (c *Client) UpdateVm(vmReq Vm) (*Vm, error) {
 		"name_description":  vmReq.NameDescription,
 		"hvmBootFirmware":   vmReq.Boot.Firmware,
 		"auto_poweron":      vmReq.AutoPoweron,
-		"resourceSet":       resourceSet,
 		"high_availability": vmReq.HA, // valid options are best-effort, restart, ''
 		"CPUs":              vmReq.CPUs.Number,
 		"memoryMax":         vmReq.Memory.Static[1],
@@ -305,6 +331,10 @@ func (c *Client) UpdateVm(vmReq Vm) (*Vm, error) {
 
 		// cpusMask, cpuWeight and cpuCap can be changed at runtime to an integer value or null
 		// coresPerSocket is null or a number of cores per socket. Putting an invalid value doesn't seem to cause an error :(
+	}
+
+	if vmReq.ResourceSet != nil {
+		params["resourceSet"] = vmReq.ResourceSet
 	}
 
 	// TODO: (#145) Uncomment this once issues with secure_boot have been figured out
