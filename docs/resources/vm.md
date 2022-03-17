@@ -107,7 +107,7 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 ```
 
 
-* `high_availabililty` - (Optional) The restart priority for the VM. Possible values are `best-effort`, `restart` and empty string (no restarts on failure. Defaults to empty string.
+* `high_availability` - (Optional) The restart priority for the VM. Possible values are `best-effort`, `restart` and empty string (no restarts on failure. Defaults to empty string.
 * `hvm_boot_firmware` - (Optional) The firmware to use for the VM. Possible values are `bios` and `uefi`. Defaults to empty string.
 * `exp_nested_hvm` - (Optional) Boolean parameter that allows a VM to use nested virtualization.
 * `installation_method` - (Optional) This cannot be used with `cdrom`. Possible values are `network` which allows a VM to boot via PXE.
