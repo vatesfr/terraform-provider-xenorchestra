@@ -416,7 +416,11 @@ func (c *Client) DeleteVm(id string) error {
 	params := map[string]interface{}{
 		"id": id,
 	}
-	var reply []interface{}
+	// Xen Orchestra versions >= 5.x.x changed this return value to a bool
+	// when older versions returned an object. This needs to be an interface
+	// type in order to be backwards compatible while fixing this bug. See
+	// GitHub issue 196 for more details.
+	var reply interface{}
 	return c.Call("vm.delete", params, &reply)
 }
 
