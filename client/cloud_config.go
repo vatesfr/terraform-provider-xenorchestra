@@ -86,10 +86,10 @@ func (c *Client) CreateCloudConfig(name, template string) (*CloudConfig, error) 
 		"name":     name,
 		"template": template,
 	}
-	// Xen Orchestra versions >= 5.98.0 changed this return value to a bool
-	// when older versions returned an object. This needs to be an interface
+	// Xen Orchestra versions >= 5.98.0 changed this return value to an object
+	// when older versions returned bool. This needs to be an interface
 	// type in order to be backwards compatible while fixing this bug. See
-	// GitHub issue 196 for more details.
+	// GitHub issue 204 for more details.
 	var resp interface{}
 	err := c.Call("cloudConfig.create", params, &resp)
 
