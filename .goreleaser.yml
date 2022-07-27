@@ -27,7 +27,7 @@ builds:
   ignore:
     - goarch: '386'
     - goarm: '6'
-    - goos: windows
+    - goos: windows # This can be removed once we are using > go 1.17 (https://goreleaser.com/deprecations/#builds-for-windowsarm64)
       goarch: arm64
   binary: '{{ .ProjectName }}_v{{ .Version }}'
 archives:
