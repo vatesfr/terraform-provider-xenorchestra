@@ -1,30 +1,31 @@
 package main
 
 import (
-	"context"
-	"flag"
+	"bufio"
+	"bytes"
+	"fmt"
 	"log"
-
-	"github.com/ddelnano/terraform-provider-xenorchestra/xoa"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
+	"os"
+	"os/exec"
 )
 
 func main() {
+	fmt.Println("Starting XOA acceptance test runner")
+	goTestListArgs := []string{"test", "./...", "-list='.*'"}
+	cmd := exec.Command("go", goTestListArgs...)
+	cmd.Env = append(os.Environ(), "PWD=/home/ddelnano/go/src/github.com/ddelnano/terraform-provider-xenorchestra")
 
-	var debugMode bool
-	flag.BoolVar(&debugMode, "debuggable", false, "set to true to run the provider with support for debuggers like delve")
-	flag.Parse()
+	fmt.Println(cmd.String())
 
-	if debugMode {
-		err := plugin.Debug(context.Background(), "registry.terraform.io/terra-farm/xenorchestra",
-			&plugin.ServeOpts{
-				ProviderFunc: xoa.Provider,
-			})
-		if err != nil {
-			log.Println(err.Error())
-		}
-	} else {
-		plugin.Serve(&plugin.ServeOpts{
-			ProviderFunc: xoa.Provider})
+	stdout, err := cmd.CombinedOutput()
+	fmt.Printf("stdout\n%s\n", stdout)
+	if err != nil {
+		log.Fatal(fmt.Sprintf("failed to list available tests with err: %v", err))
+	}
+
+	r := bytes.NewReader(stdout)
+	scanner := bufio.NewScanner(r)
+	for scanner.Scan() {
+		fmt.Println(scanner.Text())
 	}
 }
