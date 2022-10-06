@@ -833,8 +833,14 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 func resourceVmDelete(d *schema.ResourceData, m interface{}) error {
 	c := m.(client.XOClient)
 
-	err := c.DeleteVm(d.Id())
-
+	vmReq := client.Vm{
+		Id: d.Id(),
+	}
+	err := c.HaltVm(vmReq)
+	if err != nil {
+		return err
+	}
+	err = c.DeleteVm(d.Id())
 	if err != nil {
 		return err
 	}
