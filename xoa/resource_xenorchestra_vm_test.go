@@ -576,6 +576,27 @@ func TestAccXenorchestraVm_createWithDisklessTemplateAndISO(t *testing.T) {
 	})
 }
 
+func TestAccXenorchestraVm_createWithoutDisks(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigWithoutDisks(vmName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "cdrom.#", "1"),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "cdrom.0.*", "data.xenorchestra_vdi.iso", "id"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccXenorchestraVm_insertAndEjectCd(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
@@ -1537,6 +1558,36 @@ resource "xenorchestra_vm" "bar" {
       sr_id = "%s"
       name_label = "disk 1"
       size = 10001317888
+    }
+}
+`, testIsoName, accTestPool.Id, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+}
+
+func testAccVmConfigWithoutDisks(vmName string) string {
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccNonDefaultTemplateConfig(disklessTestTemplate.NameLabel) + fmt.Sprintf(`
+data "xenorchestra_vdi" "iso" {
+    name_label = "%s"
+    pool_id = "%s"
+}
+
+data "xenorchestra_network" "network" {
+    name_label = "%s"
+    pool_id = "%s"
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 4295000000
+    cpus  = 1
+    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    name_label = "%s"
+    name_description = "description"
+    template = "${data.xenorchestra_template.template.id}"
+    network {
+	network_id = "${data.xenorchestra_network.network.id}"
+    }
+
+    cdrom {
+      id = data.xenorchestra_vdi.iso.id
     }
 }
 `, testIsoName, accTestPool.Id, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
