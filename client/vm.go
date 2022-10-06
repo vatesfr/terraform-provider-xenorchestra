@@ -184,28 +184,33 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 		return nil, errors.New(fmt.Sprintf("cannot create VM when multiple templates are returned: %v", tmpl))
 	}
 
-	useExistingDisks := tmpl[0].isDiskTemplate()
+	var vdis = []interface{}{}
+	var existingDisks = map[string]interface{}{}
 	installation := vmReq.Installation
-	if !useExistingDisks && installation.Method != "cdrom" && installation.Method != "network" {
-		return nil, errors.New("cannot create a VM from a diskless template without an ISO")
-	}
 
-	existingDisks := map[string]interface{}{}
-	vdis := []interface{}{}
-	disks := vmReq.Disks
+	if len(vmReq.Disks) != 0 {
+		useExistingDisks := tmpl[0].isDiskTemplate()
 
-	firstDisk := createVdiMap(disks[0])
-	// Treat the first disk differently. This covers the
-	// case where we are using a template with an already
-	// installed OS or a diskless template.
-	if useExistingDisks {
-		existingDisks["0"] = firstDisk
-	} else {
-		vdis = append(vdis, firstDisk)
-	}
+		if !useExistingDisks && installation.Method != "cdrom" && installation.Method != "network" {
+			return nil, errors.New("cannot create a VM from a diskless template without an ISO")
+		}
 
-	for i := 1; i < len(disks); i++ {
-		vdis = append(vdis, createVdiMap(disks[i]))
+		disks := vmReq.Disks
+
+		firstDisk := createVdiMap(disks[0])
+
+		// Treat the first disk differently. This covers the
+		// case where we are using a template with an already
+		// installed OS or a diskless template.
+		if useExistingDisks {
+			existingDisks["0"] = firstDisk
+		} else {
+			vdis = append(vdis, firstDisk)
+		}
+
+		for i := 1; i < len(disks); i++ {
+			vdis = append(vdis, createVdiMap(disks[i]))
+		}
 	}
 
 	params := map[string]interface{}{
