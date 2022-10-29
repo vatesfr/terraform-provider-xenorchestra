@@ -222,10 +222,12 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 		"existingDisks":    existingDisks,
 		// TODO: (#145) Uncomment this once issues with secure_boot have been figured out
 		// "secureBoot":       vmReq.SecureBoot,
-		"expNestedHvm": vmReq.ExpNestedHvm,
-		"VDIs":         vdis,
-		"VIFs":         vmReq.VIFsMap,
-		"tags":         vmReq.Tags,
+		"expNestedHvm":      vmReq.ExpNestedHvm,
+		"VDIs":              vdis,
+		"VIFs":              vmReq.VIFsMap,
+		"tags":              vmReq.Tags,
+		"auto_poweron":      vmReq.AutoPoweron,
+		"high_availability": vmReq.HA,
 	}
 
 	videoram := vmReq.Videoram.Value
