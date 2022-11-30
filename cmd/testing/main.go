@@ -11,6 +11,7 @@ import (
 
 	"os/exec"
 	"strings"
+	"sync"
 )
 
 type goTestOutput struct {
@@ -59,7 +60,7 @@ func main() {
 			continue
 		}
 		fmt.Println(text)
-		remainingTests = append(remainingTests, strings.TrimSpace(text))
+		remainingTests = append(remainingTests, fmt.Sprintf("^%s$", strings.TrimSpace(text)))
 	}
 
 	fmt.Printf("Found %d tests\n", len(remainingTests))
@@ -79,15 +80,18 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+		fmt.Printf("What is the type of StdoutPipe: %T\n", r)
 
 		decoder := json.NewDecoder(r)
 		commandFinished := make(chan bool)
+		var wg sync.WaitGroup
+		wg.Add(1)
 		go func() {
 			for {
 				select {
 				case <-commandFinished:
 					fmt.Println("Stopping go routine for 'go test'")
-					return
+					wg.Done()
 				default:
 					// fmt.Println("Starting next decoder loop")
 					for decoder.More() {
@@ -98,6 +102,7 @@ func main() {
 							}
 							log.Printf("Failed to decode JSON: %v", err)
 						}
+						// fmt.Printf("Received event '%v' '%v'\n", data.Action, data.Output)
 						switch data.Action {
 						case "pass":
 							if data.Test == "" {
@@ -106,7 +111,7 @@ func main() {
 							passedTests = append(passedTests, data.Test)
 							fmt.Printf("Found test %s passedTests: %v\n", data.Test, passedTests)
 						}
-						fmt.Print(data.Output)
+						// fmt.Print(data.Output)
 					}
 				}
 			}
@@ -115,11 +120,18 @@ func main() {
 		if err := cmd.Run(); err != nil {
 			fmt.Errorf("command run failed wtih error: %v", err)
 		}
+		fmt.Println("Command Start() finished")
+		// if err := cmd.Run(); err != nil {
+		// 	fmt.Errorf("command run failed wtih error: %v", err)
+		// }
+		// fmt.Println("Command Run() finished")
+		time.Sleep(35 * time.Second)
 		// if err := cmd.Wait(); err != nil {
 		// 	fmt.Errorf("command failed wtih error: %v", err)
 		// }
-		fmt.Println("Command Wait() finished")
+		// fmt.Println("Command Wait() finished")
 		commandFinished <- true
+		wg.Wait()
 
 		fmt.Printf("%d passed out of %d\n", len(passedTests), len(remainingTests))
 		remainingTests = findRemainingTests(passedTests, remainingTests)
@@ -136,7 +148,7 @@ func main() {
 // }
 
 func createGoTestArgs(tests []string, debug bool) []string {
-	goTestArgs := []string{"test", "./...", "-v", "-count=1", "-json"}
+	goTestArgs := []string{"test", "./...", "-v", "-count=1", "-json", "-parallel", "2"}
 	if !debug {
 		goTestArgs = append(goTestArgs, "-sweep=true")
 	}

@@ -1,0 +1,26 @@
+# You can modify this file with any component
+# available at https://github.com/aws-observability/aws-otel-collector#aws-otel-collector-built-in-components.
+# If you want to use components not supported
+# in this distribution, please feel free to use your
+# own distribution.
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+processors:
+exporters:
+  # otlp:
+  #   endpoint: api.honeycomb.io:443
+  #   headers:
+  #     "x-honeycomb-team": "<INSERT WRITE KEY>"
+  #     "x-honeycomb-dataset": "<INSERT DATASET>"
+  logging:
+    loglevel: debug
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: []
+      exporters: [logging]
