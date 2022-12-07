@@ -1,5 +1,8 @@
 .PHONY: import testacc testclient test dist
 
+# TODO(ddelnano|): Changes to gotestsum must be upstreamed to handle panic'ed tests.
+# Until clone https://github.com/ddelnano/gotestsum and build the binary yourself.
+GOTESTSUM_BIN ?= ~/code/gotestsum/gotestsum
 TIMEOUT ?= 40m
 GOMAXPROCS ?= 5
 ifdef TEST
@@ -38,3 +41,6 @@ testclient:
 
 testacc: sweep
 	TF_ACC=1 $(TF_LOG) go test $(TEST) -parallel $(GOMAXPROCS) -v -count 1 -timeout $(TIMEOUT)
+
+ci:
+	TF_ACC=1 $(GOTESTSUM_BIN) --rerun-fails=3 --rerun-fails-max-failures=1000 --packages='./...' -- ./... -parallel $(GOMAXPROCS) -v -count=1 -timeout=$(TIMEOUT) -sweep=true

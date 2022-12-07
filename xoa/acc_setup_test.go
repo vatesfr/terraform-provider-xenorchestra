@@ -30,30 +30,29 @@ func TestMain(m *testing.M) {
 
 	if flagSweep != nil && flagSweep.Value.String() != "" {
 		resource.TestMain(m)
-	} else {
-		_, runSetup := os.LookupEnv("TF_ACC")
-
-		if runSetup {
-			client.FindPoolForTests(&accTestPool)
-			client.FindTemplateForTests(&testTemplate, accTestPool.Id, "XOA_TEMPLATE")
-			client.FindTemplateForTests(&disklessTestTemplate, accTestPool.Id, "XOA_DISKLESS_TEMPLATE")
-			client.FindHostForTests(accTestPool.Master, &accTestHost)
-			client.FindNetworkForTests(accTestPool.Id, &accDefaultNetwork)
-			client.FindStorageRepositoryForTests(accTestPool, &accDefaultSr, accTestPrefix)
-			client.CreateUser(&accUser)
-			testIsoName = os.Getenv("XOA_ISO")
-		}
-
-		code := m.Run()
-
-		if runSetup {
-			client.RemoveNetworksWithNamePrefix(accTestPrefix)("")
-			client.RemoveResourceSetsWithNamePrefix(accTestPrefix)("")
-			client.RemoveTagFromAllObjects(accTestPrefix)("")
-			client.RemoveUsersWithPrefix(accTestPrefix)("")
-			client.RemoveCloudConfigsWithPrefix(accTestPrefix)("")
-		}
-
-		os.Exit(code)
 	}
+	_, runSetup := os.LookupEnv("TF_ACC")
+
+	if runSetup {
+		client.FindPoolForTests(&accTestPool)
+		client.FindTemplateForTests(&testTemplate, accTestPool.Id, "XOA_TEMPLATE")
+		client.FindTemplateForTests(&disklessTestTemplate, accTestPool.Id, "XOA_DISKLESS_TEMPLATE")
+		client.FindHostForTests(accTestPool.Master, &accTestHost)
+		client.FindNetworkForTests(accTestPool.Id, &accDefaultNetwork)
+		client.FindStorageRepositoryForTests(accTestPool, &accDefaultSr, accTestPrefix)
+		client.CreateUser(&accUser)
+		testIsoName = os.Getenv("XOA_ISO")
+	}
+
+	code := m.Run()
+
+	if runSetup {
+		client.RemoveNetworksWithNamePrefix(accTestPrefix)("")
+		client.RemoveResourceSetsWithNamePrefix(accTestPrefix)("")
+		client.RemoveTagFromAllObjects(accTestPrefix)("")
+		client.RemoveUsersWithPrefix(accTestPrefix)("")
+		client.RemoveCloudConfigsWithPrefix(accTestPrefix)("")
+	}
+
+	os.Exit(code)
 }
