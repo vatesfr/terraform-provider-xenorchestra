@@ -22,7 +22,7 @@ func (net Network) Compare(obj interface{}) bool {
 	}
 
 	labelsMatch := false
-	if net.NameLabel == otherNet.NameLabel {
+	if net.NameLabel != "" && net.NameLabel == otherNet.NameLabel {
 		labelsMatch = true
 	}
 
@@ -133,6 +133,11 @@ func FindNetworkForTests(poolId string, network *Network) {
 		PoolId:    poolId,
 		NameLabel: netName,
 	})
+
+	if err != nil {
+		fmt.Printf("[ERROR] Failed to get network with error: %v", err)
+		os.Exit(1)
+	}
 
 	*network = *net
 }
