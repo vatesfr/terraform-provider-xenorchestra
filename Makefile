@@ -1,7 +1,7 @@
 .PHONY: import testacc testclient test dist
 
 # TODO(ddelnano|#218): Changes to gotestsum must be upstreamed to handle panic'ed tests.
-# Until clone https://github.com/ddelnano/gotestsum and build the binary yourself.
+# Until then clone https://github.com/ddelnano/gotestsum and build the binary yourself.
 GOTESTSUM_BIN ?= ~/code/gotestsum/gotestsum
 TIMEOUT ?= 40m
 GOMAXPROCS ?= 5
