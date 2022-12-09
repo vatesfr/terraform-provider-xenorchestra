@@ -73,7 +73,7 @@ func TestCreateVIF_DeleteVIF(t *testing.T) {
 		t.Fatalf("failed to create client with error: %v", err)
 	}
 
-	vm, err := c.GetVm(accVm)
+	vm, err := c.GetVm(Vm{Id: accVm.Id})
 
 	if err != nil {
 		t.Fatalf("failed to get VM with error: %v", err)

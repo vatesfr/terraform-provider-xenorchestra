@@ -213,7 +213,6 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 		"bootAfterCreate":  true,
 		"name_label":       vmReq.NameLabel,
 		"name_description": vmReq.NameDescription,
-		"hvmBootFirmware":  vmReq.Boot.Firmware,
 		"template":         vmReq.Template,
 		"coreOs":           false,
 		"cpuCap":           nil,
@@ -232,6 +231,11 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 	videoram := vmReq.Videoram.Value
 	if videoram != 0 {
 		params["videoram"] = videoram
+	}
+
+	firmware := vmReq.Boot.Firmware
+	if firmware != "" {
+		params["hvmBootFirmware"] = firmware
 	}
 
 	vga := vmReq.Vga
@@ -311,15 +315,12 @@ func (c *Client) UpdateVm(vmReq Vm) (*Vm, error) {
 		"affinityHost":      vmReq.AffinityHost,
 		"name_label":        vmReq.NameLabel,
 		"name_description":  vmReq.NameDescription,
-		"hvmBootFirmware":   vmReq.Boot.Firmware,
 		"auto_poweron":      vmReq.AutoPoweron,
 		"high_availability": vmReq.HA, // valid options are best-effort, restart, ''
 		"CPUs":              vmReq.CPUs.Number,
 		"memoryMax":         vmReq.Memory.Static[1],
 		"expNestedHvm":      vmReq.ExpNestedHvm,
 		"startDelay":        vmReq.StartDelay,
-		"vga":               vmReq.Vga,
-		"videoram":          vmReq.Videoram.Value,
 		// TODO: These need more investigation before they are implemented
 		// pv_args
 
@@ -333,8 +334,18 @@ func (c *Client) UpdateVm(vmReq Vm) (*Vm, error) {
 		// coresPerSocket is null or a number of cores per socket. Putting an invalid value doesn't seem to cause an error :(
 	}
 
+	videoram := vmReq.Videoram.Value
+	if videoram != 0 {
+		params["videoram"] = videoram
+	}
+
 	if vmReq.ResourceSet != nil {
 		params["resourceSet"] = vmReq.ResourceSet
+	}
+
+	vga := vmReq.Vga
+	if vga != "" {
+		params["vga"] = vga
 	}
 
 	// TODO: (#145) Uncomment this once issues with secure_boot have been figured out
@@ -342,6 +353,11 @@ func (c *Client) UpdateVm(vmReq Vm) (*Vm, error) {
 	// if secureBoot {
 	// 	params["secureBoot"] = true
 	// }
+
+	firmware := vmReq.Boot.Firmware
+	if firmware != "" {
+		params["hvmBootFirmware"] = firmware
+	}
 
 	blockedOperations := map[string]interface{}{}
 	for k, v := range vmReq.BlockedOperations {

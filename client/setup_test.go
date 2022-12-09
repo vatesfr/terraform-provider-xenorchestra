@@ -1,6 +1,7 @@
 package client
 
 import (
+	"fmt"
 	"os"
 	"testing"
 )
@@ -15,11 +16,12 @@ func CreateResourceSet(rs ResourceSet) error {
 	return err
 }
 
-func CreateNetwork(network *Network) error {
+func CreateNetwork(network *Network) {
 	c, err := NewClient(GetConfigFromEnv())
 
 	if err != nil {
-		return err
+		fmt.Printf("[ERROR] Failed to create network with '%v'\n", err)
+		os.Exit(1)
 	}
 
 	net, err := c.CreateNetwork(Network{
@@ -28,10 +30,10 @@ func CreateNetwork(network *Network) error {
 	})
 
 	if err != nil {
-		return err
+		fmt.Printf("[ERROR] Failed to create network with '%v'\n", err)
+		os.Exit(1)
 	}
 	*network = *net
-	return nil
 }
 
 var integrationTestPrefix string = "xenorchestra-client-"
