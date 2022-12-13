@@ -82,7 +82,7 @@ This does not work in terraform since that is applied on Xen Orchestra's client 
 * `name_label` - (Required) The name of VM.
 * `name_description` - (Optional) The description of the VM.
 * `template` - (Required) The ID of the VM template to create the new VM from.
-* `cloud_config` - (Optional) The content of the cloud-init config to use
+* `cloud_config` - (Optional) The content of the cloud-init config to use. See the cloud init docs for more [information](https://cloudinit.readthedocs.io/en/latest/topics/examples.html).
 * `cloud_network_config` - (Optional) The content of the cloud-init network configuration for the VM (uses [version 1](https://cloudinit.readthedocs.io/en/latest/topics/network-config-format-v1.html))
 * `cpus` - (Required) The number of CPUs the VM will have. Updates to this field will cause a stop and start of the VM if the new CPU value is greater than the max CPU value. This can be determined with the following command:
 ```

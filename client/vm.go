@@ -265,6 +265,11 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 
 	cloudConfig := vmReq.CloudConfig
 	if cloudConfig != "" {
+		if !strings.HasPrefix(cloudConfig, "#cloud-config") {
+			log.Printf("[WARNING] cloud config does not start with required text `#cloud-config`.")
+			log.Printf("[WARNING] Validate that your configuration is well formed according to the documentation (https://cloudinit.readthedocs.io/en/latest/topics/format.html).\n")
+		}
+
 		params["cloudConfig"] = cloudConfig
 	}
 
