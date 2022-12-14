@@ -121,11 +121,12 @@ type Vm struct {
 	// These fields are used for passing in disk inputs when
 	// creating Vms, however, this is not a real field as far
 	// as the XO api or XAPI is concerned
-	Disks              []Disk              `json:"-"`
-	CloudNetworkConfig string              `json:"-"`
-	VIFsMap            []map[string]string `json:"-"`
-	WaitForIps         bool                `json:"-"`
-	Installation       Installation        `json:"-"`
+	Disks                   []Disk              `json:"-"`
+	CloudNetworkConfig      string              `json:"-"`
+	VIFsMap                 []map[string]string `json:"-"`
+	WaitForIps              bool                `json:"-"`
+	Installation            Installation        `json:"-"`
+	ManagementAgentDetected bool                `json:"managementAgentDetected"`
 }
 
 type Installation struct {
@@ -265,11 +266,6 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 
 	cloudConfig := vmReq.CloudConfig
 	if cloudConfig != "" {
-		if !strings.HasPrefix(cloudConfig, "#cloud-config") {
-			log.Printf("[WARNING] cloud config does not start with required text `#cloud-config`.")
-			log.Printf("[WARNING] Validate that your configuration is well formed according to the documentation (https://cloudinit.readthedocs.io/en/latest/topics/format.html).\n")
-		}
-
 		params["cloudConfig"] = cloudConfig
 	}
 
@@ -412,9 +408,17 @@ func (c *Client) StartVm(id string) error {
 	)
 }
 
-func (c *Client) HaltVm(vmReq Vm) error {
+func (c *Client) HaltVm(id string) error {
+	// PV drivers are necessary for the XO api to issue a graceful shutdown.
+	// See https://github.com/terra-farm/terraform-provider-xenorchestra/issues/220
+	// for more details.
+	if err := c.waitForManagementAgentDetected(id); err != nil {
+		return errors.New(
+			fmt.Sprintf("failed to gracefully halt the vm with id: %s and error: %v", id, err))
+	}
+
 	params := map[string]interface{}{
-		"id": vmReq.Id,
+		"id": id,
 	}
 	var success bool
 	// TODO: This can block indefinitely before we get to the waitForVmHalt
@@ -424,7 +428,7 @@ func (c *Client) HaltVm(vmReq Vm) error {
 		return err
 	}
 	return c.waitForVmState(
-		vmReq.Id,
+		id,
 		StateChangeConf{
 			Pending: []string{"Running", "Stopped"},
 			Target:  []string{"Halted"},
@@ -493,6 +497,26 @@ func GetVmPowerState(c *Client, id string) func() (result interface{}, state str
 
 		return vm, vm.PowerState, nil
 	}
+}
+
+func (c *Client) waitForManagementAgentDetected(id string) error {
+	refreshFn := func() (result interface{}, state string, err error) {
+		vm, err := c.GetVm(Vm{Id: id})
+
+		if err != nil {
+			return vm, "", err
+		}
+
+		return vm, strconv.FormatBool(vm.ManagementAgentDetected), nil
+	}
+	stateConf := &StateChangeConf{
+		Pending: []string{"false"},
+		Refresh: refreshFn,
+		Target:  []string{"true"},
+		Timeout: 2 * time.Minute,
+	}
+	_, err := stateConf.WaitForState()
+	return err
 }
 
 func (c *Client) waitForVmState(id string, stateConf StateChangeConf) error {

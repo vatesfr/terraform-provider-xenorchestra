@@ -785,7 +785,7 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		},
 	}
 	if haltForUpdates {
-		err := c.HaltVm(vmReq)
+		err := c.HaltVm(id)
 
 		if err != nil {
 			return err
