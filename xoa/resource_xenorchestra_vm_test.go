@@ -960,8 +960,30 @@ func TestAccXenorchestraVm_createWithMutipleDisks(t *testing.T) {
 	})
 }
 
+func TestAccXenorchestraVm_gracefulTermination(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccGracefulVmTerminationProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigWithGracefulTermination(vmName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id")),
+			},
+			{
+				Config:  testAccVmConfigWithGracefulTermination(vmName),
+				Destroy: true,
+			},
+		},
+	})
+}
+
 // Reference: https://github.com/terra-farm/terraform-provider-xenorchestra/pull/212
-func TestAccXenorchestraVm_shutdownVmIsProperlyTerminated(t *testing.T) {
+func TestAccXenorchestraVm_gracefulTerminationForShutdownVm(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	shutdownVm := func() {
@@ -982,11 +1004,11 @@ func TestAccXenorchestraVm_shutdownVmIsProperlyTerminated(t *testing.T) {
 	}
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
+		Providers:    testAccGracefulVmTerminationProviders,
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccVmConfig(vmName),
+				Config: testAccVmConfigWithGracefulTermination(vmName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id")),
@@ -1702,6 +1724,35 @@ resource "xenorchestra_vm" "bar" {
       name_label = "disk 1"
       size = 10001317888
     }
+}
+`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+}
+
+func testAccVmConfigWithGracefulTermination(vmName string) string {
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
+data "xenorchestra_network" "network" {
+    name_label = "%s"
+    pool_id = "%s"
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 4295000000
+    cpus  = 1
+    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    name_label = "%s"
+    name_description = "description"
+    template = "${data.xenorchestra_template.template.id}"
+    network {
+	network_id = "${data.xenorchestra_network.network.id}"
+    }
+
+    disk {
+      sr_id = "%s"
+      name_label = "disk 1"
+      size = 10001317888
+    }
+
+    use_graceful_termination = true
 }
 `, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }

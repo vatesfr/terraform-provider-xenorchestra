@@ -175,6 +175,11 @@ func resourceVmSchema() map[string]*schema.Schema {
 			Default:  0,
 			Optional: true,
 		},
+		"use_graceful_termination": &schema.Schema{
+			Type:     schema.TypeBool,
+			Default:  false,
+			Optional: true,
+		},
 		// TODO: (#145) Uncomment this once issues with secure_boot have been figured out
 		// "secure_boot": &schema.Schema{
 		// 	Type:     schema.TypeBool,
@@ -832,24 +837,24 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 
 func resourceVmDelete(d *schema.ResourceData, m interface{}) error {
 	c := m.(client.XOClient)
+	gracefulTermination := d.Get("use_graceful_termination").(bool)
+	vmId := d.Id()
 
-	vmReq := client.Vm{
-		Id: d.Id(),
-	}
-
-	vm, err := c.GetVm(vmReq)
-	if err != nil {
-		return err
-	}
-
-	if vm.PowerState == "Running" {
-		err = c.HaltVm(vmReq.Id)
+	if gracefulTermination {
+		vm, err := c.GetVm(client.Vm{Id: vmId})
 		if err != nil {
 			return err
 		}
+
+		if vm.PowerState == "Running" {
+			err = c.HaltVm(vmId)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
-	err = c.DeleteVm(d.Id())
+	err := c.DeleteVm(vmId)
 	if err != nil {
 		return err
 	}

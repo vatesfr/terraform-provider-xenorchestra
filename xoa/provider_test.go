@@ -10,9 +10,11 @@ import (
 
 var testAccProviders map[string]*schema.Provider
 var testAccFailToStartAndHaltProviders map[string]*schema.Provider
+var testAccGracefulVmTerminationProviders map[string]*schema.Provider
 
 var testAccProvider *schema.Provider
 var testAccFailToStartHaltVmProvider *schema.Provider
+var testAccGracefulVmTerminationProvider *schema.Provider
 
 func init() {
 	testAccProvider = Provider()
@@ -24,6 +26,12 @@ func init() {
 	testAccFailToStartHaltVmProvider.ConfigureFunc = internal.GetFailToStartAndHaltXOClient
 	testAccFailToStartAndHaltProviders = map[string]*schema.Provider{
 		"xenorchestra": testAccFailToStartHaltVmProvider,
+	}
+
+	testAccGracefulVmTerminationProvider = Provider()
+	testAccGracefulVmTerminationProvider.ConfigureFunc = internal.GetGracefulVmTerminationClient
+	testAccGracefulVmTerminationProviders = map[string]*schema.Provider{
+		"xenorchestra": testAccGracefulVmTerminationProvider,
 	}
 }
 
