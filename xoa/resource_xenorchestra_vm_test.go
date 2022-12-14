@@ -1391,7 +1391,7 @@ func TestAccXenorchestraVm_diskAndNetworkAttachmentIgnoredWhenHalted(t *testing.
 			NameLabel: vmName,
 		})
 
-		err = c.HaltVm(*vm)
+		err = c.HaltVm(vm.Id)
 
 		if err != nil {
 			t.Fatalf("failed to halt VM with error: %v", err)

@@ -32,7 +32,7 @@ type XOClient interface {
 	GetVms(vm Vm) ([]Vm, error)
 	UpdateVm(vmReq Vm) (*Vm, error)
 	DeleteVm(id string) error
-	HaltVm(vmReq Vm) error
+	HaltVm(id string) error
 	StartVm(id string) error
 
 	GetCloudConfigByName(name string) ([]CloudConfig, error)

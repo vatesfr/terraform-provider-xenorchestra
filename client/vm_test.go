@@ -171,6 +171,9 @@ func TestUnmarshalingVmObject(t *testing.T) {
 		t.Fatalf("Expected vm to Unmarshal from numerical videoram value")
 	}
 
+	if vmObj.ManagementAgentDetected != false {
+		t.Fatalf("expected vm to Unmarshal to 'false' when `managementAgentDetected` not present")
+	}
 }
 
 func TestFlatResourceSetStringerInterface(t *testing.T) {
@@ -245,7 +248,7 @@ func TestUpdateVmWithUpdatesThatRequireHalt(t *testing.T) {
 
 	prevCPUs := accVm.CPUs.Number
 	updatedCPUs := prevCPUs + 1
-	err = c.HaltVm(Vm{Id: accVm.Id})
+	err = c.HaltVm(accVm.Id)
 
 	if err != nil {
 		t.Fatalf("failed to halt vm ahead of update: %v", err)

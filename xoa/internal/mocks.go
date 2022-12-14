@@ -14,7 +14,7 @@ type failToStartAndHaltVmXOClient struct {
 	*client.Client
 }
 
-func (c failToStartAndHaltVmXOClient) HaltVm(vmReq client.Vm) error {
+func (c failToStartAndHaltVmXOClient) HaltVm(id string) error {
 	return errors.New("This method shouldn't be called")
 }
 func (c failToStartAndHaltVmXOClient) StartVm(id string) error {

@@ -785,7 +785,7 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		},
 	}
 	if haltForUpdates {
-		err := c.HaltVm(vmReq)
+		err := c.HaltVm(id)
 
 		if err != nil {
 			return err
@@ -833,8 +833,23 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 func resourceVmDelete(d *schema.ResourceData, m interface{}) error {
 	c := m.(client.XOClient)
 
-	err := c.DeleteVm(d.Id())
+	vmReq := client.Vm{
+		Id: d.Id(),
+	}
 
+	vm, err := c.GetVm(vmReq)
+	if err != nil {
+		return err
+	}
+
+	if vm.PowerState == "Running" {
+		err = c.HaltVm(vmReq.Id)
+		if err != nil {
+			return err
+		}
+	}
+
+	err = c.DeleteVm(d.Id())
 	if err != nil {
 		return err
 	}
