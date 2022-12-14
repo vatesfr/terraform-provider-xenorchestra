@@ -409,6 +409,9 @@ func (c *Client) StartVm(id string) error {
 }
 
 func (c *Client) HaltVm(id string) error {
+	// PV drivers are necessary for the XO api to issue a graceful shutdown.
+	// See https://github.com/terra-farm/terraform-provider-xenorchestra/issues/220
+	// for more details.
 	if err := c.waitForManagementAgentDetected(id); err != nil {
 		return errors.New(
 			fmt.Sprintf("failed to gracefully halt the vm with id: %s and error: %v", id, err))
