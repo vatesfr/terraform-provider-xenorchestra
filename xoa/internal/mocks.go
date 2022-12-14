@@ -47,9 +47,9 @@ func GetFailToStartAndHaltXOClient(d *schema.ResourceData) (interface{}, error) 
 	return newFailToStartAndHaltClient(config)
 }
 
-// graceful is a mock client used to ensure that HaltVm
-// and StartVm is not called. This is useful for tests that need to ensure that
-// a Vm is modified without rebooting for CPU or memory changes
+// gracefulVmTerminationClient is a mock client that verifies Vms are only terminated
+// if they are stopped first. This is necessary to validate the xenorchestra_vm resource's
+// graceful termination functionality works.
 type gracefulVmTerminationClient struct {
 	*client.Client
 }
