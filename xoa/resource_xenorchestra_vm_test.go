@@ -960,6 +960,46 @@ func TestAccXenorchestraVm_createWithMutipleDisks(t *testing.T) {
 	})
 }
 
+// Reference: https://github.com/terra-farm/terraform-provider-xenorchestra/pull/212
+func TestAccXenorchestraVm_shutdownVmIsProperlyTerminated(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
+	shutdownVm := func() {
+		c, err := client.NewClient(client.GetConfigFromEnv())
+		if err != nil {
+			t.Fatalf("failed to create client with error: %v", err)
+		}
+
+		vm, err := c.GetVm(client.Vm{
+			NameLabel: vmName,
+		})
+
+		err = c.HaltVm(vm.Id)
+
+		if err != nil {
+			t.Fatalf("failed to halt VM with error: %v", err)
+		}
+	}
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfig(vmName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id")),
+			},
+			{
+				PreConfig: shutdownVm,
+				Config:    testAccVmConfig(vmName),
+				Destroy:   true,
+			},
+		},
+	})
+}
+
 func TestAccXenorchestraVm_addAndRemoveDisksToVm(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())

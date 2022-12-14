@@ -843,7 +843,7 @@ func resourceVmDelete(d *schema.ResourceData, m interface{}) error {
 	}
 
 	if vm.PowerState == "Running" {
-		err = c.HaltVm(vmReq)
+		err = c.HaltVm(vmReq.Id)
 		if err != nil {
 			return err
 		}
