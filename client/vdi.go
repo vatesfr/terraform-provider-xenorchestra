@@ -3,11 +3,26 @@ package client
 import (
 	"errors"
 	"fmt"
+	"io"
+	"log"
+	"net/http"
+	"net/url"
+	"os"
+	"strings"
+	"time"
 )
 
 type Disk struct {
 	VBD
 	VDI
+}
+
+type CreateVDIReq struct {
+	SRId            string
+	Filepath        string
+	Type            string
+	NameLabel       string
+	NameDescription string
 }
 
 type VDI struct {
@@ -127,6 +142,17 @@ func (c *Client) GetCdroms(vm *Vm) ([]Disk, error) {
 	return cds, err
 }
 
+func (c *Client) GetAllVDIs() ([]VDI, error) {
+	var response map[string]VDI
+	err := c.GetAllObjectsOfType(VDI{}, &response)
+
+	vdis := make([]VDI, 0, len(response))
+	for _, net := range response {
+		vdis = append(vdis, net)
+	}
+	return vdis, err
+}
+
 func (c *Client) GetVDIs(vdiReq VDI) ([]VDI, error) {
 	obj, err := c.FindFromGetAllObjects(vdiReq)
 
@@ -141,6 +167,27 @@ func (c *Client) GetVDIs(vdiReq VDI) ([]VDI, error) {
 	}
 
 	return vdis, nil
+}
+
+func (c *Client) GetVDI(vdiReq VDI) (VDI, error) {
+	obj, err := c.FindFromGetAllObjects(vdiReq)
+
+	if err != nil {
+		return VDI{}, err
+	}
+
+	vdis, ok := obj.([]VDI)
+
+	if !ok {
+		return VDI{}, errors.New(fmt.Sprintf("failed to coerce %+v into VDI", obj))
+	}
+
+	numVdis := len(vdis)
+	if numVdis != 1 {
+		return VDI{}, errors.New(fmt.Sprintf("expected to return 1 VDI, instead recieved %d for request %v", numVdis, vdiReq))
+	}
+
+	return vdis[0], nil
 }
 
 func (c *Client) GetParentVDI(vbd VBD) (VDI, error) {
@@ -190,10 +237,40 @@ func (c *Client) DeleteDisk(vm Vm, d Disk) error {
 		return err
 	}
 
-	vdiDeleteParams := map[string]interface{}{
-		"id": d.VDIId,
+	return c.DeleteVDI(d.VDIId)
+}
+
+var notFoundState string = "NotFound"
+
+func (c *Client) DeleteVDI(id string) error {
+	var success bool
+	params := map[string]interface{}{
+		"id": id,
 	}
-	return c.Call("vdi.delete", vdiDeleteParams, &success)
+
+	err := c.Call("vdi.delete", params, &success)
+	if err != nil {
+		return err
+	}
+	refreshFn := func() (result interface{}, state string, err error) {
+		vdi, err := c.GetVDI(VDI{
+			VDIId: id,
+		})
+
+		if _, ok := err.(NotFound); ok {
+			return vdi, notFoundState, nil
+		}
+
+		return vdi, vdi.VDIId, err
+	}
+	stateConf := &StateChangeConf{
+		Pending: []string{id, ""},
+		Refresh: refreshFn,
+		Target:  []string{notFoundState},
+		Timeout: time.Minute,
+	}
+	_, err = stateConf.WaitForState()
+	return err
 }
 
 func (c *Client) ConnectDisk(d Disk) error {
@@ -237,4 +314,87 @@ func (c *Client) InsertCd(vmId, cdId string) error {
 		"cd_id": cdId,
 	}
 	return c.Call("vm.insertCd", params, &success)
+}
+
+func (c *Client) CreateVDI(vdiReq CreateVDIReq) (VDI, error) {
+	file, err := os.Open(vdiReq.Filepath)
+	defer file.Close()
+
+	if err != nil {
+		return VDI{}, err
+	}
+
+	fi, err := file.Stat()
+	if err != nil {
+		return VDI{}, err
+	}
+
+	reqURL := &url.URL{
+		Host:     c.restApiURL.Host,
+		Scheme:   c.restApiURL.Scheme,
+		Path:     fmt.Sprintf("/rest/v0/srs/%s/vdis", url.PathEscape(vdiReq.SRId)),
+		RawQuery: fmt.Sprintf("raw&name_label=%s", url.QueryEscape(vdiReq.NameLabel)),
+	}
+
+	contentType := "application/octet-stream"
+	req, err := http.NewRequest("POST", reqURL.String(), file)
+
+	if err != nil {
+		return VDI{}, err
+	}
+
+	req.Header.Set("Content-Type", contentType)
+	req.ContentLength = fi.Size()
+
+	fmt.Printf("[DEBUG] Sending rest api request to %s\n", reqURL.String())
+	res, err := c.httpClient.Do(req)
+
+	if err != nil {
+		return VDI{}, err
+	}
+
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return VDI{}, err
+	}
+
+	bodyStr := string(body)
+	fmt.Printf("[DEBUG] Received response from rest api: %s\n", bodyStr)
+
+	if res.StatusCode != 200 {
+		return VDI{}, fmt.Errorf("failed to create VDI, received response from server: %v\n", bodyStr)
+	}
+
+	return c.GetVDI(VDI{
+		VDIId: bodyStr,
+	})
+}
+
+func RemoveVDIsWithPrefix(prefix string) func(string) error {
+	return func(_ string) error {
+		c, err := NewClient(GetConfigFromEnv())
+		if err != nil {
+			return fmt.Errorf("error getting client: %s", err)
+		}
+
+		vdis, err := c.GetAllVDIs()
+
+		if err != nil {
+			return err
+		}
+
+		for _, vdi := range vdis {
+			if strings.HasPrefix(vdi.NameLabel, prefix) {
+				log.Printf("[DEBUG] Deleting vdi: %v\n", vdi)
+				err = c.DeleteVDI(vdi.VDIId)
+
+				if err != nil {
+					log.Printf("error destroying vdi `%s` during sweep: %v", vdi.NameLabel, err)
+				}
+			}
+		}
+		return nil
+	}
 }
