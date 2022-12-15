@@ -387,6 +387,6 @@ func Test_warnOnInvalidCloudConfigRecognizesMultipartMIME(t *testing.T) {
 	log.SetOutput(&logBuf)
 	warnOnInvalidCloudConfig(s)
 	if strings.Contains(logBuf.String(), "WARNING") {
-		t.Errorf("multipart MIME archives should be valid. Received: %v", logBuf.String())
+		t.Errorf("multipart MIME archives should be recognized as valid cloud config")
 	}
 }
