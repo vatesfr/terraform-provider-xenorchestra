@@ -127,6 +127,7 @@ type Vm struct {
 	WaitForIps              bool                `json:"-"`
 	Installation            Installation        `json:"-"`
 	ManagementAgentDetected bool                `json:"managementAgentDetected"`
+	PVDriversDetected       bool                `json:"pvDriversDetected"`
 }
 
 type Installation struct {
@@ -412,9 +413,9 @@ func (c *Client) HaltVm(id string) error {
 	// PV drivers are necessary for the XO api to issue a graceful shutdown.
 	// See https://github.com/terra-farm/terraform-provider-xenorchestra/issues/220
 	// for more details.
-	if err := c.waitForManagementAgentDetected(id); err != nil {
+	if err := c.waitForPVDriversDetected(id); err != nil {
 		return errors.New(
-			fmt.Sprintf("failed to gracefully halt the vm with id: %s and error: %v", id, err))
+			fmt.Sprintf("failed to gracefully halt vm (%s) since PV drivers never detected", id))
 	}
 
 	params := map[string]interface{}{
@@ -499,7 +500,7 @@ func GetVmPowerState(c *Client, id string) func() (result interface{}, state str
 	}
 }
 
-func (c *Client) waitForManagementAgentDetected(id string) error {
+func (c *Client) waitForPVDriversDetected(id string) error {
 	refreshFn := func() (result interface{}, state string, err error) {
 		vm, err := c.GetVm(Vm{Id: id})
 
@@ -507,7 +508,7 @@ func (c *Client) waitForManagementAgentDetected(id string) error {
 			return vm, "", err
 		}
 
-		return vm, strconv.FormatBool(vm.ManagementAgentDetected), nil
+		return vm, strconv.FormatBool(vm.PVDriversDetected), nil
 	}
 	stateConf := &StateChangeConf{
 		Pending: []string{"false"},
