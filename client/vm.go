@@ -415,7 +415,7 @@ func (c *Client) HaltVm(id string) error {
 	// for more details.
 	if err := c.waitForPVDriversDetected(id); err != nil {
 		return errors.New(
-			fmt.Sprintf("failed to gracefully halt vm (%s) since PV drivers never detected", id))
+			fmt.Sprintf("failed to gracefully halt vm (%s) since PV drivers were never detected", id))
 	}
 
 	params := map[string]interface{}{
