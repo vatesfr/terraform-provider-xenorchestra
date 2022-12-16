@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -267,6 +268,8 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 
 	cloudConfig := vmReq.CloudConfig
 	if cloudConfig != "" {
+		warnOnInvalidCloudConfig(cloudConfig)
+
 		params["cloudConfig"] = cloudConfig
 	}
 
@@ -670,4 +673,29 @@ func RemoveVmsWithNamePrefix(prefix string) func(string) error {
 		}
 		return nil
 	}
+}
+
+// This is not meant to be a robust check since it would be complicated to detect all
+// malformed config. The goal is to cover what is supported by the cloudinit terraform
+// provider (https://github.com/hashicorp/terraform-provider-cloudinit) and to rule out
+// obviously bad config
+func warnOnInvalidCloudConfig(cloudConfig string) {
+	contentType := http.DetectContentType([]byte(cloudConfig))
+	if contentType == "application/x-gzip" {
+		return
+	}
+
+	if strings.HasPrefix(cloudConfig, "Content-Type") {
+		if !strings.Contains(cloudConfig, "multipart/") {
+
+			log.Printf("[WARNING] Detected MIME type that may not be supported by cloudinit")
+			log.Printf("[WARNING] Validate that your configuration is well formed according to the documentation (https://cloudinit.readthedocs.io/en/latest/topics/format.html).\n")
+		}
+		return
+	}
+	if !strings.HasPrefix(cloudConfig, "#cloud-config") {
+		log.Printf("[WARNING] cloud config does not start with required text `#cloud-config`.")
+		log.Printf("[WARNING] Validate that your configuration is well formed according to the documentation (https://cloudinit.readthedocs.io/en/latest/topics/format.html).\n")
+	}
+
 }
