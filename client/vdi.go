@@ -18,11 +18,10 @@ type Disk struct {
 }
 
 type CreateVDIReq struct {
-	SRId            string
-	Filepath        string
-	Type            string
-	NameLabel       string
-	NameDescription string
+	SRId      string
+	Filepath  string
+	Type      string
+	NameLabel string
 }
 
 type VDI struct {
