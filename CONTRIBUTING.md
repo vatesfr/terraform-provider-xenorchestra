@@ -6,7 +6,7 @@ Any and all contributions are welcome! Don't hesitate to reach out to ask if you
 
 - [Terraform](https://www.terraform.io/downloads.html) 0.12+
 - [Go](https://golang.org/doc/install) 1.16 (to build the provider plugin)
-- git lfs
+- git lfs must be installed and `git lfs install` must be run after cloning
 
 ## Testing the Provider
 
