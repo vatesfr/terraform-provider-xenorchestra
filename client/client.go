@@ -8,8 +8,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/http/cookiejar"
+	"net/url"
 	"os"
 	"reflect"
+	"strings"
 	"time"
 
 	gorillawebsocket "github.com/gorilla/websocket"
@@ -80,8 +83,12 @@ type XOClient interface {
 
 	GetTemplate(template Template) ([]Template, error)
 
+	GetAllVDIs() ([]VDI, error)
 	GetVDIs(vdiReq VDI) ([]VDI, error)
+	GetVDI(vdiReq VDI) (VDI, error)
+	CreateVDI(vdiReq CreateVDIReq) (VDI, error)
 	UpdateVDI(d Disk) error
+	DeleteVDI(id string) error
 
 	CreateAcl(acl Acl) (*Acl, error)
 	GetAcl(aclReq Acl) (*Acl, error)
@@ -109,7 +116,9 @@ type XOClient interface {
 }
 
 type Client struct {
-	rpc jsonrpc2.JSONRPC2
+	rpc        jsonrpc2.JSONRPC2
+	httpClient http.Client
+	restApiURL *url.URL
 }
 
 type Config struct {
@@ -125,12 +134,12 @@ var dialer = gorillawebsocket.Dialer{
 }
 
 func GetConfigFromEnv() Config {
-	var url string
+	var wsURL string
 	var username string
 	var password string
 	insecure := false
 	if v := os.Getenv("XOA_URL"); v != "" {
-		url = v
+		wsURL = v
 	}
 	if v := os.Getenv("XOA_USER"); v != "" {
 		username = v
@@ -142,7 +151,7 @@ func GetConfigFromEnv() Config {
 		insecure = true
 	}
 	return Config{
-		Url:                url,
+		Url:                wsURL,
 		Username:           username,
 		Password:           password,
 		InsecureSkipVerify: insecure,
@@ -150,16 +159,16 @@ func GetConfigFromEnv() Config {
 }
 
 func NewClient(config Config) (XOClient, error) {
-	url := config.Url
+	wsURL := config.Url
 	username := config.Username
 	password := config.Password
-	skipVerify := config.InsecureSkipVerify
 
-	if skipVerify {
-		dialer.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: config.InsecureSkipVerify,
 	}
+	dialer.TLSClientConfig = tlsConfig
 
-	ws, _, err := dialer.Dial(fmt.Sprintf("%s/api/", url), http.Header{})
+	ws, _, err := dialer.Dial(fmt.Sprintf("%s/api/", wsURL), http.Header{})
 
 	if err != nil {
 		return nil, err
@@ -179,8 +188,41 @@ func NewClient(config Config) (XOClient, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	var token string
+	err = c.Call(context.Background(), "token.create", map[string]interface{}{}, &token)
+	if err != nil {
+		return nil, err
+	}
+
+	jar, err := cookiejar.New(&cookiejar.Options{})
+	if err != nil {
+		return nil, err
+	}
+
+	restApiURL, err := convertWebsocketURLToRestApi(wsURL)
+	if err != nil {
+		return nil, err
+	}
+
+	jar.SetCookies(restApiURL, []*http.Cookie{
+		&http.Cookie{
+			Name:   "authenticationToken",
+			Value:  token,
+			MaxAge: 0,
+		},
+	})
+
+	httpClient := http.Client{
+		Jar: jar,
+		Transport: &http.Transport{
+			TLSClientConfig: tlsConfig,
+		},
+	}
 	return &Client{
-		rpc: c,
+		rpc:        c,
+		httpClient: httpClient,
+		restApiURL: restApiURL,
 	}, nil
 }
 
@@ -305,4 +347,14 @@ func (h *handler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
 type signInResponse struct {
 	Email string `json:"email,omitempty"`
 	Id    string `json:"id,omitempty"`
+}
+
+// This function must be used after a successful JSONRPC websocket request
+// is made. This is to verify that we can trust the websocket URL is well-formed
+// so our simple ws/wss -> http/https translation will be done correctly
+func convertWebsocketURLToRestApi(wsURL string) (*url.URL, error) {
+	if !strings.HasPrefix(wsURL, "ws") {
+		return nil, fmt.Errorf("expected `%s` to begin with ws in order to munge the URL to its http/https equivalent\n", wsURL)
+	}
+	return url.Parse(strings.Replace(wsURL, "ws", "http", 1))
 }

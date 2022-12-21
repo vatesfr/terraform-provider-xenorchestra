@@ -15,6 +15,7 @@ var accTestPrefix string = "terraform-acc"
 var accTestPool client.Pool
 var accTestHost client.Host
 var accDefaultSr client.StorageRepository
+var accIsoSr client.StorageRepository
 var accDefaultNetwork client.Network
 var accUser client.User = client.User{Email: fmt.Sprintf("%s-%s", accTestPrefix, "regular-user")}
 var testTemplate client.Template
@@ -40,6 +41,7 @@ func TestMain(m *testing.M) {
 			client.FindHostForTests(accTestPool.Master, &accTestHost)
 			client.FindNetworkForTests(accTestPool.Id, &accDefaultNetwork)
 			client.FindStorageRepositoryForTests(accTestPool, &accDefaultSr, accTestPrefix)
+			client.FindIsoStorageRepositoryForTests(accTestPool, &accIsoSr, accTestPrefix, "XOA_ISO_SR")
 			client.CreateUser(&accUser)
 			testIsoName = os.Getenv("XOA_ISO")
 		}
@@ -48,6 +50,7 @@ func TestMain(m *testing.M) {
 
 		if runSetup {
 			client.RemoveNetworksWithNamePrefix(accTestPrefix)("")
+			client.RemoveVDIsWithPrefix(accTestPrefix)("")
 			client.RemoveResourceSetsWithNamePrefix(accTestPrefix)("")
 			client.RemoveTagFromAllObjects(accTestPrefix)("")
 			client.RemoveUsersWithPrefix(accTestPrefix)("")

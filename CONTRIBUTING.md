@@ -6,6 +6,7 @@ Any and all contributions are welcome! Don't hesitate to reach out to ask if you
 
 - [Terraform](https://www.terraform.io/downloads.html) 0.12+
 - [Go](https://golang.org/doc/install) 1.16 (to build the provider plugin)
+- git lfs must be installed and `git lfs install` must be run after cloning
 
 ## Testing the Provider
 
@@ -24,6 +25,7 @@ The following environment variables must be set:
 - XOA_TEMPLATE - A VM template that has an existing OS **already installed**
 - XOA_DISKLESS_TEMPLATE - A VM template that does not have an existing OS (found from `xe template-list`)
 - XOA_ISO - The name of an ISO that exists on the same pool as `XOA_POOL`
+- XOA_ISO_SR - The name of an ISO storage repository that exists on the same pool as `XOA_POOL`. This SR must be writable since the tests will upload an ISO to it.
 - XOA_NETWORK - The name of a network that is PXE capable. If a non PXE capable network is used some tests may fail.
 
 I typically keep these in a ~/.xoa file and run the following before running the test suite
@@ -36,7 +38,8 @@ export XOA_USER=username
 export XOA_PASSWORD=password
 export XOA_POOL=pool-1
 export XOA_TEMPLATE='Debian 10 Cloudinit'
-export XOA_TEMPLATE='Debian Buster 10'
+
+[ ... ]
 
 # Source the environment variables inside the file
 eval $(cat ~/.xoa)

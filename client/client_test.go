@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"testing"
 
 	"github.com/sourcegraph/jsonrpc2"
@@ -103,5 +104,61 @@ func TestCall_withNonJsonRPC2Error(t *testing.T) {
 
 	if err != expectedErr {
 		t.Errorf("Call method should return an error as is if not of type `jsonrpc2.Error`. Expected: %v received: %v", expectedErr, err)
+	}
+}
+
+func Test_convertWebsocketURLToRestApi(t *testing.T) {
+	tests := []struct {
+		inputURL    string
+		expectedURL *url.URL
+		err         error
+	}{
+		{
+			// Use a URL that contains 'ws' more than once to verify
+			// string replacement only modifies the prefix
+			inputURL: "ws://example.com/wss",
+			expectedURL: &url.URL{
+				Scheme: "http",
+				Host:   "example.com",
+				Path:   "/wss",
+			},
+			err: nil,
+		},
+		{
+			// Use a URL that contains 'ws' more than once to verify
+			// string replacement only modifies the prefix
+			inputURL: "wss://example.com/wss",
+			expectedURL: &url.URL{
+				Scheme: "https",
+				Host:   "example.com",
+				Path:   "/wss",
+			},
+			err: nil,
+		},
+		{
+			inputURL:    "ftp://example.com",
+			expectedURL: nil,
+			err:         fmt.Errorf("expected `%s` to begin with ws in order to munge the URL to its http/https equivalent\n", "ftp://example.com"),
+		},
+	}
+
+	for _, tt := range tests {
+		url, err := convertWebsocketURLToRestApi(tt.inputURL)
+
+		if (tt.err == nil && err != tt.err) || (tt.err != nil && tt.err.Error() != err.Error()) {
+			t.Errorf("expected error `%v` to match `%v`\n", err, tt.err)
+		}
+
+		if tt.expectedURL == nil && tt.expectedURL != url {
+			t.Errorf("expected url creation to return nil but instead received `%v`\n", err)
+		}
+
+		if tt.expectedURL != nil {
+			urlStr := url.String()
+			expectedURLStr := tt.expectedURL.String()
+			if expectedURLStr != urlStr {
+				t.Errorf("expected `%s` and `%s` to match\n", expectedURLStr, urlStr)
+			}
+		}
 	}
 }
