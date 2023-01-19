@@ -410,7 +410,7 @@ func TestAccXenorchestraVm_createWhenWaitingForIp(t *testing.T) {
 }
 
 func TestAccXenorchestraVm_ensureVmsInResourceSetsCanBeUpdatedByNonAdminUsers(t *testing.T) {
-	vmName := fmt.Sprintf("Terraform testing - %s", t.Name())
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	adminUser := os.Getenv("XOA_USER")
 	adminPassword := os.Getenv("XOA_PASSWORD")
 	accUserPassword := "password"
@@ -1146,11 +1146,11 @@ func TestAccXenorchestraVm_replaceExistingVifs(t *testing.T) {
 func TestAccXenorchestraVm_updatesWithoutReboot(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 
-	origNameLabel := fmt.Sprintf("Terraform testing - orig label (%s)", t.Name())
+	origNameLabel := fmt.Sprintf("%s - orig label (%s)", accTestPrefix, t.Name())
 	origNameDesc := "name label"
 	origHa := ""
 	origPowerOn := false
-	updatedNameLabel := "Terraform Updated name label"
+	updatedNameLabel := fmt.Sprintf("%s - updated label (%s)", accTestPrefix, t.Name())
 	updatedNameDesc := "Terraform Updated description"
 	updatedHa := "restart"
 	updatedPowerOn := true
@@ -1187,7 +1187,7 @@ func TestAccXenorchestraVm_updatesWithoutReboot(t *testing.T) {
 func TestAccXenorchestraVm_updatesWithoutRebootForOtherAttrs(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 
-	nameLabel := fmt.Sprintf("Terraform testing - %s", t.Name())
+	nameLabel := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
