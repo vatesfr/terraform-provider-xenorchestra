@@ -324,6 +324,8 @@ func (c *Client) UpdateVm(vmReq Vm) (*Vm, error) {
 		"high_availability": vmReq.HA, // valid options are best-effort, restart, ''
 		"CPUs":              vmReq.CPUs.Number,
 		"memoryMax":         vmReq.Memory.Static[1],
+		"memoryMin":         vmReq.Memory.Static[1],
+		"memoryStaticMax":   vmReq.Memory.Static[1],
 		"expNestedHvm":      vmReq.ExpNestedHvm,
 		"startDelay":        vmReq.StartDelay,
 		// TODO: These need more investigation before they are implemented
