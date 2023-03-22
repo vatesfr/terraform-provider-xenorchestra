@@ -323,8 +323,6 @@ func (c *Client) UpdateVm(vmReq Vm) (*Vm, error) {
 		"auto_poweron":      vmReq.AutoPoweron,
 		"high_availability": vmReq.HA, // valid options are best-effort, restart, ''
 		"CPUs":              vmReq.CPUs.Number,
-		"memoryMax":         vmReq.Memory.Static[1],
-		"memoryMin":         vmReq.Memory.Static[1],
 		"memoryStaticMax":   vmReq.Memory.Static[1],
 		"expNestedHvm":      vmReq.ExpNestedHvm,
 		"startDelay":        vmReq.StartDelay,
@@ -339,6 +337,12 @@ func (c *Client) UpdateVm(vmReq Vm) (*Vm, error) {
 
 		// cpusMask, cpuWeight and cpuCap can be changed at runtime to an integer value or null
 		// coresPerSocket is null or a number of cores per socket. Putting an invalid value doesn't seem to cause an error :(
+	}
+
+	memorySet := map[string]interface{}{
+		"id":        vmReq.Id,
+		"memoryMin": vmReq.Memory.Static[1],
+		"memoryMax": vmReq.Memory.Static[1],
 	}
 
 	videoram := vmReq.Videoram.Value
@@ -384,6 +388,12 @@ func (c *Client) UpdateVm(vmReq Vm) (*Vm, error) {
 
 	if err != nil {
 		return nil, err
+	}
+
+	// Change the dynamic memory settings after the static has been applied
+	memoryErr := c.Call("vm.set", memorySet, &success)
+	if memoryErr != nil {
+		return nil, memoryErr
 	}
 
 	// TODO: This is a poor way to ensure that terraform will see the updated
