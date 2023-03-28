@@ -222,6 +222,8 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 		"cpuWeight":        nil,
 		"CPUs":             vmReq.CPUs.Number,
 		"memoryMax":        vmReq.Memory.Static[1],
+		"memoryMin":        vmReq.Memory.Static[1],
+		"memoryStatic":     vmReq.Memory.Static[1],
 		"existingDisks":    existingDisks,
 		// TODO: (#145) Uncomment this once issues with secure_boot have been figured out
 		// "secureBoot":       vmReq.SecureBoot,
