@@ -330,10 +330,18 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 	for _, network := range networks {
 		netMap, _ := network.(map[string]interface{})
 
-		network_maps = append(network_maps, map[string]string{
-			"network": netMap["network_id"].(string),
-			"mac":     getFormattedMac(netMap["mac_address"].(string)),
-		})
+		netID := netMap["network_id"].(string)
+		macAddr := netMap["mac_address"].(string)
+
+		netMapToAdd := map[string]string{
+			"network": netID,
+		}
+		// We only add the mac address if it contains a value.
+		if macAddr != "" {
+			netMapToAdd["mac"] = getFormattedMac(macAddr)
+		}
+
+		network_maps = append(network_maps, netMapToAdd)
 	}
 
 	ds := []client.Disk{}
@@ -1175,20 +1183,19 @@ type guestNetwork map[string][]string
 // of maps where each element represents a network interface.
 // Each map will contain the following keys: ip, ipv4 and ipv6. The values
 // will be a slice of ip addresses.
-// []map[string][]string{
-//   {
-//     "ip":   []string{"interface 1's IPs",
-//     "ipv4": []string{"interface 1's IPs",
-//     "ipv6": []string{"ip1", "ip2"}
-//   },
-//   {
-//     "ip":   []string{"interface 2's IPs",
-//     "ipv4": []string{"interface 2's IPs",
-//     "ipv6": []string{"ip1", "ip2"}
-//   },
-// }
 //
-//
+//	[]map[string][]string{
+//	  {
+//	    "ip":   []string{"interface 1's IPs",
+//	    "ipv4": []string{"interface 1's IPs",
+//	    "ipv6": []string{"ip1", "ip2"}
+//	  },
+//	  {
+//	    "ip":   []string{"interface 2's IPs",
+//	    "ipv4": []string{"interface 2's IPs",
+//	    "ipv6": []string{"ip1", "ip2"}
+//	  },
+//	}
 func extractIpsFromNetworks(networks map[string]string) []guestNetwork {
 
 	if len(networks) < 1 {
