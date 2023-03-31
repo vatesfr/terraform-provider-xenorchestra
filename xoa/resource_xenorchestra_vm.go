@@ -230,6 +230,15 @@ func resourceVmSchema() map[string]*schema.Schema {
 						Type:     schema.TypeString,
 						Optional: true,
 						Computed: true,
+						StateFunc: func(val interface{}) string {
+							unformattedMac := val.(string)
+							mac, err := net.ParseMAC(unformattedMac)
+							if err != nil {
+								panic(fmt.Sprintf("Mac address `%s` was not parsable. This should never happened because Terraform's validation should happen before this is stored into state", unformattedMac))
+							}
+							return mac.String()
+
+						},
 						ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
 							mac_address := val.(string)
 							if _, err := net.ParseMAC(mac_address); err != nil {
