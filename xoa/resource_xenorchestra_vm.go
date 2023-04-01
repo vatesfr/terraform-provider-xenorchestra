@@ -339,10 +339,18 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 	for _, network := range networks {
 		netMap, _ := network.(map[string]interface{})
 
-		network_maps = append(network_maps, map[string]string{
-			"network": netMap["network_id"].(string),
-			"mac":     getFormattedMac(netMap["mac_address"].(string)),
-		})
+		netID := netMap["network_id"].(string)
+		macAddr := netMap["mac_address"].(string)
+
+		netMapToAdd := map[string]string{
+			"network": netID,
+		}
+		// We only add the mac address if it contains a value.
+		if macAddr != "" {
+			netMapToAdd["mac"] = getFormattedMac(macAddr)
+		}
+
+		network_maps = append(network_maps, netMapToAdd)
 	}
 
 	ds := []client.Disk{}
