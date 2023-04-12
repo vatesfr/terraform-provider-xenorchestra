@@ -212,7 +212,6 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 	}
 
 	params := map[string]interface{}{
-		"affinityHost":     vmReq.AffinityHost,
 		"bootAfterCreate":  true,
 		"name_label":       vmReq.NameLabel,
 		"name_description": vmReq.NameDescription,
@@ -239,6 +238,11 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 	firmware := vmReq.Boot.Firmware
 	if firmware != "" {
 		params["hvmBootFirmware"] = firmware
+	}
+
+	affinityHost := vmReq.AffinityHost
+	if affinityHost != "" {
+		params["affinityHost"] = affinityHost
 	}
 
 	vga := vmReq.Vga

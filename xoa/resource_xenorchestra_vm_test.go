@@ -681,6 +681,11 @@ func TestAccXenorchestraVm_createWithDashedMacAddress(t *testing.T) {
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
 			{
+				Config:             testAccVmConfigWithMacAddress(vmName, macWithDashes),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
 				Config: testAccVmConfigWithMacAddress(vmName, macWithDashes),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
@@ -2008,6 +2013,13 @@ resource "xenorchestra_vm" "bar" {
 
 func testAccVmConfigWithMacAddress(vmName, macAddress string) string {
 	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
+
+data "null_data_source" "values" {
+  inputs = {
+    mac_address = "%s"
+  }
+}
+
 data "xenorchestra_network" "network" {
     name_label = "%s"
     pool_id = "%s"
@@ -2022,7 +2034,7 @@ resource "xenorchestra_vm" "bar" {
     template = "${data.xenorchestra_template.template.id}"
     network {
 	network_id = "${data.xenorchestra_network.network.id}"
-	mac_address = "%s"
+	mac_address = data.null_data_source.values.outputs["mac_address"]
     }
 
     disk {
@@ -2031,7 +2043,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, macAddress, accDefaultSr.Id)
+`, macAddress, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithTwoMacAddresses(vmName, firstMac, secondMac string) string {
