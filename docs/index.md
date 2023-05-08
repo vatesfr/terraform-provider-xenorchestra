@@ -61,7 +61,7 @@ provider "xenorchestra" {
 
 ### Upgrading from terraform 0.12 to 0.13
 
-If you were previously using a local copy of the provider (not using the terraform registry) you will need to ugprade your statefile in order to use the terraform registry.
+If you were previously using a local copy of the provider (not using the terraform registry) you will need to upgrade your statefile in order to use the terraform registry.
 
 This can be fixed with a `terraform state replace-provider -- -/xenorchestra registry.terraform.io/terra-farm/xenorchestra`. If you need to do this you will likely see the following error when upgrading to terraform 0.13.
 
