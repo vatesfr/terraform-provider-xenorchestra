@@ -1,6 +1,6 @@
 # Terraform Provider for Xen Orchestra
 
-This is a terraform provider for [Xen Orchestra](https://github.com/vatesfr/xen-orchestra).
+This is a terraform provider for [Xen Orchestra](https://github.com/vatesfr/xen-orchestra) forked from [terra-farm/terraform-provider-xenorchestra](https://github.com/terra-farm/terraform-provider-xenorchestra).
 
 ## Docs
 
