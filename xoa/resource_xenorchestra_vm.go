@@ -741,7 +741,7 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		haltForUpdates = true
 	}
 
-	if _, nMemoryMax := d.GetChange("memory_max"); d.HasChange("memory_max") && nMemoryMax.(int) > vm.Memory.Static[1] {
+	if d.HasChange("memory_max") {
 		haltForUpdates = true
 	}
 
