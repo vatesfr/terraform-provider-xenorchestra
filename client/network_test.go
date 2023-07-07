@@ -92,3 +92,30 @@ func TestGetNetwork(t *testing.T) {
 		t.Errorf("expected network pool id to not be an empty string")
 	}
 }
+
+func TestCreateNetwork_DeleteNetwork(t *testing.T) {
+	c, err := NewClient(GetConfigFromEnv())
+
+	if err != nil {
+		t.Fatalf("failed to create client with error: %v", err)
+	}
+
+	testNet, err := c.CreateNetwork(Network{
+		NameLabel:   integrationTestPrefix + "_created_network",
+		PifId:       "TODO: PIF ID",
+		Description: "Network created by integration tests",
+		Mtu:         1500,
+		Vlan:        100,
+		PoolId:      accTestPool.Id,
+	})
+
+	if err != nil {
+		t.Fatalf("failed to create network with error: %v", err)
+	}
+
+	err = c.DeleteNetwork(testNet.Id)
+
+	if err != nil {
+		t.Errorf("failed to delete the network with error: %v", err)
+	}
+}

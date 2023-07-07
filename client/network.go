@@ -9,10 +9,14 @@ import (
 )
 
 type Network struct {
-	Id        string `json:"id"`
-	NameLabel string `json:"name_label"`
-	Bridge    string `json:"bridge"`
-	PoolId    string `json:"$poolId"`
+	Id          string `json:"id"`
+	NameLabel   string `json:"name_label"`
+	Description string `json:"description,omitempty"`
+	PifId       string `json:"pif,omitempty"`
+	Mtu         int    `json:"mtu,omitempty"`
+	Vlan        int    `json:"vlan,omitempty"`
+	Bridge      string `json:"bridge"`
+	PoolId      string `json:"$poolId"`
 }
 
 func (net Network) Compare(obj interface{}) bool {

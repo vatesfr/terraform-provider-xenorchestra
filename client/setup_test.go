@@ -25,8 +25,12 @@ func CreateNetwork(network *Network) {
 	}
 
 	net, err := c.CreateNetwork(Network{
-		NameLabel: testNetworkName,
-		PoolId:    accTestPool.Id,
+		NameLabel:   testNetworkName,
+		PoolId:      accTestPool.Id,
+		Description: "Default Test Network",
+		PifId:       "TODO: PIF",
+		Mtu:         1500,
+		Vlan:        100,
 	})
 
 	if err != nil {
