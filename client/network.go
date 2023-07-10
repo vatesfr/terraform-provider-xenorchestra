@@ -5,14 +5,25 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"strings"
+	"time"
+
+	"github.com/mitchellh/mapstructure"
 )
 
 type Network struct {
-	Id        string `json:"id"`
-	NameLabel string `json:"name_label"`
-	Bridge    string `json:"bridge"`
-	PoolId    string `json:"$poolId"`
+	Automatic       bool     `json:"automatic,omitempty" mapstructure:"automatic,omitempty"`
+	Id              string   `json:"id" mapstructure:"id"`
+	NameLabel       string   `json:"name_label" mapstructure:"name_label,omitempty"`
+	NameDescription string   `json:"name_description" mapstructure:"name_description,omitempty"`
+	Bridge          string   `json:"bridge" mapstructure:",omitempty"`
+	DefaultIsLocked bool     `json:"defaultIsLocked" mapstructure:"defaultIsLocked,omitempty"`
+	PoolId          string   `json:"$poolId" mapstructure:",omitempty"`
+	MTU             int      `json:"MTU" mapstructure:",omitempty"`
+	PIFs            []string `json:"PIFs" mapstructure:",omitempty"`
+	Nbd             bool     `json:"nbd" mapstructure:"nbd,omitempty"`
+	InsecureNbd     bool     `json:"insecureNbd" mapstructure:",omitempty"`
 }
 
 func (net Network) Compare(obj interface{}) bool {
@@ -38,8 +49,11 @@ func (net Network) Compare(obj interface{}) bool {
 func (c *Client) CreateNetwork(netReq Network) (*Network, error) {
 	var id string
 	params := map[string]interface{}{
-		"pool": netReq.PoolId,
-		"name": netReq.NameLabel,
+		"pool":        netReq.PoolId,
+		"name":        netReq.NameLabel,
+		"description": netReq.NameDescription,
+		"mtu":         netReq.MTU,
+		"nbd":         netReq.Nbd,
 	}
 
 	err := c.Call("network.create", params, &id)
@@ -47,7 +61,50 @@ func (c *Client) CreateNetwork(netReq Network) (*Network, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if err := c.waitForModifyNetwork(id, netReq.Nbd, time.Minute); err != nil {
+		return nil, err
+	}
 	return c.GetNetwork(Network{Id: id})
+}
+
+func (c *Client) waitForModifyNetwork(id string, nbdTarget bool, timeout time.Duration) error {
+	if !nbdTarget {
+		return nil
+	}
+	// NBD network creation is eventually consistent so we must poll until
+	// the NBD field returns true
+	refreshFn := func() (result interface{}, state string, err error) {
+		network, err := c.GetNetwork(Network{Id: id})
+
+		if err != nil {
+			return network, "", err
+		}
+
+		return network, strconv.FormatBool(network.Nbd), nil
+	}
+	stateConf := &StateChangeConf{
+		Pending: []string{"false"},
+		Refresh: refreshFn,
+		Target:  []string{"true"},
+		Timeout: timeout,
+	}
+	_, err := stateConf.WaitForState()
+	return err
+}
+
+func (c *Client) UpdateNetwork(netReq Network) (*Network, error) {
+	var params map[string]interface{}
+	mapstructure.Decode(netReq, &params)
+	log.Printf("[DEBUG] params for network.set: %#v", params)
+
+	var success bool
+	err := c.Call("network.set", params, &success)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.GetNetwork(netReq)
 }
 
 func (c *Client) GetNetwork(netReq Network) (*Network, error) {
