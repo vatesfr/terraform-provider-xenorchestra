@@ -22,6 +22,22 @@ func dataSourceXoaNetwork() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"pif_id": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"description": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"mtu": &schema.Schema{
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"vlan": &schema.Schema{
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -45,5 +61,9 @@ func dataSourceNetworkRead(d *schema.ResourceData, m interface{}) error {
 	d.Set("bridge", net.Bridge)
 	d.Set("name_label", net.NameLabel)
 	d.Set("pool_id", net.PoolId)
+	d.Set("pif", net.PifId)
+	d.Set("description", net.Description)
+	d.Set("mtu", net.Mtu)
+	d.Set("vlan", net.Vlan)
 	return nil
 }

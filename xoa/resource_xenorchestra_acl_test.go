@@ -147,6 +147,10 @@ func testAccAclExists(resourceName string) resource.TestCheckFunc {
 
 		acl, err := c.GetAcl(client.Acl{Id: rs.Primary.ID})
 
+		if err != nil {
+			return err
+		}
+
 		if acl.Id == rs.Primary.ID {
 			return nil
 		}

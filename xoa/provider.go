@@ -40,6 +40,7 @@ func Provider() *schema.Provider {
 			"xenorchestra_vm":           resourceRecord(),
 			"xenorchestra_resource_set": resourceResourceSet(),
 			"xenorchestra_vdi":          resourceVDIRecord(),
+			"xenorchestra_network":      resourceNetwork(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"xenorchestra_cloud_config": dataSourceXoaCloudConfig(),
