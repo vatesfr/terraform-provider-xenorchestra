@@ -11,7 +11,7 @@ import (
 type Network struct {
 	Id          string `json:"id"`
 	NameLabel   string `json:"name_label"`
-	Description string `json:"description,omitempty"`
+	Description string `json:"name_description,omitempty"`
 	PifId       string `json:"pif,omitempty"`
 	Mtu         int    `json:"mtu,omitempty"`
 	Vlan        int    `json:"vlan,omitempty"`
@@ -44,6 +44,22 @@ func (c *Client) CreateNetwork(netReq Network) (*Network, error) {
 	params := map[string]interface{}{
 		"pool": netReq.PoolId,
 		"name": netReq.NameLabel,
+	}
+
+	if netReq.Description != "" {
+		params["description"] = netReq.Description
+	}
+
+	if netReq.PifId != "" {
+		params["pif"] = netReq.PifId
+	}
+
+	if netReq.Description != "" {
+		params["description"] = netReq.Description
+	}
+
+	if netReq.Mtu != 0 {
+		params["mtu"] = netReq.Mtu
 	}
 
 	err := c.Call("network.create", params, &id)

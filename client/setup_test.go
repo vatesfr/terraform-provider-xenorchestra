@@ -25,12 +25,8 @@ func CreateNetwork(network *Network) {
 	}
 
 	net, err := c.CreateNetwork(Network{
-		NameLabel:   testNetworkName,
-		PoolId:      accTestPool.Id,
-		Description: "Default Test Network",
-		PifId:       "TODO: PIF",
-		Mtu:         1500,
-		Vlan:        100,
+		NameLabel: testNetworkName,
+		PoolId:    accTestPool.Id,
 	})
 
 	if err != nil {
@@ -47,6 +43,7 @@ var accDefaultSr StorageRepository
 var accDefaultNetwork Network
 var testTemplate Template
 var disklessTestTemplate Template
+var accTestPif PIF
 var accVm Vm
 
 func TestMain(m *testing.M) {
@@ -54,6 +51,7 @@ func TestMain(m *testing.M) {
 	FindTemplateForTests(&testTemplate, accTestPool.Id, "XOA_TEMPLATE")
 	FindTemplateForTests(&disklessTestTemplate, accTestPool.Id, "XOA_DISKLESS_TEMPLATE")
 	FindHostForTests(accTestPool.Master, &accTestHost)
+	FindPIFForTests(accTestHost.Id, &accTestPif)
 	FindStorageRepositoryForTests(accTestPool, &accDefaultSr, integrationTestPrefix)
 	CreateNetwork(&accDefaultNetwork)
 	FindOrCreateVmForTests(&accVm, accTestPool.Id, accDefaultSr.Id, testTemplate.Id, integrationTestPrefix)

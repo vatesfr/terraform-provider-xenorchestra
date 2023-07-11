@@ -94,6 +94,12 @@ func resourceNetworkDelete(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
+	err = c.DeleteNetwork(net.Id)
+
+	if err != nil {
+		return nil
+	}
+
 	resourceDataFromNetwork(d, net)
 	return nil
 }

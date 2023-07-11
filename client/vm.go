@@ -604,9 +604,11 @@ func FindOrCreateVmForTests(vm *Vm, poolId, srId, templateName, tag string) {
 
 		vmRes, err = c.CreateVm(
 			Vm{
-				NameLabel: fmt.Sprintf("Terraform testing - %d", time.Now().Unix()),
-				Tags:      []string{tag},
-				Template:  templateName,
+				//TODO: don't hardcode
+				AffinityHost: "0ac45be0-70ce-4c1f-a756-0fb54c171ddf",
+				NameLabel:    fmt.Sprintf("Terraform testing - %d", time.Now().Unix()),
+				Tags:         []string{tag},
+				Template:     templateName,
 				CPUs: CPUs{
 					Number: 1,
 				},
