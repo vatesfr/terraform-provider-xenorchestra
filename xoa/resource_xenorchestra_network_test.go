@@ -119,6 +119,8 @@ func testAccCheckXenOrchestraNetworkDestroy(s *terraform.State) error {
 			return fmt.Errorf("Network (%s) still exists", net.Id)
 		}
 	}
+
+	return nil
 }
 
 func testAccCheckXenOrchestraNetworkDestroyNow(resourceName string) resource.TestCheckFunc {

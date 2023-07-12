@@ -102,7 +102,7 @@ func TestCreateNetwork_DeleteNetwork(t *testing.T) {
 
 	var netReq Network = Network{
 		NameLabel:   integrationTestPrefix + "created-network",
-		PifId:       accTestPif.Id,
+		PifIds:      []string{accTestPif.Id},
 		Description: "Network created by integration tests",
 		Mtu:         1500,
 		Vlan:        100,
@@ -123,8 +123,8 @@ func TestCreateNetwork_DeleteNetwork(t *testing.T) {
 		t.Errorf("expected network name_label `%s` to match `%s`", resultNet.NameLabel, netReq.NameLabel)
 	}
 
-	if resultNet.PifId == "" {
-		t.Errorf("expected network pif to not be empty")
+	if len(resultNet.PifIds) == 0 {
+		t.Errorf("expected network pifs to not be empty")
 	}
 
 	if resultNet.Description != netReq.Description {
@@ -141,10 +141,10 @@ func TestCreateNetwork_DeleteNetwork(t *testing.T) {
 
 	//Creating a Network while specifying a PIF ID and a VLAN creates clone of the given PIF with the given VLAN
 	var pifs []PIF
-	pifs, err = c.GetPIF(PIF{Id: resultNet.PifId})
+	pifs, err = c.GetPIF(PIF{Id: resultNet.PifIds[0]})
 
 	if err != nil {
-		t.Fatalf("failed to get pif of with id %s with error: %v", resultNet.PifId, err)
+		t.Fatalf("failed to get pif of with id %s with error: %v", resultNet.PifIds[0], err)
 	}
 
 	if len(pifs) > 1 || pifs[0].Vlan != resultNet.Vlan {

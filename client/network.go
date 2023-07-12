@@ -9,14 +9,14 @@ import (
 )
 
 type Network struct {
-	Id          string `json:"id"`
-	NameLabel   string `json:"name_label"`
-	Description string `json:"name_description,omitempty"`
-	PifId       string `json:"pif,omitempty"`
-	Mtu         int    `json:"mtu,omitempty"`
-	Vlan        int    `json:"vlan,omitempty"`
-	Bridge      string `json:"bridge"`
-	PoolId      string `json:"$poolId"`
+	Id          string   `json:"id"`
+	NameLabel   string   `json:"name_label"`
+	Description string   `json:"name_description,omitempty"`
+	PifIds      []string `json:"PIFs,omitempty"`
+	Mtu         int      `json:"mtu,omitempty"`
+	Vlan        int      `json:"vlan,omitempty"`
+	Bridge      string   `json:"bridge"`
+	PoolId      string   `json:"$poolId"`
 }
 
 func (net Network) Compare(obj interface{}) bool {
@@ -50,12 +50,17 @@ func (c *Client) CreateNetwork(netReq Network) (*Network, error) {
 		params["description"] = netReq.Description
 	}
 
-	if netReq.PifId != "" {
-		params["pif"] = netReq.PifId
+	if len(netReq.PifIds) > 0 {
+		//For now, only one PIF is supported, but the struct still requires an array
+		params["pif"] = netReq.PifIds[0]
 	}
 
 	if netReq.Description != "" {
 		params["description"] = netReq.Description
+	}
+
+	if netReq.Vlan != 0 {
+		params["vlan"] = netReq.Vlan
 	}
 
 	if netReq.Mtu != 0 {

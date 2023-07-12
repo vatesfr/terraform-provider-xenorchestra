@@ -109,7 +109,7 @@ func networkFromResourceData(net *client.Network, d *schema.ResourceData) {
 	net.Bridge = d.Get("bridge").(string)
 	net.NameLabel = d.Get("name_label").(string)
 	net.PoolId = d.Get("pool_id").(string)
-	net.PifId = d.Get("pif").(string)
+	net.PifIds = []string{d.Get("pif").(string)}
 	net.Description = d.Get("description").(string)
 	net.Mtu = d.Get("mtu").(int)
 	net.Vlan = d.Get("vlan").(int)
@@ -120,7 +120,7 @@ func resourceDataFromNetwork(d *schema.ResourceData, net *client.Network) {
 	d.Set("bridge", net.Bridge)
 	d.Set("name_label", net.NameLabel)
 	d.Set("pool_id", net.PoolId)
-	d.Set("pif", net.PifId)
+	d.Set("pif", net.PifIds[0])
 	d.Set("description", net.Description)
 	d.Set("mtu", net.Mtu)
 	d.Set("vlan", net.Vlan)
