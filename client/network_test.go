@@ -141,7 +141,7 @@ func TestCreateNetwork_DeleteNetwork(t *testing.T) {
 
 	//Creating a Network while specifying a PIF ID and a VLAN creates clone of the given PIF with the given VLAN
 	var pifs []PIF
-	pifs, err = c.GetPIF(PIF{Id: resultNet.PifIds[0]})
+	pifs, err = c.GetPIF(PIF{Host: accTestHost.Id, Device: "eth0", Vlan: 100, Id: resultNet.PifIds[0]})
 
 	if err != nil {
 		t.Fatalf("failed to get pif of with id %s with error: %v", resultNet.PifIds[0], err)
