@@ -147,8 +147,8 @@ func TestCreateNetwork_DeleteNetwork(t *testing.T) {
 		t.Fatalf("failed to get pif of with id %s with error: %v", resultNet.PifIds[0], err)
 	}
 
-	if len(pifs) > 1 || pifs[0].Vlan != resultNet.Vlan {
-		t.Errorf("expected network VLAN `%d` to match `%d`", resultNet.Vlan, netReq.Vlan)
+	if len(pifs) == 0 || pifs[0].Vlan != netReq.Vlan {
+		t.Errorf("expected network VLAN `%d` to match `%d`", pifs[0].Vlan, netReq.Vlan)
 	}
 
 	err = c.DeleteNetwork(resultNet.Id)
