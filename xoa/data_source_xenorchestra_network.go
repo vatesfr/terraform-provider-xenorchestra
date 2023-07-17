@@ -64,6 +64,5 @@ func dataSourceNetworkRead(d *schema.ResourceData, m interface{}) error {
 	d.Set("pif", net.PifIds[0])
 	d.Set("description", net.Description)
 	d.Set("mtu", net.Mtu)
-	d.Set("vlan", net.Vlan)
 	return nil
 }

@@ -14,7 +14,6 @@ type Network struct {
 	Description string   `json:"name_description,omitempty"`
 	PifIds      []string `json:"PIFs,omitempty"`
 	Mtu         int      `json:"mtu,omitempty"`
-	Vlan        int      `json:"vlan,omitempty"`
 	Bridge      string   `json:"bridge"`
 	PoolId      string   `json:"$poolId"`
 }
@@ -39,7 +38,7 @@ func (net Network) Compare(obj interface{}) bool {
 	return false
 }
 
-func (c *Client) CreateNetwork(netReq Network) (*Network, error) {
+func (c *Client) CreateNetwork(netReq Network, vlan int) (*Network, error) {
 	var id string
 	params := map[string]interface{}{
 		"pool": netReq.PoolId,
@@ -59,8 +58,8 @@ func (c *Client) CreateNetwork(netReq Network) (*Network, error) {
 		params["description"] = netReq.Description
 	}
 
-	if netReq.Vlan != 0 {
-		params["vlan"] = netReq.Vlan
+	if vlan != 0 {
+		params["vlan"] = vlan
 	}
 
 	if netReq.Mtu != 0 {

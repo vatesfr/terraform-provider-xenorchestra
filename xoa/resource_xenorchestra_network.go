@@ -24,7 +24,7 @@ func resourceNetwork() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"pif_id": &schema.Schema{
+			"pif_ids": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
 			},
@@ -49,8 +49,9 @@ func resourceNetworkCreate(d *schema.ResourceData, m interface{}) error {
 
 	var net = &client.Network{}
 	networkFromResourceData(net, d)
+	var vlan = d.Get("vlan").(int)
 
-	net, err := c.CreateNetwork(*net)
+	net, err := c.CreateNetwork(*net, vlan)
 
 	if err != nil {
 		return err
@@ -112,7 +113,6 @@ func networkFromResourceData(net *client.Network, d *schema.ResourceData) {
 	net.PifIds = []string{d.Get("pif").(string)}
 	net.Description = d.Get("description").(string)
 	net.Mtu = d.Get("mtu").(int)
-	net.Vlan = d.Get("vlan").(int)
 }
 
 func resourceDataFromNetwork(d *schema.ResourceData, net *client.Network) {
@@ -123,5 +123,4 @@ func resourceDataFromNetwork(d *schema.ResourceData, net *client.Network) {
 	d.Set("pif", net.PifIds[0])
 	d.Set("description", net.Description)
 	d.Set("mtu", net.Mtu)
-	d.Set("vlan", net.Vlan)
 }

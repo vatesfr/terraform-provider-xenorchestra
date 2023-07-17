@@ -1572,7 +1572,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testIsoName, accTestPool.Id, accDefaultNetwork, accTestPool.Id, vmName, accDefaultSr.Id)
+`, testIsoName, accTestPool.Id, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithTags(vmName, tag, secondTag string) string {

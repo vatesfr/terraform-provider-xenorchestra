@@ -100,16 +100,16 @@ func TestCreateNetwork_DeleteNetwork(t *testing.T) {
 		t.Fatalf("failed to create client with error: %v", err)
 	}
 
+	var vlan = 100
 	var netReq Network = Network{
 		NameLabel:   integrationTestPrefix + "created-network",
 		PifIds:      []string{accTestPif.Id},
 		Description: "Network created by integration tests",
 		Mtu:         1500,
-		Vlan:        100,
 		PoolId:      accTestPool.Id,
 	}
 
-	resultNet, err := c.CreateNetwork(netReq)
+	resultNet, err := c.CreateNetwork(netReq, vlan)
 
 	if err != nil {
 		t.Fatalf("failed to create network with error: %v", err)
@@ -147,8 +147,8 @@ func TestCreateNetwork_DeleteNetwork(t *testing.T) {
 		t.Fatalf("failed to get pif of with id %s with error: %v", resultNet.PifIds[0], err)
 	}
 
-	if len(pifs) == 0 || pifs[0].Vlan != netReq.Vlan {
-		t.Errorf("expected network VLAN `%d` to match `%d`", pifs[0].Vlan, netReq.Vlan)
+	if len(pifs) == 0 || pifs[0].Vlan != vlan {
+		t.Errorf("expected network VLAN `%d` to match `%d`", pifs[0].Vlan, vlan)
 	}
 
 	err = c.DeleteNetwork(resultNet.Id)

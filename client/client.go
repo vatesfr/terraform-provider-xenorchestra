@@ -70,7 +70,7 @@ type XOClient interface {
 	GetCurrentUser() (*User, error)
 	DeleteUser(userReq User) error
 
-	CreateNetwork(netReq Network) (*Network, error)
+	CreateNetwork(netReq Network, vlan int) (*Network, error)
 	GetNetwork(netReq Network) (*Network, error)
 	GetNetworks() ([]Network, error)
 	DeleteNetwork(id string) error
