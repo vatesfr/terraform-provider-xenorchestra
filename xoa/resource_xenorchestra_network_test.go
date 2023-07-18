@@ -12,10 +12,10 @@ import (
 var netName string = fmt.Sprintf("%s-network-resource", accTestPrefix)
 
 func init() {
-	resource.AddTestSweepers("xenorchestra_network", &resource.Sweeper{
-		Name: "xenorchestra_network",
-		F:    client.DeleteNetwork(&client.Network{}),
-	})
+	// resource.AddTestSweepers("xenorchestra_network", &resource.Sweeper{
+	// 	Name: "xenorchestra_network",
+	// 	F:    client.DeleteNetwork(&client.Network{}),
+	// })
 }
 
 func TestAccXenorchestraNetwork_readAfterDelete(t *testing.T) {
