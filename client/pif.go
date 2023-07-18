@@ -2,6 +2,8 @@ package client
 
 import (
 	"errors"
+	"fmt"
+	"os"
 )
 
 type PIF struct {
@@ -57,4 +59,23 @@ func (c *Client) GetPIF(pifReq PIF) (pifs []PIF, err error) {
 	}
 
 	return pifs, nil
+}
+
+func FindPIFForTests(hostId string, pif *PIF) {
+	var pifs []PIF
+
+	c, err := NewClient(GetConfigFromEnv())
+	if err != nil {
+		fmt.Printf("failed to create client with error: %v", err)
+		os.Exit(-1)
+	}
+
+	pifs, err = c.GetPIF(PIF{Host: hostId, Device: "eth0", Vlan: -1})
+
+	if err != nil || len(pifs) != 1 {
+		fmt.Printf("failed to find a PIF on hostId: %v with device eth0 and Vlan -1 with error: %v\n", hostId, err)
+		os.Exit(-1)
+	}
+
+	*pif = pifs[0]
 }

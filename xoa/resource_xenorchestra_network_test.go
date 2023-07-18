@@ -14,32 +14,32 @@ var netName string = fmt.Sprintf("%s-network-resource", accTestPrefix)
 func init() {
 	resource.AddTestSweepers("xenorchestra_network", &resource.Sweeper{
 		Name: "xenorchestra_network",
-		F:    client.RemoveResourceSetsWithNamePrefix(accTestPrefix),
+		F:    client.DeleteNetwork(&client.Network{}),
 	})
 }
 
 func TestAccXenorchestraNetwork_readAfterDelete(t *testing.T) {
-	networkName := "testNetwork"
 	poolId := accTestPool.Id
 	resourceName := "xenorchestra_network.bar"
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckXenOrchestraNetworkDestroy,
+		CheckDestroy: testAccCheckXenOrchestraNetworkDestroy(netName),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccNetwork(networkName, poolId),
+				Config: testAccNetwork(netName, poolId),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCloudConfigExists(resourceName),
+					testAccNetworkExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id")),
+				ExpectNonEmptyPlan: true,
 			},
 			{
-				Config:             testAccNetwork(networkName, poolId),
+				Config:             testAccNetwork(netName, poolId),
 				Check:              testAccCheckXenOrchestraNetworkDestroyNow(resourceName),
 				ExpectNonEmptyPlan: true,
 			},
 			{
-				Config:             testAccNetwork(networkName, poolId),
+				Config:             testAccNetwork(netName, poolId),
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: true,
 			},
@@ -61,10 +61,10 @@ resource "xenorchestra_network" "bar" {
 	name_label = "%s%s"
 	pool_id = "%s"
 	description = "Acceptance test network"
-	pif = "TODO: PIF"
+	pif = "%s"
 	mtu = 1500
 	vlan = 100
-}`, accTestPrefix, name, poolId)
+}`, accTestPrefix, name, poolId, accTestPif.Id)
 }
 
 func testAccNetworkExists(resourceName string) resource.TestCheckFunc {
@@ -97,30 +97,28 @@ func testAccNetworkExists(resourceName string) resource.TestCheckFunc {
 	}
 }
 
-func testAccCheckXenOrchestraNetworkDestroy(s *terraform.State) error {
-	c, err := client.NewClient(client.GetConfigFromEnv())
-
-	if err != nil {
-		return err
-	}
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "xenorchestra_network" {
-			continue
-		}
-
-		net, err := c.GetNetwork(client.Network{Id: rs.Primary.ID})
+func testAccCheckXenOrchestraNetworkDestroy(networkName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		c, err := client.NewClient(client.GetConfigFromEnv())
 
 		if err != nil {
 			return err
 		}
 
-		if net != nil {
-			return fmt.Errorf("Network (%s) still exists", net.Id)
-		}
-	}
+		networks, err := c.GetNetworks()
 
-	return nil
+		if err != nil {
+			return err
+		}
+
+		for _, net := range networks {
+			if net.NameLabel == networkName {
+				return fmt.Errorf("Network (%s) still exists", networkName)
+			}
+		}
+
+		return nil
+	}
 }
 
 func testAccCheckXenOrchestraNetworkDestroyNow(resourceName string) resource.TestCheckFunc {

@@ -17,6 +17,7 @@ var accTestHost client.Host
 var accDefaultSr client.StorageRepository
 var accIsoSr client.StorageRepository
 var accDefaultNetwork client.Network
+var accTestPif client.PIF
 var accUser client.User = client.User{Email: fmt.Sprintf("%s-%s", accTestPrefix, "regular-user")}
 var testTemplate client.Template
 var disklessTestTemplate client.Template
@@ -42,6 +43,7 @@ func TestMain(m *testing.M) {
 			client.FindNetworkForTests(accTestPool.Id, &accDefaultNetwork)
 			client.FindStorageRepositoryForTests(accTestPool, &accDefaultSr, accTestPrefix)
 			client.FindIsoStorageRepositoryForTests(accTestPool, &accIsoSr, accTestPrefix, "XOA_ISO_SR")
+			client.FindPIFForTests(accTestHost.Id, &accTestPif)
 			client.CreateUser(&accUser)
 			testIsoName = os.Getenv("XOA_ISO")
 		}

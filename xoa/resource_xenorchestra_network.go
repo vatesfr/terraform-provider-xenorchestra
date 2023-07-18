@@ -11,34 +11,41 @@ func resourceNetwork() *schema.Resource {
 		Read:   resourceNetworkRead,
 		Delete: resourceNetworkDelete,
 		Schema: map[string]*schema.Schema{
-			"bridge": &schema.Schema{
+			"bridge": {
 				Type:     schema.TypeString,
 				Computed: true,
 				Optional: true,
+				ForceNew: true,
 			},
-			"name_label": &schema.Schema{
+			"name_label": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
-			"pool_id": &schema.Schema{
+			"pool_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 			},
-			"pif_ids": &schema.Schema{
+			"pif": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 			},
-			"description": &schema.Schema{
+			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 			},
-			"mtu": &schema.Schema{
+			"mtu": {
 				Type:     schema.TypeInt,
 				Optional: true,
+				ForceNew: true,
 			},
-			"vlan": &schema.Schema{
+			"vlan": {
 				Type:     schema.TypeInt,
 				Optional: true,
+				ForceNew: true,
 			},
 		},
 	}
@@ -101,7 +108,7 @@ func resourceNetworkDelete(d *schema.ResourceData, m interface{}) error {
 		return nil
 	}
 
-	resourceDataFromNetwork(d, net)
+	d.SetId("")
 	return nil
 }
 
