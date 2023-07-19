@@ -46,7 +46,7 @@ func (net Network) Compare(obj interface{}) bool {
 	return false
 }
 
-func (c *Client) CreateNetwork(netReq Network) (*Network, error) {
+func (c *Client) CreateNetwork(netReq Network, vlan int, pif string) (*Network, error) {
 	var id string
 	params := map[string]interface{}{
 		"pool":        netReq.PoolId,
@@ -54,6 +54,14 @@ func (c *Client) CreateNetwork(netReq Network) (*Network, error) {
 		"description": netReq.NameDescription,
 		"mtu":         netReq.MTU,
 		"nbd":         netReq.Nbd,
+	}
+
+	if vlan > 0 {
+		params["vlan"] = vlan
+	}
+
+	if len(pif) > 0 {
+		params["pif"] = pif
 	}
 
 	err := c.Call("network.create", params, &id)
@@ -103,6 +111,9 @@ func (c *Client) UpdateNetwork(netReq Network) (*Network, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// TODO(ddelnano): Expand waitForModifyNetwork to handle this case
+	time.Sleep(time.Second)
 
 	return c.GetNetwork(netReq)
 }

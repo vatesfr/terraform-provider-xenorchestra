@@ -19,7 +19,7 @@ var createNetwork = func(net client.Network, t *testing.T, times int) func() {
 				t.Fatalf("failed to created client with error: %v", err)
 			}
 
-			_, err = c.CreateNetwork(net)
+			_, err = c.CreateNetwork(net, 0, "")
 
 			if err != nil {
 				t.Fatalf("failed to created network with error: %v", err)

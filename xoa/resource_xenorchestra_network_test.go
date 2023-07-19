@@ -2,6 +2,7 @@ package xoa
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -31,26 +32,46 @@ func TestAccXONetwork_create(t *testing.T) {
 	)
 }
 
-func TestAccXONetwork_createWithNonDefaults(t *testing.T) {
-	resourceName := "xenorchestra_network.network"
+func TestAccXONetwork_createWithVlanRequiresPIF(t *testing.T) {
 	nameLabel := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
-	desc := "Non default description"
-	// TODO(ddelnano): Add support for creating networks with VLANs
-	nbd := "true"
-	mtu := "950"
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccXenorchestraNetworkConfigNonDefaults(nameLabel, desc, mtu, nbd),
+				Config:      testAccXenorchestraNetworkConfigWithoutVlan(nameLabel),
+				ExpectError: regexp.MustCompile("all of `pif_id,vlan` must be specified"),
+			},
+			{
+				Config:      testAccXenorchestraNetworkConfigWithoutPIF(nameLabel),
+				ExpectError: regexp.MustCompile("all of `pif_id,vlan` must be specified"),
+			},
+		},
+	},
+	)
+}
+
+func TestAccXONetwork_createWithNonDefaults(t *testing.T) {
+	resourceName := "xenorchestra_network.network"
+	nameLabel := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
+	desc := "Non default description"
+	nbd := "true"
+	mtu := "950"
+	vlan := "22"
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccXenorchestraNetworkConfigNonDefaultsWithVlan(nameLabel, desc, mtu, nbd, vlan),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckXenorchestraNetwork(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "name_label"),
 					resource.TestCheckResourceAttr(resourceName, "name_description", desc),
-					resource.TestCheckResourceAttr(resourceName, "pool_id", accTestPool.Id),
+					resource.TestCheckResourceAttr(resourceName, "pool_id", accTestPIF.PoolId),
 					resource.TestCheckResourceAttr(resourceName, "mtu", mtu),
+					resource.TestCheckResourceAttr(resourceName, "vlan", vlan),
 					resource.TestCheckResourceAttr(resourceName, "nbd", nbd)),
 			},
 		},
@@ -82,7 +103,7 @@ func TestAccXONetwork_updateInPlace(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "name_label"),
 					resource.TestCheckResourceAttr(resourceName, "name_description", desc),
-					resource.TestCheckResourceAttr(resourceName, "pool_id", accTestPool.Id),
+					resource.TestCheckResourceAttr(resourceName, "pool_id", accTestPIF.PoolId),
 					resource.TestCheckResourceAttr(resourceName, "automatic", automatic),
 					resource.TestCheckResourceAttr(resourceName, "default_is_locked", isLocked),
 					resource.TestCheckResourceAttr(resourceName, "nbd", nbd)),
@@ -94,7 +115,7 @@ func TestAccXONetwork_updateInPlace(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttr(resourceName, "name_label", updatedNameLabel),
 					resource.TestCheckResourceAttr(resourceName, "name_description", updatedDesc),
-					resource.TestCheckResourceAttr(resourceName, "pool_id", accTestPool.Id),
+					resource.TestCheckResourceAttr(resourceName, "pool_id", accTestPIF.PoolId),
 					resource.TestCheckResourceAttr(resourceName, "automatic", updatedAutomatic),
 					resource.TestCheckResourceAttr(resourceName, "default_is_locked", updatedIsLocked),
 					resource.TestCheckResourceAttr(resourceName, "nbd", updatedNbd)),
@@ -108,7 +129,6 @@ func TestAccXONetwork_updateForceNew(t *testing.T) {
 	resourceName := "xenorchestra_network.network"
 	nameLabel := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	desc := "Non default description"
-	// TODO(ddelnano): Add support for creating networks with VLANs
 	nbd := "false"
 	origMtu := "950"
 	updatedMtu := "1000"
@@ -124,7 +144,7 @@ func TestAccXONetwork_updateForceNew(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "name_label"),
 					resource.TestCheckResourceAttr(resourceName, "name_description", desc),
-					resource.TestCheckResourceAttr(resourceName, "pool_id", accTestPool.Id),
+					resource.TestCheckResourceAttr(resourceName, "pool_id", accTestPIF.PoolId),
 					resource.TestCheckResourceAttr(resourceName, "mtu", origMtu)),
 			},
 			{
@@ -134,7 +154,7 @@ func TestAccXONetwork_updateForceNew(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "name_label"),
 					resource.TestCheckResourceAttr(resourceName, "name_description", desc),
-					resource.TestCheckResourceAttr(resourceName, "pool_id", accTestPool.Id),
+					resource.TestCheckResourceAttr(resourceName, "pool_id", accTestPIF.PoolId),
 					resource.TestCheckResourceAttr(resourceName, "mtu", updatedMtu)),
 			},
 		},
@@ -162,7 +182,27 @@ resource "xenorchestra_network" "network" {
     name_label = "%s"
     pool_id = "%s"
 }
-`, name, accTestPool.Id)
+`, name, accTestPIF.PoolId)
+}
+
+var testAccXenorchestraNetworkConfigWithoutVlan = func(name string) string {
+	return testAccXenorchestraDataSourcePIFConfig(accTestPIF.Host) + fmt.Sprintf(`
+resource "xenorchestra_network" "network" {
+    name_label = "%s"
+    pool_id = "%s"
+    pif_id = data.xenorchestra_pif.pif.id
+}
+`, name, accTestPIF.PoolId)
+}
+
+var testAccXenorchestraNetworkConfigWithoutPIF = func(name string) string {
+	return fmt.Sprintf(`
+resource "xenorchestra_network" "network" {
+    name_label = "%s"
+    pool_id = "%s"
+    vlan = 10
+}
+`, name, accTestPIF.PoolId)
 }
 
 var testAccXenorchestraNetworkConfigNonDefaults = func(name, desc, mtu, nbd string) string {
@@ -174,7 +214,27 @@ resource "xenorchestra_network" "network" {
     mtu = %s
     nbd = %s
 }
-`, name, desc, accTestPool.Id, mtu, nbd)
+`, name, desc, accTestPIF.PoolId, mtu, nbd)
+}
+
+var testAccXenorchestraNetworkConfigNonDefaultsWithVlan = func(name, desc, mtu, nbd, vlan string) string {
+	return fmt.Sprintf(`
+data "xenorchestra_pif" "pif" {
+    device = "eth0"
+    vlan = -1
+    host_id = "%s"
+}
+
+resource "xenorchestra_network" "network" {
+    name_label = "%s"
+    name_description = "%s"
+    pool_id = "%s"
+    mtu = %s
+    nbd = %s
+    pif_id = data.xenorchestra_pif.pif.id
+    vlan = %s
+}
+`, accTestPIF.Host, name, desc, accTestPIF.PoolId, mtu, nbd, vlan)
 }
 
 var testAccXenorchestraNetworkConfigInPlaceUpdates = func(name, desc, nbd, automatic, isLocked string) string {
@@ -187,5 +247,5 @@ resource "xenorchestra_network" "network" {
     automatic = %s
     default_is_locked = %s
 }
-`, name, desc, accTestPool.Id, nbd, automatic, isLocked)
+`, name, desc, accTestPIF.PoolId, nbd, automatic, isLocked)
 }

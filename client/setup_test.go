@@ -27,7 +27,7 @@ func CreateNetwork(network *Network) {
 	net, err := c.CreateNetwork(Network{
 		NameLabel: testNetworkName,
 		PoolId:    accTestPool.Id,
-	})
+	}, 0, "")
 
 	if err != nil {
 		fmt.Printf("[ERROR] Failed to create network with '%v'\n", err)
@@ -52,7 +52,7 @@ func TestMain(m *testing.M) {
 	FindHostForTests(accTestPool.Master, &accTestHost)
 	FindStorageRepositoryForTests(accTestPool, &accDefaultSr, integrationTestPrefix)
 	CreateNetwork(&accDefaultNetwork)
-	FindOrCreateVmForTests(&accVm, accTestPool.Id, accDefaultSr.Id, testTemplate.Id, integrationTestPrefix)
+	// FindOrCreateVmForTests(&accVm, accTestPool.Id, accDefaultSr.Id, testTemplate.Id, integrationTestPrefix)
 	CreateResourceSet(testResourceSet)
 
 	code := m.Run()
