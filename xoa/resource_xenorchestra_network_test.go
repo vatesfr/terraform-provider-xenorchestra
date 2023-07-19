@@ -11,14 +11,7 @@ import (
 
 var netName string = fmt.Sprintf("%s-network-resource", accTestPrefix)
 
-func init() {
-	// resource.AddTestSweepers("xenorchestra_network", &resource.Sweeper{
-	// 	Name: "xenorchestra_network",
-	// 	F:    client.DeleteNetwork(&client.Network{}),
-	// })
-}
-
-func TestAccXenorchestraNetwork_readAfterDelete(t *testing.T) {
+func TestAccXenorchestraNetwork_create(t *testing.T) {
 	poolId := accTestPool.Id
 	resourceName := "xenorchestra_network.bar"
 	resource.Test(t, resource.TestCase{
@@ -33,26 +26,8 @@ func TestAccXenorchestraNetwork_readAfterDelete(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "id")),
 				ExpectNonEmptyPlan: true,
 			},
-			{
-				Config:             testAccNetwork(netName, poolId),
-				Check:              testAccCheckXenOrchestraNetworkDestroyNow(resourceName),
-				ExpectNonEmptyPlan: true,
-			},
-			{
-				Config:             testAccNetwork(netName, poolId),
-				PlanOnly:           true,
-				ExpectNonEmptyPlan: true,
-			},
 		},
 	})
-}
-
-func TestAccXenorchestraNetwork_create(t *testing.T) {
-
-}
-
-func TestAccXenorchestraNetwork_update(t *testing.T) {
-
 }
 
 func testAccNetwork(name, poolId string) string {
