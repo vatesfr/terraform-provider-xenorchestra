@@ -1148,12 +1148,12 @@ func TestAccXenorchestraVm_updatesWithoutReboot(t *testing.T) {
 
 	origNameLabel := fmt.Sprintf("%s - orig label (%s)", accTestPrefix, t.Name())
 	origNameDesc := "name label"
-	origHa := ""
-	origPowerOn := false
+	origHa := "restart"
+	origPowerOn := true
 	updatedNameLabel := fmt.Sprintf("%s - updated label (%s)", accTestPrefix, t.Name())
 	updatedNameDesc := "Terraform Updated description"
-	updatedHa := "restart"
-	updatedPowerOn := true
+	updatedHa := ""
+	updatedPowerOn := false
 	affinityHost := accTestPool.Master
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
