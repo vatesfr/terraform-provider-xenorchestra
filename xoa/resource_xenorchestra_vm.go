@@ -419,6 +419,8 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		Template:        d.Get("template").(string),
 		CloudConfig:     d.Get("cloud_config").(string),
 		ResourceSet:     rs,
+		HA:              d.Get("high_availability").(string),
+		AutoPoweron:     d.Get("auto_poweron").(bool),
 		CPUs: client.CPUs{
 			Number: d.Get("cpus").(int),
 		},
