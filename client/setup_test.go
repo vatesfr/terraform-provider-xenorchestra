@@ -52,7 +52,7 @@ func TestMain(m *testing.M) {
 	FindHostForTests(accTestPool.Master, &accTestHost)
 	FindStorageRepositoryForTests(accTestPool, &accDefaultSr, integrationTestPrefix)
 	CreateNetwork(&accDefaultNetwork)
-	// FindOrCreateVmForTests(&accVm, accTestPool.Id, accDefaultSr.Id, testTemplate.Id, integrationTestPrefix)
+	FindOrCreateVmForTests(&accVm, accTestPool.Id, accDefaultSr.Id, testTemplate.Id, integrationTestPrefix)
 	CreateResourceSet(testResourceSet)
 
 	code := m.Run()
