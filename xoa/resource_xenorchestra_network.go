@@ -5,7 +5,6 @@ import (
 
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/mitchellh/mapstructure"
 )
 
 var netDefaultDesc string = "Created with Xen Orchestra"
@@ -86,35 +85,42 @@ func resourceXoaNetwork() *schema.Resource {
 func resourceNetworkCreate(d *schema.ResourceData, m interface{}) error {
 	c := m.(client.XOClient)
 
-	network, err := c.CreateNetwork(client.Network{
-		NameLabel:       d.Get("name_label").(string),
-		NameDescription: d.Get("name_description").(string),
-		PoolId:          d.Get("pool_id").(string),
-		MTU:             d.Get("mtu").(int),
-		Nbd:             d.Get("nbd").(bool),
-	}, d.Get("vlan").(int), d.Get("pif_id").(string))
+	network, err := c.CreateNetwork(client.CreateNetworkRequest{
+		Name:        d.Get("name_label").(string),
+		Description: d.Get("name_description").(string),
+		Pool:        d.Get("pool_id").(string),
+		Mtu:         d.Get("mtu").(int),
+		Nbd:         d.Get("nbd").(bool),
+		Vlan:        d.Get("vlan").(int),
+		PIF:         d.Get("pif_id").(string),
+	})
 	if err != nil {
 		return err
 	}
-	vlan := 0
-	if len(network.PIFs) > 0 {
-		pifs, err := c.GetPIF(client.PIF{Id: network.PIFs[0]})
-		if err != nil {
-			return err
-		}
-
-		if len(pifs) != 1 {
-			return errors.New("expected to find single PIF")
-		}
-		vlan = pifs[0].Vlan
+	vlan, err := getVlanForNetwork(c, network)
+	if err != nil {
+		return err
 	}
 	return networkToData(network, vlan, d)
 }
 
+func getVlanForNetwork(c client.XOClient, net *client.Network) (int, error) {
+	if len(net.PIFs) > 0 {
+		pifs, err := c.GetPIF(client.PIF{Id: net.PIFs[0]})
+		if err != nil {
+			return -1, err
+		}
+
+		if len(pifs) != 1 {
+			return -1, errors.New("expected to find single PIF")
+		}
+		return pifs[0].Vlan, nil
+	}
+	return 0, nil
+}
+
 func resourceNetworkRead(d *schema.ResourceData, m interface{}) error {
 	c := m.(client.XOClient)
-
-	vlan := 0
 	net, err := c.GetNetwork(
 		client.Network{Id: d.Id()})
 
@@ -126,16 +132,10 @@ func resourceNetworkRead(d *schema.ResourceData, m interface{}) error {
 	if err != nil {
 		return err
 	}
-	if len(net.PIFs) > 0 {
-		pifs, err := c.GetPIF(client.PIF{Id: net.PIFs[0]})
-		if err != nil {
-			return err
-		}
 
-		if len(pifs) != 1 {
-			return errors.New("expected to find single PIF")
-		}
-		vlan = pifs[0].Vlan
+	vlan, err := getVlanForNetwork(c, net)
+	if err != nil {
+		return err
 	}
 	return networkToData(net, vlan, d)
 }
@@ -143,30 +143,26 @@ func resourceNetworkRead(d *schema.ResourceData, m interface{}) error {
 func resourceNetworkUpdate(d *schema.ResourceData, m interface{}) error {
 	c := m.(client.XOClient)
 
-	attrUpdates := map[string]string{
-		"automatic":         "",
-		"default_is_locked": "defaultIsLocked",
-		"nbd":               "",
-		"name_label":        "",
-		"name_description":  "",
+	updateNetworkReq := client.UpdateNetworkRequest{
+		Id: d.Id(),
 	}
-	params := map[string]interface{}{
-		"id": d.Id(),
+	if d.HasChange("automatic") {
+		updateNetworkReq.Automatic = d.Get("automatic").(bool)
 	}
-	for tfAttr, xoAttr := range attrUpdates {
-		if d.HasChange(tfAttr) {
-			attr := tfAttr
-			if xoAttr != "" {
-				attr = xoAttr
-			}
-			params[attr] = d.Get(tfAttr)
-		}
+	if d.HasChange("default_is_locked") {
+		updateNetworkReq.DefaultIsLocked = d.Get("default_is_locked").(bool)
 	}
-	var netUpdateReq client.Network
-	if err := mapstructure.Decode(params, &netUpdateReq); err != nil {
-		return err
+	if d.HasChange("nbd") {
+		updateNetworkReq.Nbd = d.Get("nbd").(bool)
 	}
-	_, err := c.UpdateNetwork(netUpdateReq)
+	if d.HasChange("name_label") {
+		updateNetworkReq.NameLabel = d.Get("name_label").(string)
+	}
+	if d.HasChange("name_description") {
+		updateNetworkReq.NameDescription = d.Get("name_description").(string)
+	}
+
+	_, err := c.UpdateNetwork(updateNetworkReq)
 	if err != nil {
 		return err
 	}

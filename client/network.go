@@ -13,17 +13,17 @@ import (
 )
 
 type Network struct {
-	Automatic       bool     `json:"automatic,omitempty" mapstructure:"automatic,omitempty"`
-	Id              string   `json:"id" mapstructure:"id"`
-	NameLabel       string   `json:"name_label" mapstructure:"name_label,omitempty"`
-	NameDescription string   `json:"name_description" mapstructure:"name_description,omitempty"`
-	Bridge          string   `json:"bridge" mapstructure:",omitempty"`
-	DefaultIsLocked bool     `json:"defaultIsLocked" mapstructure:"defaultIsLocked,omitempty"`
-	PoolId          string   `json:"$poolId" mapstructure:",omitempty"`
-	MTU             int      `json:"MTU" mapstructure:",omitempty"`
-	PIFs            []string `json:"PIFs" mapstructure:",omitempty"`
-	Nbd             bool     `json:"nbd" mapstructure:"nbd,omitempty"`
-	InsecureNbd     bool     `json:"insecureNbd" mapstructure:",omitempty"`
+	Automatic       bool     `json:"automatic,omitempty"`
+	Id              string   `json:"id"`
+	NameLabel       string   `json:"name_label"`
+	NameDescription string   `json:"name_description"`
+	Bridge          string   `json:"bridge"`
+	DefaultIsLocked bool     `json:"defaultIsLocked"`
+	PoolId          string   `json:"$poolId"`
+	MTU             int      `json:"MTU"`
+	PIFs            []string `json:"PIFs"`
+	Nbd             bool     `json:"nbd"`
+	InsecureNbd     bool     `json:"insecureNbd"`
 }
 
 func (net Network) Compare(obj interface{}) bool {
@@ -46,31 +46,42 @@ func (net Network) Compare(obj interface{}) bool {
 	return false
 }
 
-func (c *Client) CreateNetwork(netReq Network, vlan int, pif string) (*Network, error) {
+type CreateNetworkRequest struct {
+	Pool        string `mapstructure:"pool"`
+	Name        string `mapstructure:"name"`
+	Nbd         bool   `mapstructure:"nbd,omitempty"`
+	Description string `mapstructure:"description"`
+	Mtu         int    `mapstructure:"mtu,omitempty"`
+	PIF         string `mapstructure:"pif,omitempty"`
+	Vlan        int    `mapstructure:"vlan,omitempty"`
+}
+
+type UpdateNetworkRequest struct {
+	Id              string `mapstructure:"id"`
+	Automatic       bool   `mapstructure:"automatic,omitempty"`
+	DefaultIsLocked bool   `mapstructure:"defaultIsLocked,omitempty"`
+	NameDescription string `mapstructure:"name_description,omitempty"`
+	NameLabel       string `mapstructure:"name_label,omitempty"`
+	Nbd             bool   `mapstructure:"nbd,omitempty"`
+}
+
+func (c *Client) CreateNetwork(createReq CreateNetworkRequest) (*Network, error) {
 	var id string
-	params := map[string]interface{}{
-		"pool":        netReq.PoolId,
-		"name":        netReq.NameLabel,
-		"description": netReq.NameDescription,
-		"mtu":         netReq.MTU,
-		"nbd":         netReq.Nbd,
-	}
-
-	if vlan > 0 {
-		params["vlan"] = vlan
-	}
-
-	if len(pif) > 0 {
-		params["pif"] = pif
-	}
-
-	err := c.Call("network.create", params, &id)
+	var params map[string]interface{}
+	err := mapstructure.Decode(createReq, &params)
 
 	if err != nil {
 		return nil, err
 	}
 
-	if err := c.waitForModifyNetwork(id, netReq.Nbd, time.Minute); err != nil {
+	log.Printf("[DEBUG] params for network.create: %#v", params)
+	err = c.Call("network.create", params, &id)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err := c.waitForModifyNetwork(id, createReq.Nbd, time.Minute); err != nil {
 		return nil, err
 	}
 	return c.GetNetwork(Network{Id: id})
@@ -101,7 +112,7 @@ func (c *Client) waitForModifyNetwork(id string, nbdTarget bool, timeout time.Du
 	return err
 }
 
-func (c *Client) UpdateNetwork(netReq Network) (*Network, error) {
+func (c *Client) UpdateNetwork(netReq UpdateNetworkRequest) (*Network, error) {
 	var params map[string]interface{}
 	mapstructure.Decode(netReq, &params)
 	log.Printf("[DEBUG] params for network.set: %#v", params)
@@ -115,7 +126,7 @@ func (c *Client) UpdateNetwork(netReq Network) (*Network, error) {
 	// TODO(ddelnano): Expand waitForModifyNetwork to handle this case
 	time.Sleep(time.Second)
 
-	return c.GetNetwork(netReq)
+	return c.GetNetwork(Network{Id: netReq.Id})
 }
 
 func (c *Client) GetNetwork(netReq Network) (*Network, error) {
