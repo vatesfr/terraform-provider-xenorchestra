@@ -50,40 +50,30 @@ type CreateNetworkRequest struct {
 	Pool            string `mapstructure:"pool"`
 	Name            string `mapstructure:"name"`
 	Nbd             bool   `mapstructure:"nbd,omitempty"`
-	Description     string `mapstructure:"description"`
+	Description     string `mapstructure:"description,omitempty"`
 	Mtu             int    `mapstructure:"mtu,omitempty"`
 	PIF             string `mapstructure:"pif,omitempty"`
 	Vlan            int    `mapstructure:"vlan,omitempty"`
-	Automatic       bool   `mapstructure:"automatic,omitempty"`
-	DefaultIsLocked bool   `mapstructure:"defaultIsLocked,omitempty"`
+	Automatic       bool   `mapstructure:"automatic"`
+	DefaultIsLocked bool   `mapstructure:"defaultIsLocked"`
 }
 
 type UpdateNetworkRequest struct {
-	Id              string `mapstructure:"id"`
-	Automatic       bool   `mapstructure:"automatic"`
-	DefaultIsLocked bool   `mapstructure:"defaultIsLocked,omitempty"`
-	NameDescription string `mapstructure:"name_description,omitempty"`
-	NameLabel       string `mapstructure:"name_label,omitempty"`
-	Nbd             bool   `mapstructure:"nbd,omitempty"`
+	Id              string  `mapstructure:"id"`
+	Automatic       bool    `mapstructure:"automatic"`
+	DefaultIsLocked bool    `mapstructure:"defaultIsLocked"`
+	NameDescription *string `mapstructure:"name_description,omitempty"`
+	NameLabel       *string `mapstructure:"name_label,omitempty"`
+	Nbd             bool    `mapstructure:"nbd"`
 }
 
 func (c *Client) CreateNetwork(netReq CreateNetworkRequest) (*Network, error) {
 	var id string
-	params := map[string]interface{}{
-		"pool":        netReq.Pool,
-		"name":        netReq.Name,
-		"description": netReq.Description,
-		"mtu":         netReq.Mtu,
-		"nbd":         netReq.Nbd,
-	}
+	var params map[string]interface{}
+	mapstructure.Decode(netReq, &params)
 
-	if netReq.Vlan > 0 {
-		params["vlan"] = netReq.Vlan
-	}
-
-	if len(netReq.PIF) > 0 {
-		params["pif"] = netReq.PIF
-	}
+	delete(params, "automatic")
+	delete(params, "defaultIsLocked")
 
 	log.Printf("[DEBUG] params for network.create: %#v", params)
 	err := c.Call("network.create", params, &id)
@@ -100,6 +90,8 @@ func (c *Client) CreateNetwork(netReq CreateNetworkRequest) (*Network, error) {
 		return net, err
 	}
 
+	// Neither automatic nor defaultIsLocked can be specified in the network.create RPC.
+	// Update them afterwards if the user requested it during creation.
 	if netReq.Automatic || netReq.DefaultIsLocked {
 		return c.UpdateNetwork(UpdateNetworkRequest{
 			Id:              id,
@@ -138,7 +130,6 @@ func (c *Client) waitForModifyNetwork(id string, nbdTarget bool, timeout time.Du
 func (c *Client) UpdateNetwork(netReq UpdateNetworkRequest) (*Network, error) {
 	var params map[string]interface{}
 	mapstructure.Decode(netReq, &params)
-	log.Printf("[DEBUG] req: %#v params for network.set: %#v", netReq, params)
 
 	var success bool
 	err := c.Call("network.set", params, &success)

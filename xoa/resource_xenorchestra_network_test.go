@@ -84,7 +84,7 @@ func TestAccXONetwork_updateInPlace(t *testing.T) {
 	nameLabel := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	isLocked := "false"
 	automatic := "true"
-	desc := ""
+	desc := netDefaultDesc
 	nbd := "false"
 
 	updatedNameLabel := nameLabel + " updated"

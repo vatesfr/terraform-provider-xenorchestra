@@ -2,11 +2,9 @@ package xoa
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/mitchellh/mapstructure"
 )
 
 var netDefaultDesc string = "Created with Xen Orchestra"
@@ -147,31 +145,20 @@ func resourceNetworkRead(d *schema.ResourceData, m interface{}) error {
 func resourceNetworkUpdate(d *schema.ResourceData, m interface{}) error {
 	c := m.(client.XOClient)
 
-	attrUpdates := map[string]string{
-		"automatic":         "",
-		"default_is_locked": "defaultIsLocked",
-		"nbd":               "",
-		"name_label":        "",
-		"name_description":  "",
+	netUpdateReq := client.UpdateNetworkRequest{
+		Id:              d.Id(),
+		Automatic:       d.Get("automatic").(bool),
+		DefaultIsLocked: d.Get("default_is_locked").(bool),
+		Nbd:             d.Get("nbd").(bool),
 	}
-	params := map[string]interface{}{
-		"id": d.Id(),
+	if d.HasChange("name_label") {
+		nameLabel := d.Get("name_label").(string)
+		netUpdateReq.NameLabel = &nameLabel
 	}
-	for tfAttr, xoAttr := range attrUpdates {
-		if d.HasChange(tfAttr) {
-			attr := tfAttr
-			if xoAttr != "" {
-				attr = xoAttr
-			}
-			params[attr] = d.Get(tfAttr)
-		}
+	if d.HasChange("name_description") {
+		nameDescription := d.Get("name_description").(string)
+		netUpdateReq.NameDescription = &nameDescription
 	}
-
-	var netUpdateReq client.UpdateNetworkRequest
-	if err := mapstructure.Decode(params, &netUpdateReq); err != nil {
-		return err
-	}
-	fmt.Printf("[DEBUG] UpdateNetworkRequest: %#v\n", netUpdateReq)
 	_, err := c.UpdateNetwork(netUpdateReq)
 	if err != nil {
 		return err
