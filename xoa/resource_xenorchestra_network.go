@@ -2,9 +2,11 @@ package xoa
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/mitchellh/mapstructure"
 )
 
 var netDefaultDesc string = "Created with Xen Orchestra"
@@ -86,13 +88,15 @@ func resourceNetworkCreate(d *schema.ResourceData, m interface{}) error {
 	c := m.(client.XOClient)
 
 	network, err := c.CreateNetwork(client.CreateNetworkRequest{
-		Name:        d.Get("name_label").(string),
-		Description: d.Get("name_description").(string),
-		Pool:        d.Get("pool_id").(string),
-		Mtu:         d.Get("mtu").(int),
-		Nbd:         d.Get("nbd").(bool),
-		Vlan:        d.Get("vlan").(int),
-		PIF:         d.Get("pif_id").(string),
+		Automatic:       d.Get("automatic").(bool),
+		DefaultIsLocked: d.Get("default_is_locked").(bool),
+		Name:            d.Get("name_label").(string),
+		Description:     d.Get("name_description").(string),
+		Pool:            d.Get("pool_id").(string),
+		Mtu:             d.Get("mtu").(int),
+		Nbd:             d.Get("nbd").(bool),
+		Vlan:            d.Get("vlan").(int),
+		PIF:             d.Get("pif_id").(string),
 	})
 	if err != nil {
 		return err
@@ -143,26 +147,32 @@ func resourceNetworkRead(d *schema.ResourceData, m interface{}) error {
 func resourceNetworkUpdate(d *schema.ResourceData, m interface{}) error {
 	c := m.(client.XOClient)
 
-	updateNetworkReq := client.UpdateNetworkRequest{
-		Id: d.Id(),
+	attrUpdates := map[string]string{
+		"automatic":         "",
+		"default_is_locked": "defaultIsLocked",
+		"nbd":               "",
+		"name_label":        "",
+		"name_description":  "",
 	}
-	if d.HasChange("automatic") {
-		updateNetworkReq.Automatic = d.Get("automatic").(bool)
+	params := map[string]interface{}{
+		"id": d.Id(),
 	}
-	if d.HasChange("default_is_locked") {
-		updateNetworkReq.DefaultIsLocked = d.Get("default_is_locked").(bool)
-	}
-	if d.HasChange("nbd") {
-		updateNetworkReq.Nbd = d.Get("nbd").(bool)
-	}
-	if d.HasChange("name_label") {
-		updateNetworkReq.NameLabel = d.Get("name_label").(string)
-	}
-	if d.HasChange("name_description") {
-		updateNetworkReq.NameDescription = d.Get("name_description").(string)
+	for tfAttr, xoAttr := range attrUpdates {
+		if d.HasChange(tfAttr) {
+			attr := tfAttr
+			if xoAttr != "" {
+				attr = xoAttr
+			}
+			params[attr] = d.Get(tfAttr)
+		}
 	}
 
-	_, err := c.UpdateNetwork(updateNetworkReq)
+	var netUpdateReq client.UpdateNetworkRequest
+	if err := mapstructure.Decode(params, &netUpdateReq); err != nil {
+		return err
+	}
+	fmt.Printf("[DEBUG] UpdateNetworkRequest: %#v\n", netUpdateReq)
+	_, err := c.UpdateNetwork(netUpdateReq)
 	if err != nil {
 		return err
 	}

@@ -83,14 +83,14 @@ func TestAccXONetwork_updateInPlace(t *testing.T) {
 	resourceName := "xenorchestra_network.network"
 	nameLabel := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	isLocked := "false"
-	automatic := "false"
+	automatic := "true"
 	desc := ""
 	nbd := "false"
 
 	updatedNameLabel := nameLabel + " updated"
 	updatedDesc := "Non default description"
 	updatedNbd := "true"
-	updatedAutomatic := "true"
+	updatedAutomatic := "false"
 	updatedIsLocked := "true"
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },

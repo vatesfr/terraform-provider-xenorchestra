@@ -47,44 +47,67 @@ func (net Network) Compare(obj interface{}) bool {
 }
 
 type CreateNetworkRequest struct {
-	Pool        string `mapstructure:"pool"`
-	Name        string `mapstructure:"name"`
-	Nbd         bool   `mapstructure:"nbd,omitempty"`
-	Description string `mapstructure:"description"`
-	Mtu         int    `mapstructure:"mtu,omitempty"`
-	PIF         string `mapstructure:"pif,omitempty"`
-	Vlan        int    `mapstructure:"vlan,omitempty"`
+	Pool            string `mapstructure:"pool"`
+	Name            string `mapstructure:"name"`
+	Nbd             bool   `mapstructure:"nbd,omitempty"`
+	Description     string `mapstructure:"description"`
+	Mtu             int    `mapstructure:"mtu,omitempty"`
+	PIF             string `mapstructure:"pif,omitempty"`
+	Vlan            int    `mapstructure:"vlan,omitempty"`
+	Automatic       bool   `mapstructure:"automatic,omitempty"`
+	DefaultIsLocked bool   `mapstructure:"defaultIsLocked,omitempty"`
 }
 
 type UpdateNetworkRequest struct {
 	Id              string `mapstructure:"id"`
-	Automatic       bool   `mapstructure:"automatic,omitempty"`
+	Automatic       bool   `mapstructure:"automatic"`
 	DefaultIsLocked bool   `mapstructure:"defaultIsLocked,omitempty"`
 	NameDescription string `mapstructure:"name_description,omitempty"`
 	NameLabel       string `mapstructure:"name_label,omitempty"`
 	Nbd             bool   `mapstructure:"nbd,omitempty"`
 }
 
-func (c *Client) CreateNetwork(createReq CreateNetworkRequest) (*Network, error) {
+func (c *Client) CreateNetwork(netReq CreateNetworkRequest) (*Network, error) {
 	var id string
-	var params map[string]interface{}
-	err := mapstructure.Decode(createReq, &params)
+	params := map[string]interface{}{
+		"pool":        netReq.Pool,
+		"name":        netReq.Name,
+		"description": netReq.Description,
+		"mtu":         netReq.Mtu,
+		"nbd":         netReq.Nbd,
+	}
 
-	if err != nil {
-		return nil, err
+	if netReq.Vlan > 0 {
+		params["vlan"] = netReq.Vlan
+	}
+
+	if len(netReq.PIF) > 0 {
+		params["pif"] = netReq.PIF
 	}
 
 	log.Printf("[DEBUG] params for network.create: %#v", params)
-	err = c.Call("network.create", params, &id)
+	err := c.Call("network.create", params, &id)
 
 	if err != nil {
 		return nil, err
 	}
 
-	if err := c.waitForModifyNetwork(id, createReq.Nbd, time.Minute); err != nil {
+	if err := c.waitForModifyNetwork(id, netReq.Nbd, time.Minute); err != nil {
 		return nil, err
 	}
-	return c.GetNetwork(Network{Id: id})
+	net, err := c.GetNetwork(Network{Id: id})
+	if err != nil {
+		return net, err
+	}
+
+	if netReq.Automatic || netReq.DefaultIsLocked {
+		return c.UpdateNetwork(UpdateNetworkRequest{
+			Id:              id,
+			Automatic:       netReq.Automatic,
+			DefaultIsLocked: netReq.DefaultIsLocked,
+		})
+	}
+	return net, err
 }
 
 func (c *Client) waitForModifyNetwork(id string, nbdTarget bool, timeout time.Duration) error {
@@ -115,7 +138,7 @@ func (c *Client) waitForModifyNetwork(id string, nbdTarget bool, timeout time.Du
 func (c *Client) UpdateNetwork(netReq UpdateNetworkRequest) (*Network, error) {
 	var params map[string]interface{}
 	mapstructure.Decode(netReq, &params)
-	log.Printf("[DEBUG] params for network.set: %#v", params)
+	log.Printf("[DEBUG] req: %#v params for network.set: %#v", netReq, params)
 
 	var success bool
 	err := c.Call("network.set", params, &success)
