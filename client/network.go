@@ -60,7 +60,7 @@ type CreateNetworkRequest struct {
 
 // Nbd and Automatic are eventually consistent. This ensures that waitForModifyNetwork will
 // poll until the values are correct.
-func (c CreateNetworkRequest) Compare(obj interface{}) bool {
+func (c CreateNetworkRequest) Propagated(obj interface{}) bool {
 	otherNet := obj.(Network)
 
 	if otherNet.Automatic == c.Automatic &&
@@ -81,7 +81,7 @@ type UpdateNetworkRequest struct {
 
 // Nbd and Automatic are eventually consistent. This ensures that waitForModifyNetwork will
 // poll until the values are correct.
-func (c UpdateNetworkRequest) Compare(obj interface{}) bool {
+func (c UpdateNetworkRequest) Propagated(obj interface{}) bool {
 	otherNet := obj.(Network)
 
 	if otherNet.Automatic == c.Automatic &&
@@ -119,7 +119,7 @@ func (c *Client) CreateNetwork(netReq CreateNetworkRequest) (*Network, error) {
 	return c.waitForModifyNetwork(id, netReq, 10*time.Second)
 }
 
-func (c *Client) waitForModifyNetwork(id string, target XoObject, timeout time.Duration) (*Network, error) {
+func (c *Client) waitForModifyNetwork(id string, target RefreshComparison, timeout time.Duration) (*Network, error) {
 	refreshFn := func() (result interface{}, state string, err error) {
 		network, err := c.GetNetwork(Network{Id: id})
 
@@ -127,7 +127,7 @@ func (c *Client) waitForModifyNetwork(id string, target XoObject, timeout time.D
 			return network, "", err
 		}
 
-		equal := strconv.FormatBool(target.Compare(*network))
+		equal := strconv.FormatBool(target.Propagated(*network))
 
 		return network, equal, nil
 	}

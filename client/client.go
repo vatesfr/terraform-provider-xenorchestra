@@ -256,6 +256,10 @@ func (c *Client) Call(method string, params, result interface{}, opt ...jsonrpc2
 	return nil
 }
 
+type RefreshComparison interface {
+	Propagated(obj interface{}) bool
+}
+
 type XoObject interface {
 	Compare(obj interface{}) bool
 }
