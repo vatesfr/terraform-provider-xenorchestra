@@ -68,8 +68,8 @@ func FindPIFForTests(pif *PIF) {
 	pifId, found := os.LookupEnv("XOA_PIF")
 
 	if !found {
-		fmt.Println("The XOA_PIF environment variable must be set")
-		os.Exit(-1)
+		fmt.Println("The XOA_PIF environment variable must be set to run the network resource tests")
+		return
 	}
 
 	c, err := NewClient(GetConfigFromEnv())

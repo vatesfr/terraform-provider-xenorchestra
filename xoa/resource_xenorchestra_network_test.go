@@ -10,6 +10,9 @@ import (
 )
 
 func TestAccXONetwork_create(t *testing.T) {
+	if accTestPIF.Id == "" {
+		t.Skip()
+	}
 	resourceName := "xenorchestra_network.network"
 	nameLabel := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	resource.Test(t, resource.TestCase{
@@ -33,6 +36,9 @@ func TestAccXONetwork_create(t *testing.T) {
 }
 
 func TestAccXONetwork_createWithVlanRequiresPIF(t *testing.T) {
+	if accTestPIF.Id == "" {
+		t.Skip()
+	}
 	nameLabel := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
@@ -52,6 +58,9 @@ func TestAccXONetwork_createWithVlanRequiresPIF(t *testing.T) {
 }
 
 func TestAccXONetwork_createWithNonDefaults(t *testing.T) {
+	if accTestPIF.Id == "" {
+		t.Skip()
+	}
 	resourceName := "xenorchestra_network.network"
 	nameLabel := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	desc := "Non default description"
@@ -80,6 +89,9 @@ func TestAccXONetwork_createWithNonDefaults(t *testing.T) {
 }
 
 func TestAccXONetwork_updateInPlace(t *testing.T) {
+	if accTestPIF.Id == "" {
+		t.Skip()
+	}
 	resourceName := "xenorchestra_network.network"
 	nameLabel := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	isLocked := "false"
@@ -126,6 +138,9 @@ func TestAccXONetwork_updateInPlace(t *testing.T) {
 }
 
 func TestAccXONetwork_updateForceNew(t *testing.T) {
+	if accTestPIF.Id == "" {
+		t.Skip()
+	}
 	resourceName := "xenorchestra_network.network"
 	nameLabel := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	desc := "Non default description"
