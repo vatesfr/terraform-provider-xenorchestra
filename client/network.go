@@ -58,6 +58,18 @@ type CreateNetworkRequest struct {
 	DefaultIsLocked bool   `mapstructure:"defaultIsLocked"`
 }
 
+// Nbd and Automatic are eventually consistent. This ensures that waitForModifyNetwork will
+// poll until the values are correct.
+func (c CreateNetworkRequest) Compare(obj interface{}) bool {
+	otherNet := obj.(Network)
+
+	if otherNet.Automatic == c.Automatic &&
+		otherNet.Nbd == c.Nbd {
+		return true
+	}
+	return false
+}
+
 type UpdateNetworkRequest struct {
 	Id              string  `mapstructure:"id"`
 	Automatic       bool    `mapstructure:"automatic"`
@@ -65,6 +77,18 @@ type UpdateNetworkRequest struct {
 	NameDescription *string `mapstructure:"name_description,omitempty"`
 	NameLabel       *string `mapstructure:"name_label,omitempty"`
 	Nbd             bool    `mapstructure:"nbd"`
+}
+
+// Nbd and Automatic are eventually consistent. This ensures that waitForModifyNetwork will
+// poll until the values are correct.
+func (c UpdateNetworkRequest) Compare(obj interface{}) bool {
+	otherNet := obj.(Network)
+
+	if otherNet.Automatic == c.Automatic &&
+		otherNet.Nbd == c.Nbd {
+		return true
+	}
+	return false
 }
 
 func (c *Client) CreateNetwork(netReq CreateNetworkRequest) (*Network, error) {
@@ -82,40 +106,31 @@ func (c *Client) CreateNetwork(netReq CreateNetworkRequest) (*Network, error) {
 		return nil, err
 	}
 
-	if err := c.waitForModifyNetwork(id, netReq.Nbd, time.Minute); err != nil {
-		return nil, err
-	}
-	net, err := c.GetNetwork(Network{Id: id})
-	if err != nil {
-		return net, err
-	}
-
 	// Neither automatic nor defaultIsLocked can be specified in the network.create RPC.
 	// Update them afterwards if the user requested it during creation.
 	if netReq.Automatic || netReq.DefaultIsLocked {
-		return c.UpdateNetwork(UpdateNetworkRequest{
+		_, err = c.UpdateNetwork(UpdateNetworkRequest{
 			Id:              id,
 			Automatic:       netReq.Automatic,
 			DefaultIsLocked: netReq.DefaultIsLocked,
 		})
 	}
-	return net, err
+
+	return c.waitForModifyNetwork(id, netReq, 10*time.Second)
 }
 
-func (c *Client) waitForModifyNetwork(id string, nbdTarget bool, timeout time.Duration) error {
-	if !nbdTarget {
-		return nil
-	}
-	// NBD network creation is eventually consistent so we must poll until
-	// the NBD field returns true
+func (c *Client) waitForModifyNetwork(id string, target XoObject, timeout time.Duration) (*Network, error) {
 	refreshFn := func() (result interface{}, state string, err error) {
 		network, err := c.GetNetwork(Network{Id: id})
 
+		log.Printf("[DEBUG] Waiting for refresh: %#v against %#v", network, target)
 		if err != nil {
 			return network, "", err
 		}
 
-		return network, strconv.FormatBool(network.Nbd), nil
+		equal := strconv.FormatBool(target.Compare(*network))
+
+		return network, equal, nil
 	}
 	stateConf := &StateChangeConf{
 		Pending: []string{"false"},
@@ -123,8 +138,8 @@ func (c *Client) waitForModifyNetwork(id string, nbdTarget bool, timeout time.Du
 		Target:  []string{"true"},
 		Timeout: timeout,
 	}
-	_, err := stateConf.WaitForState()
-	return err
+	network, err := stateConf.WaitForState()
+	return network.(*Network), err
 }
 
 func (c *Client) UpdateNetwork(netReq UpdateNetworkRequest) (*Network, error) {
@@ -137,10 +152,7 @@ func (c *Client) UpdateNetwork(netReq UpdateNetworkRequest) (*Network, error) {
 		return nil, err
 	}
 
-	// TODO(ddelnano): Expand waitForModifyNetwork to handle this case
-	time.Sleep(time.Second)
-
-	return c.GetNetwork(Network{Id: netReq.Id})
+	return c.waitForModifyNetwork(netReq.Id, netReq, 10*time.Second)
 }
 
 func (c *Client) GetNetwork(netReq Network) (*Network, error) {
