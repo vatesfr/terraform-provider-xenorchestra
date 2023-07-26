@@ -123,7 +123,6 @@ func (c *Client) waitForModifyNetwork(id string, target XoObject, timeout time.D
 	refreshFn := func() (result interface{}, state string, err error) {
 		network, err := c.GetNetwork(Network{Id: id})
 
-		log.Printf("[DEBUG] Waiting for refresh: %#v against %#v", network, target)
 		if err != nil {
 			return network, "", err
 		}

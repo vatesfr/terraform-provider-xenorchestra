@@ -24,10 +24,10 @@ func CreateNetwork(network *Network) {
 		os.Exit(1)
 	}
 
-	net, err := c.CreateNetwork(Network{
-		NameLabel: testNetworkName,
-		PoolId:    accTestPool.Id,
-	}, 0, "")
+	net, err := c.CreateNetwork(CreateNetworkRequest{
+		Name: testNetworkName,
+		Pool: accTestPool.Id,
+	})
 
 	if err != nil {
 		fmt.Printf("[ERROR] Failed to create network with '%v'\n", err)
