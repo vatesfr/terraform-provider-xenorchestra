@@ -5,14 +5,25 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"strings"
+	"time"
+
+	"github.com/mitchellh/mapstructure"
 )
 
 type Network struct {
-	Id        string `json:"id"`
-	NameLabel string `json:"name_label"`
-	Bridge    string `json:"bridge"`
-	PoolId    string `json:"$poolId"`
+	Automatic       bool     `json:"automatic,omitempty"`
+	Id              string   `json:"id"`
+	NameLabel       string   `json:"name_label"`
+	NameDescription string   `json:"name_description"`
+	Bridge          string   `json:"bridge"`
+	DefaultIsLocked bool     `json:"defaultIsLocked"`
+	PoolId          string   `json:"$poolId"`
+	MTU             int      `json:"MTU"`
+	PIFs            []string `json:"PIFs"`
+	Nbd             bool     `json:"nbd"`
+	InsecureNbd     bool     `json:"insecureNbd"`
 }
 
 func (net Network) Compare(obj interface{}) bool {
@@ -35,19 +46,112 @@ func (net Network) Compare(obj interface{}) bool {
 	return false
 }
 
-func (c *Client) CreateNetwork(netReq Network) (*Network, error) {
-	var id string
-	params := map[string]interface{}{
-		"pool": netReq.PoolId,
-		"name": netReq.NameLabel,
-	}
+type CreateNetworkRequest struct {
+	Pool            string `mapstructure:"pool"`
+	Name            string `mapstructure:"name"`
+	Nbd             bool   `mapstructure:"nbd,omitempty"`
+	Description     string `mapstructure:"description,omitempty"`
+	Mtu             int    `mapstructure:"mtu,omitempty"`
+	PIF             string `mapstructure:"pif,omitempty"`
+	Vlan            int    `mapstructure:"vlan,omitempty"`
+	Automatic       bool   `mapstructure:"automatic"`
+	DefaultIsLocked bool   `mapstructure:"defaultIsLocked"`
+}
 
+// Nbd and Automatic are eventually consistent. This ensures that waitForModifyNetwork will
+// poll until the values are correct.
+func (c CreateNetworkRequest) Propagated(obj interface{}) bool {
+	otherNet := obj.(Network)
+
+	if otherNet.Automatic == c.Automatic &&
+		otherNet.Nbd == c.Nbd {
+		return true
+	}
+	return false
+}
+
+type UpdateNetworkRequest struct {
+	Id              string  `mapstructure:"id"`
+	Automatic       bool    `mapstructure:"automatic"`
+	DefaultIsLocked bool    `mapstructure:"defaultIsLocked"`
+	NameDescription *string `mapstructure:"name_description,omitempty"`
+	NameLabel       *string `mapstructure:"name_label,omitempty"`
+	Nbd             bool    `mapstructure:"nbd"`
+}
+
+// Nbd and Automatic are eventually consistent. This ensures that waitForModifyNetwork will
+// poll until the values are correct.
+func (c UpdateNetworkRequest) Propagated(obj interface{}) bool {
+	otherNet := obj.(Network)
+
+	if otherNet.Automatic == c.Automatic &&
+		otherNet.Nbd == c.Nbd {
+		return true
+	}
+	return false
+}
+
+func (c *Client) CreateNetwork(netReq CreateNetworkRequest) (*Network, error) {
+	var id string
+	var params map[string]interface{}
+	mapstructure.Decode(netReq, &params)
+
+	delete(params, "automatic")
+	delete(params, "defaultIsLocked")
+
+	log.Printf("[DEBUG] params for network.create: %#v", params)
 	err := c.Call("network.create", params, &id)
 
 	if err != nil {
 		return nil, err
 	}
-	return c.GetNetwork(Network{Id: id})
+
+	// Neither automatic nor defaultIsLocked can be specified in the network.create RPC.
+	// Update them afterwards if the user requested it during creation.
+	if netReq.Automatic || netReq.DefaultIsLocked {
+		_, err = c.UpdateNetwork(UpdateNetworkRequest{
+			Id:              id,
+			Automatic:       netReq.Automatic,
+			DefaultIsLocked: netReq.DefaultIsLocked,
+		})
+	}
+
+	return c.waitForModifyNetwork(id, netReq, 10*time.Second)
+}
+
+func (c *Client) waitForModifyNetwork(id string, target RefreshComparison, timeout time.Duration) (*Network, error) {
+	refreshFn := func() (result interface{}, state string, err error) {
+		network, err := c.GetNetwork(Network{Id: id})
+
+		if err != nil {
+			return network, "", err
+		}
+
+		equal := strconv.FormatBool(target.Propagated(*network))
+
+		return network, equal, nil
+	}
+	stateConf := &StateChangeConf{
+		Pending: []string{"false"},
+		Refresh: refreshFn,
+		Target:  []string{"true"},
+		Timeout: timeout,
+	}
+	network, err := stateConf.WaitForState()
+	return network.(*Network), err
+}
+
+func (c *Client) UpdateNetwork(netReq UpdateNetworkRequest) (*Network, error) {
+	var params map[string]interface{}
+	mapstructure.Decode(netReq, &params)
+
+	var success bool
+	err := c.Call("network.set", params, &success)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.waitForModifyNetwork(netReq.Id, netReq, 10*time.Second)
 }
 
 func (c *Client) GetNetwork(netReq Network) (*Network, error) {

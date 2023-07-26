@@ -2,6 +2,8 @@ package client
 
 import (
 	"errors"
+	"fmt"
+	"os"
 )
 
 type PIF struct {
@@ -18,6 +20,9 @@ type PIF struct {
 func (p PIF) Compare(obj interface{}) bool {
 	otherPif := obj.(PIF)
 
+	if p.Id != "" && otherPif.Id == p.Id {
+		return true
+	}
 	hostIdExists := p.Host != ""
 	if hostIdExists && p.Host != otherPif.Host {
 		return false
@@ -57,4 +62,33 @@ func (c *Client) GetPIF(pifReq PIF) (pifs []PIF, err error) {
 	}
 
 	return pifs, nil
+}
+
+func FindPIFForTests(pif *PIF) {
+	pifId, found := os.LookupEnv("XOA_PIF")
+
+	if !found {
+		fmt.Println("The XOA_PIF environment variable must be set to run the network resource tests")
+		return
+	}
+
+	c, err := NewClient(GetConfigFromEnv())
+	if err != nil {
+		fmt.Printf("failed to create client with error: %v", err)
+		os.Exit(-1)
+	}
+
+	pifs, err := c.GetPIF(PIF{Id: pifId})
+
+	if err != nil {
+		fmt.Printf("[ERROR] Failed to get pif with error: %v", err)
+		os.Exit(1)
+	}
+
+	if len(pifs) != 1 {
+		fmt.Printf("[ERROR] expected to find a single pif. Found %d PIFs instead: %v", len(pifs), pifs)
+		os.Exit(1)
+	}
+
+	*pif = pifs[0]
 }

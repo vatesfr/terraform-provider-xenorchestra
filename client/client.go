@@ -70,8 +70,9 @@ type XOClient interface {
 	GetCurrentUser() (*User, error)
 	DeleteUser(userReq User) error
 
-	CreateNetwork(netReq Network) (*Network, error)
+	CreateNetwork(netReq CreateNetworkRequest) (*Network, error)
 	GetNetwork(netReq Network) (*Network, error)
+	UpdateNetwork(netReq UpdateNetworkRequest) (*Network, error)
 	GetNetworks() ([]Network, error)
 	DeleteNetwork(id string) error
 
@@ -253,6 +254,10 @@ func (c *Client) Call(method string, params, result interface{}, opt ...jsonrpc2
 		return errors.New(fmt.Sprintf("%s: %s", err, *data))
 	}
 	return nil
+}
+
+type RefreshComparison interface {
+	Propagated(obj interface{}) bool
 }
 
 type XoObject interface {

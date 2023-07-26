@@ -27,6 +27,7 @@ The following environment variables must be set:
 - XOA_ISO - The name of an ISO that exists on the same pool as `XOA_POOL`
 - XOA_ISO_SR - The name of an ISO storage repository that exists on the same pool as `XOA_POOL`. This SR must be writable since the tests will upload an ISO to it.
 - XOA_NETWORK - The name of a network that is PXE capable. If a non PXE capable network is used some tests may fail.
+- XOA_PIF - The UUID of a PIF that will be used for testing VLAN network creation. This has the potential to disrupt network traffic, so this PIF should be an unused interface.
 
 I typically keep these in a ~/.xoa file and run the following before running the test suite
 
