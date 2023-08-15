@@ -795,7 +795,7 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		},
 	}
 
-	if d.HasChange("affinity_host") && affinityHost != "" {
+	if d.HasChange("affinity_host") {
 		vmReq.AffinityHost = &affinityHost
 	}
 

@@ -74,7 +74,9 @@ func (c *Client) CreateVIF(vm *Vm, vif *VIF) (*VIF, error) {
 	params := map[string]interface{}{
 		"network": vif.Network,
 		"vm":      vm.Id,
-		"mac":     vif.MacAddress,
+	}
+	if vif.MacAddress != "" {
+		params["mac"] = vif.MacAddress
 	}
 	err := c.Call("vm.createInterface", params, &id)
 

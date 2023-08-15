@@ -321,7 +321,6 @@ func createVdiMap(disk Disk) map[string]interface{} {
 func (c *Client) UpdateVm(vmReq Vm) (*Vm, error) {
 	params := map[string]interface{}{
 		"id":                vmReq.Id,
-		"affinityHost":      vmReq.AffinityHost,
 		"name_label":        vmReq.NameLabel,
 		"name_description":  vmReq.NameDescription,
 		"auto_poweron":      vmReq.AutoPoweron,
@@ -341,6 +340,15 @@ func (c *Client) UpdateVm(vmReq Vm) (*Vm, error) {
 
 		// cpusMask, cpuWeight and cpuCap can be changed at runtime to an integer value or null
 		// coresPerSocket is null or a number of cores per socket. Putting an invalid value doesn't seem to cause an error :(
+	}
+
+	affinityHost := vmReq.AffinityHost
+	if affinityHost != nil {
+		if *affinityHost == "" {
+			params["affinityHost"] = nil
+		} else {
+			params["affinityHost"] = *affinityHost
+		}
 	}
 
 	videoram := vmReq.Videoram.Value
