@@ -1,13 +1,13 @@
 package xoa
 
 import (
-	"errors"
-
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 var netDefaultDesc string = "Created with Xen Orchestra"
+var validBondModes []string = []string{"balance-slb", "active-backup", "lacp"}
 
 func resourceXoaNetwork() *schema.Resource {
 	return &schema.Resource{
@@ -46,18 +46,44 @@ func resourceXoaNetwork() *schema.Resource {
 				RequiredWith: []string{
 					"vlan",
 				},
+				ConflictsWith: []string{
+					"pif_ids",
+				},
 				ForceNew:    true,
 				Description: "The pif (uuid) that should be used for this network.",
+			},
+			"pif_ids": &schema.Schema{
+				Type: schema.TypeList,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+				Optional: true,
+				ConflictsWith: []string{
+					"pif_id",
+					"nbd",
+				},
+				RequiredWith: []string{
+					"bond_mode",
+				},
+				ForceNew:    true,
+				Description: "The pifs (uuid) that should be used for this network.",
+			},
+			"bond_mode": &schema.Schema{
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Description:  "The bond mode that should be used for this network.",
+				ValidateFunc: validation.StringInSlice(validBondModes, false),
 			},
 			"vlan": &schema.Schema{
 				Type:     schema.TypeInt,
 				Optional: true,
-				Default:  0,
+				Default:  -1,
 				RequiredWith: []string{
 					"pif_id",
 				},
 				ForceNew:    true,
-				Description: "The vlan to use for the network. Defaults to `0` meaning no VLAN.",
+				Description: "The vlan to use for the network. Defaults to `-1` meaning no VLAN.",
 			},
 			"pool_id": &schema.Schema{
 				Type:        schema.TypeString,
@@ -85,7 +111,18 @@ func resourceXoaNetwork() *schema.Resource {
 func resourceNetworkCreate(d *schema.ResourceData, m interface{}) error {
 	c := m.(client.XOClient)
 
+	pifsReq := []string{}
+	for _, pif := range d.Get("pif_ids").([]interface{}) {
+		pifsReq = append(pifsReq, pif.(string))
+	}
+	// The Xen Orchestra API treats the VLAN default as 0, however,
+	// the xapi will return a -1 in those cases. Terraform must treat
+	vlan := 0
+	if vlanParam, _ := d.Get("vlan").(int); vlanParam != -1 {
+		vlan = vlanParam
+	}
 	network, err := c.CreateNetwork(client.CreateNetworkRequest{
+		BondMode:        d.Get("bond_mode").(string),
 		Automatic:       d.Get("automatic").(bool),
 		DefaultIsLocked: d.Get("default_is_locked").(bool),
 		Name:            d.Get("name_label").(string),
@@ -93,37 +130,42 @@ func resourceNetworkCreate(d *schema.ResourceData, m interface{}) error {
 		Pool:            d.Get("pool_id").(string),
 		Mtu:             d.Get("mtu").(int),
 		Nbd:             d.Get("nbd").(bool),
-		Vlan:            d.Get("vlan").(int),
+		Vlan:            vlan,
 		PIF:             d.Get("pif_id").(string),
+		PIFs:            pifsReq,
 	})
 	if err != nil {
 		return err
 	}
-	vlan, err := getVlanForNetwork(c, network)
-	if err != nil {
-		return err
-	}
-	return networkToData(network, vlan, d)
-}
-
-func getVlanForNetwork(c client.XOClient, net *client.Network) (int, error) {
-	if len(net.PIFs) > 0 {
-		pifs, err := c.GetPIF(client.PIF{Id: net.PIFs[0]})
+	var pif *client.PIF
+	if len(network.PIFs) > 0 {
+		pifs, err := c.GetPIF(client.PIF{Id: network.PIFs[0]})
 		if err != nil {
-			return -1, err
+			return err
 		}
-
-		if len(pifs) != 1 {
-			return -1, errors.New("expected to find single PIF")
-		}
-		return pifs[0].Vlan, nil
+		pif = &pifs[0]
 	}
-	return 0, nil
+	return networkToData(network, pif, d)
 }
+
+// func getVlanForNetwork(c client.XOClient, net *client.Network) (int, error) {
+// 	if len(net.PIFs) > 0 {
+// 		pifs, err := c.GetPIF(client.PIF{Id: net.PIFs[0]})
+// 		if err != nil {
+// 			return -1, err
+// 		}
+
+// 		if len(pifs) != 1 {
+// 			return -1, errors.New("expected to find single PIF")
+// 		}
+// 		return pifs[0].Vlan, nil
+// 	}
+// 	return 0, nil
+// }
 
 func resourceNetworkRead(d *schema.ResourceData, m interface{}) error {
 	c := m.(client.XOClient)
-	net, err := c.GetNetwork(
+	network, err := c.GetNetwork(
 		client.Network{Id: d.Id()})
 
 	if _, ok := err.(client.NotFound); ok {
@@ -135,11 +177,15 @@ func resourceNetworkRead(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	vlan, err := getVlanForNetwork(c, net)
-	if err != nil {
-		return err
+	var pif *client.PIF
+	if len(network.PIFs) > 0 {
+		pifs, err := c.GetPIF(client.PIF{Id: network.PIFs[0]})
+		if err != nil {
+			return err
+		}
+		pif = &pifs[0]
 	}
-	return networkToData(net, vlan, d)
+	return networkToData(network, pif, d)
 }
 
 func resourceNetworkUpdate(d *schema.ResourceData, m interface{}) error {
@@ -178,7 +224,7 @@ func resourceNetworkDelete(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
-func networkToData(network *client.Network, vlan int, d *schema.ResourceData) error {
+func networkToData(network *client.Network, pif *client.PIF, d *schema.ResourceData) error {
 	d.SetId(network.Id)
 	if err := d.Set("name_label", network.NameLabel); err != nil {
 		return err
@@ -201,8 +247,10 @@ func networkToData(network *client.Network, vlan int, d *schema.ResourceData) er
 	if err := d.Set("default_is_locked", network.DefaultIsLocked); err != nil {
 		return err
 	}
-	if err := d.Set("vlan", vlan); err != nil {
-		return err
+	if pif != nil {
+		if err := d.Set("vlan", pif.Vlan); err != nil {
+			return err
+		}
 	}
 	return nil
 }

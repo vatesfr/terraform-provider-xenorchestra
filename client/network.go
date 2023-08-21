@@ -47,15 +47,17 @@ func (net Network) Compare(obj interface{}) bool {
 }
 
 type CreateNetworkRequest struct {
-	Pool            string `mapstructure:"pool"`
-	Name            string `mapstructure:"name"`
-	Nbd             bool   `mapstructure:"nbd,omitempty"`
-	Description     string `mapstructure:"description,omitempty"`
-	Mtu             int    `mapstructure:"mtu,omitempty"`
-	PIF             string `mapstructure:"pif,omitempty"`
-	Vlan            int    `mapstructure:"vlan,omitempty"`
-	Automatic       bool   `mapstructure:"automatic"`
-	DefaultIsLocked bool   `mapstructure:"defaultIsLocked"`
+	BondMode        string   `mapstructure:"bondMode,omitempty"`
+	Pool            string   `mapstructure:"pool"`
+	Name            string   `mapstructure:"name"`
+	Nbd             bool     `mapstructure:"nbd,omitempty"`
+	Description     string   `mapstructure:"description,omitempty"`
+	Mtu             int      `mapstructure:"mtu,omitempty"`
+	PIF             string   `mapstructure:"pif,omitempty"`
+	PIFs            []string `mapstructure:"pifs,omitempty"`
+	Vlan            int      `mapstructure:"vlan,omitempty"`
+	Automatic       bool     `mapstructure:"automatic"`
+	DefaultIsLocked bool     `mapstructure:"defaultIsLocked"`
 }
 
 // Nbd and Automatic are eventually consistent. This ensures that waitForModifyNetwork will
@@ -99,8 +101,20 @@ func (c *Client) CreateNetwork(netReq CreateNetworkRequest) (*Network, error) {
 	delete(params, "automatic")
 	delete(params, "defaultIsLocked")
 
+	var err error
+	if len(netReq.PIFs) > 0 {
+		log.Printf("[DEBUG] params for network.createBonded: %#v", params)
+
+		var result map[string]interface{}
+		err = c.Call("network.createBonded", params, &result)
+		if err != nil {
+			return nil, err
+		}
+		return c.waitForModifyNetwork(result["uuid"].(string), netReq, 10*time.Second)
+	}
+
 	log.Printf("[DEBUG] params for network.create: %#v", params)
-	err := c.Call("network.create", params, &id)
+	err = c.Call("network.create", params, &id)
 
 	if err != nil {
 		return nil, err
@@ -166,6 +180,7 @@ func (c *Client) GetNetwork(netReq Network) (*Network, error) {
 	if len(nets) > 1 {
 		return nil, errors.New(fmt.Sprintf("Your query returned more than one result: %+v. Use `pool_id` or other fields to filter the result down to a single network", nets))
 	}
+	fmt.Printf("[DEBUG] Found network %v\n", nets[0])
 
 	return &nets[0], nil
 }
