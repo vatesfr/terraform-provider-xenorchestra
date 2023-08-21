@@ -12,10 +12,11 @@ var validBondModes []string = []string{"balance-slb", "active-backup", "lacp"}
 
 func resourceXoaBondedNetwork() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceBondedNetworkCreate,
-		Delete: resourceBondedNetworkDelete,
-		Read:   resourceBondedNetworkRead,
-		Update: resourceBondedNetworkUpdate,
+		Description: "A resource for managing Bonded Xen Orchestra networks. See the XCP-ng [networking docs](https://xcp-ng.org/docs/networking.html) for more details.",
+		Create:      resourceBondedNetworkCreate,
+		Delete:      resourceBondedNetworkDelete,
+		Read:        resourceBondedNetworkRead,
+		Update:      resourceBondedNetworkUpdate,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
