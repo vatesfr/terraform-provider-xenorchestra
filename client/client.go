@@ -73,6 +73,7 @@ type XOClient interface {
 	CreateNetwork(netReq CreateNetworkRequest) (*Network, error)
 	GetNetwork(netReq Network) (*Network, error)
 	UpdateNetwork(netReq UpdateNetworkRequest) (*Network, error)
+	CreateBondedNetwork(netReq CreateBondedNetworkRequest) (*Network, error)
 	GetNetworks() ([]Network, error)
 	DeleteNetwork(id string) error
 

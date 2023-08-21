@@ -2,23 +2,28 @@ package xoa
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-var netDefaultDesc string = "Created with Xen Orchestra"
+var validBondModes []string = []string{"balance-slb", "active-backup", "lacp"}
 
-func resourceXoaNetwork() *schema.Resource {
+func resourceXoaBondedNetwork() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceNetworkCreate,
-		Delete: resourceNetworkDelete,
-		Read:   resourceNetworkRead,
-		Update: resourceNetworkUpdate,
+		Create: resourceBondedNetworkCreate,
+		Delete: resourceBondedNetworkDelete,
+		Read:   resourceBondedNetworkRead,
+		Update: resourceBondedNetworkUpdate,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Schema: map[string]*schema.Schema{
+			// Verify if network.set applies for bonded networks unconditionally or if it
+			// only works with a subset of the parameters
+
 			"automatic": &schema.Schema{
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -40,24 +45,21 @@ func resourceXoaNetwork() *schema.Resource {
 				Optional: true,
 				Default:  netDefaultDesc,
 			},
-			"pif_id": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-				RequiredWith: []string{
-					"vlan",
+			"pif_ids": &schema.Schema{
+				Type: schema.TypeList,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
 				},
+				Optional:    true,
 				ForceNew:    true,
-				Description: "The pif (uuid) that should be used for this network.",
+				Description: "The pifs (uuid) that should be used for this network.",
 			},
-			"vlan": &schema.Schema{
-				Type:     schema.TypeInt,
-				Optional: true,
-				Default:  0,
-				RequiredWith: []string{
-					"pif_id",
-				},
-				ForceNew:    true,
-				Description: "The vlan to use for the network. Defaults to `0` meaning no VLAN.",
+			"bond_mode": &schema.Schema{
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Description:  "The bond mode that should be used for this network.",
+				ValidateFunc: validation.StringInSlice(validBondModes, false),
 			},
 			"pool_id": &schema.Schema{
 				Type:        schema.TypeString,
@@ -72,58 +74,43 @@ func resourceXoaNetwork() *schema.Resource {
 				ForceNew:    true,
 				Description: "The MTU of the network. Defaults to `1500` if unspecified.",
 			},
-			"nbd": &schema.Schema{
-				Type:        schema.TypeBool,
-				Optional:    true,
-				Default:     false,
-				Description: "Whether the network should use a network block device. Defaults to `false` if unspecified.",
-			},
 		},
 	}
 }
 
-func resourceNetworkCreate(d *schema.ResourceData, m interface{}) error {
+func resourceBondedNetworkCreate(d *schema.ResourceData, m interface{}) error {
 	c := m.(client.XOClient)
 
-	network, err := c.CreateNetwork(client.CreateNetworkRequest{
+	pifsReq := []string{}
+	for _, pif := range d.Get("pif_ids").([]interface{}) {
+		pifsReq = append(pifsReq, pif.(string))
+	}
+	network, err := c.CreateBondedNetwork(client.CreateBondedNetworkRequest{
 		Automatic:       d.Get("automatic").(bool),
 		DefaultIsLocked: d.Get("default_is_locked").(bool),
+		BondMode:        d.Get("bond_mode").(string),
 		Name:            d.Get("name_label").(string),
 		Description:     d.Get("name_description").(string),
 		Pool:            d.Get("pool_id").(string),
 		Mtu:             d.Get("mtu").(int),
-		Nbd:             d.Get("nbd").(bool),
-		Vlan:            d.Get("vlan").(int),
-		PIF:             d.Get("pif_id").(string),
+		PIFs:            pifsReq,
 	})
 	if err != nil {
 		return err
 	}
-	vlan, err := getVlanForNetwork(c, network)
-	if err != nil {
-		return err
+	if len(network.PIFs) < 1 {
+		return errors.New("network should contain more than one PIF")
 	}
-	return networkToData(network, vlan, d)
+	fmt.Printf("[WARNING] attempting to set pif_ids\n")
+	if err := d.Set("pif_ids", pifsReq); err != nil {
+		return errors.New("failed to set pif_ids attribute.")
+	}
+	return bondedNetworkToData(network, d)
 }
 
-func getVlanForNetwork(c client.XOClient, net *client.Network) (int, error) {
-	if len(net.PIFs) > 0 {
-		pifs, err := c.GetPIF(client.PIF{Id: net.PIFs[0]})
-		if err != nil {
-			return -1, err
-		}
-
-		if len(pifs) != 1 {
-			return -1, errors.New("expected to find single PIF")
-		}
-		return pifs[0].Vlan, nil
-	}
-	return 0, nil
-}
-
-func resourceNetworkRead(d *schema.ResourceData, m interface{}) error {
+func resourceBondedNetworkRead(d *schema.ResourceData, m interface{}) error {
 	c := m.(client.XOClient)
-	net, err := c.GetNetwork(
+	network, err := c.GetNetwork(
 		client.Network{Id: d.Id()})
 
 	if _, ok := err.(client.NotFound); ok {
@@ -135,21 +122,19 @@ func resourceNetworkRead(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	vlan, err := getVlanForNetwork(c, net)
-	if err != nil {
-		return err
+	if len(network.PIFs) < 1 {
+		return errors.New("network should contain more than one PIF")
 	}
-	return networkToData(net, vlan, d)
+	return bondedNetworkToData(network, d)
 }
 
-func resourceNetworkUpdate(d *schema.ResourceData, m interface{}) error {
+func resourceBondedNetworkUpdate(d *schema.ResourceData, m interface{}) error {
 	c := m.(client.XOClient)
 
 	netUpdateReq := client.UpdateNetworkRequest{
 		Id:              d.Id(),
 		Automatic:       d.Get("automatic").(bool),
 		DefaultIsLocked: d.Get("default_is_locked").(bool),
-		Nbd:             d.Get("nbd").(bool),
 	}
 	if d.HasChange("name_label") {
 		nameLabel := d.Get("name_label").(string)
@@ -163,10 +148,10 @@ func resourceNetworkUpdate(d *schema.ResourceData, m interface{}) error {
 	if err != nil {
 		return err
 	}
-	return resourceNetworkRead(d, m)
+	return resourceBondedNetworkRead(d, m)
 }
 
-func resourceNetworkDelete(d *schema.ResourceData, m interface{}) error {
+func resourceBondedNetworkDelete(d *schema.ResourceData, m interface{}) error {
 	c := m.(client.XOClient)
 
 	err := c.DeleteNetwork(d.Id())
@@ -178,7 +163,7 @@ func resourceNetworkDelete(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
-func networkToData(network *client.Network, vlan int, d *schema.ResourceData) error {
+func bondedNetworkToData(network *client.Network, d *schema.ResourceData) error {
 	d.SetId(network.Id)
 	if err := d.Set("name_label", network.NameLabel); err != nil {
 		return err
@@ -192,16 +177,11 @@ func networkToData(network *client.Network, vlan int, d *schema.ResourceData) er
 	if err := d.Set("mtu", network.MTU); err != nil {
 		return err
 	}
-	if err := d.Set("nbd", network.Nbd); err != nil {
-		return err
-	}
+
 	if err := d.Set("automatic", network.Automatic); err != nil {
 		return err
 	}
 	if err := d.Set("default_is_locked", network.DefaultIsLocked); err != nil {
-		return err
-	}
-	if err := d.Set("vlan", vlan); err != nil {
 		return err
 	}
 	return nil

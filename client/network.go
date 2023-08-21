@@ -46,18 +46,24 @@ func (net Network) Compare(obj interface{}) bool {
 	return false
 }
 
+// type sharedNetworkRequestParams struct {
+// 	Pool        string `mapstructure:"pool"`
+// 	Name        string `mapstructure:"name"`
+// 	Description string `mapstructure:"description,omitempty"`
+// 	Mtu         int    `mapstructure:"mtu,omitempty"`
+// }
+
 type CreateNetworkRequest struct {
-	BondMode        string   `mapstructure:"bondMode,omitempty"`
-	Pool            string   `mapstructure:"pool"`
-	Name            string   `mapstructure:"name"`
-	Nbd             bool     `mapstructure:"nbd,omitempty"`
-	Description     string   `mapstructure:"description,omitempty"`
-	Mtu             int      `mapstructure:"mtu,omitempty"`
-	PIF             string   `mapstructure:"pif,omitempty"`
-	PIFs            []string `mapstructure:"pifs,omitempty"`
-	Vlan            int      `mapstructure:"vlan,omitempty"`
-	Automatic       bool     `mapstructure:"automatic"`
-	DefaultIsLocked bool     `mapstructure:"defaultIsLocked"`
+	Pool        string `mapstructure:"pool"`
+	Name        string `mapstructure:"name"`
+	Description string `mapstructure:"description,omitempty"`
+	Mtu         int    `mapstructure:"mtu,omitempty"`
+
+	Nbd             bool   `mapstructure:"nbd,omitempty"`
+	PIF             string `mapstructure:"pif,omitempty"`
+	Vlan            int    `mapstructure:"vlan,omitempty"`
+	Automatic       bool   `mapstructure:"automatic"`
+	DefaultIsLocked bool   `mapstructure:"defaultIsLocked"`
 }
 
 // Nbd and Automatic are eventually consistent. This ensures that waitForModifyNetwork will
@@ -70,6 +76,25 @@ func (c CreateNetworkRequest) Propagated(obj interface{}) bool {
 		return true
 	}
 	return false
+}
+
+// Does network.set apply for bonded networks? It uses the automatic and defaultIsLocked parameters.
+// That API call also allows for nbd, which is not supported for bonded networks to my knowledge
+type CreateBondedNetworkRequest struct {
+	Pool        string `mapstructure:"pool"`
+	Name        string `mapstructure:"name"`
+	Description string `mapstructure:"description,omitempty"`
+	Mtu         int    `mapstructure:"mtu,omitempty"`
+
+	BondMode string   `mapstructure:"bondMode,omitempty"`
+	PIFs     []string `mapstructure:"pifs,omitempty"`
+
+	Automatic       bool `mapstructure:"automatic"`
+	DefaultIsLocked bool `mapstructure:"defaultIsLocked"`
+}
+
+func (c CreateBondedNetworkRequest) Propagated(obj interface{}) bool {
+	return true
 }
 
 type UpdateNetworkRequest struct {
@@ -101,20 +126,8 @@ func (c *Client) CreateNetwork(netReq CreateNetworkRequest) (*Network, error) {
 	delete(params, "automatic")
 	delete(params, "defaultIsLocked")
 
-	var err error
-	if len(netReq.PIFs) > 0 {
-		log.Printf("[DEBUG] params for network.createBonded: %#v", params)
-
-		var result map[string]interface{}
-		err = c.Call("network.createBonded", params, &result)
-		if err != nil {
-			return nil, err
-		}
-		return c.waitForModifyNetwork(result["uuid"].(string), netReq, 10*time.Second)
-	}
-
 	log.Printf("[DEBUG] params for network.create: %#v", params)
-	err = c.Call("network.create", params, &id)
+	err := c.Call("network.create", params, &id)
 
 	if err != nil {
 		return nil, err
@@ -130,6 +143,34 @@ func (c *Client) CreateNetwork(netReq CreateNetworkRequest) (*Network, error) {
 		})
 	}
 
+	return c.waitForModifyNetwork(id, netReq, 10*time.Second)
+}
+
+func (c *Client) CreateBondedNetwork(netReq CreateBondedNetworkRequest) (*Network, error) {
+	var params map[string]interface{}
+	mapstructure.Decode(netReq, &params)
+
+	delete(params, "automatic")
+	delete(params, "defaultIsLocked")
+
+	log.Printf("[DEBUG] params for network.createBonded: %#v", params)
+
+	var result map[string]interface{}
+	err := c.Call("network.createBonded", params, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	id := result["uuid"].(string)
+	// Neither automatic nor defaultIsLocked can be specified in the network.create RPC.
+	// Update them afterwards if the user requested it during creation.
+	if netReq.Automatic || netReq.DefaultIsLocked {
+		_, err = c.UpdateNetwork(UpdateNetworkRequest{
+			Id:              id,
+			Automatic:       netReq.Automatic,
+			DefaultIsLocked: netReq.DefaultIsLocked,
+		})
+	}
 	return c.waitForModifyNetwork(id, netReq, 10*time.Second)
 }
 

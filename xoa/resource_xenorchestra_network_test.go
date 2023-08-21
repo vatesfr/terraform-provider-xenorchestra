@@ -35,39 +35,6 @@ func TestAccXONetwork_create(t *testing.T) {
 	)
 }
 
-func TestAccXONetwork_createBonded(t *testing.T) {
-	if accTestPIF.Id == "" {
-		t.Skip()
-	}
-	resourceName := "xenorchestra_network.network"
-	nameLabel := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccXenorchestraNetworkConfigBonded(nameLabel),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckXenorchestraNetwork(resourceName),
-					resource.TestCheckResourceAttrSet(resourceName, "id"),
-					resource.TestCheckResourceAttrSet(resourceName, "name_label"),
-					resource.TestCheckResourceAttrSet(resourceName, "name_description"),
-					resource.TestCheckResourceAttrSet(resourceName, "pool_id"),
-					// resource.TestCheckResourceAttrSet(resourceName, "pif_ids"),
-					resource.TestCheckResourceAttrSet(resourceName, "mtu"),
-					resource.TestCheckNoResourceAttr(resourceName, "pif_id"),
-					resource.TestCheckResourceAttr(resourceName, "vlan", "-1")),
-			},
-			// {
-			// 	Config:   testAccXenorchestraNetworkConfigBonded(nameLabel),
-			// 	PlanOnly: true,
-			// 	// ExpectNonEmptyPlan: true,
-			// },
-		},
-	},
-	)
-}
-
 func TestAccXONetwork_createWithVlanRequiresPIF(t *testing.T) {
 	if accTestPIF.Id == "" {
 		t.Skip()
@@ -296,28 +263,4 @@ resource "xenorchestra_network" "network" {
     default_is_locked = %s
 }
 `, name, desc, accTestPIF.PoolId, nbd, automatic, isLocked)
-}
-
-var testAccXenorchestraNetworkConfigBonded = func(name string) string {
-	return fmt.Sprintf(`
-data "xenorchestra_pif" "eth1" {
-    device = "eth1"
-    vlan = -1
-    host_id = "%s"
-}
-data "xenorchestra_pif" "eth2" {
-    device = "eth2"
-    vlan = -1
-    host_id = "%s"
-}
-
-resource "xenorchestra_network" "network" {
-    name_label = "%s"
-    pool_id = "%s"
-    pif_ids = [
-      data.xenorchestra_pif.eth1.id,
-      data.xenorchestra_pif.eth2.id,
-    ]
-    bond_mode = "active-backup"
-}`, accTestPIF.Host, accTestPIF.Host, name, accTestPIF.PoolId)
 }
