@@ -28,7 +28,7 @@ func TestAccXOBondedNetwork_createAndPlanWithOmittedPIF(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "mtu")),
 			},
 			{
-				// Asserting that pif_ids was set in the previous set failed. This
+				// Asserting that pif_ids was set in the previous step failed. This
 				// second step is to verify that even though it's not persisted in the
 				// state that it still correctly detects changes to the resource when
 				// the pif_ids argument is modified.

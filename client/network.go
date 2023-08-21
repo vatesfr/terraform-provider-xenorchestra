@@ -49,6 +49,9 @@ func (net Network) Compare(obj interface{}) bool {
 type CreateNetworkRequest struct {
 	// The first set of members are shared between bonded and non bonded networks
 	// These should be kept in sync with the CreateBondedNetworkRequest struct
+	// Refactoring these fields to an embedded struct means that the caller must
+	// know the embedded structs existance. Since the list is relatively small
+	// this was deemed a more appropriate tradeoff to make the API nicer.
 	Automatic       bool   `mapstructure:"automatic"`
 	DefaultIsLocked bool   `mapstructure:"defaultIsLocked"`
 	Pool            string `mapstructure:"pool"`
