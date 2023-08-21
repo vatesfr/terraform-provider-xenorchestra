@@ -37,10 +37,13 @@ var validInstallationMethods = []string{
 	"network",
 }
 
+var defaultCloudConfigDiskName string = "XO CloudConfigDrive"
+
 func resourceVm() *schema.Resource {
 	vmSchema := resourceVmSchema()
 	delete(vmSchema, "cdrom")
 	delete(vmSchema, "installation_method")
+	delete(vmSchema, "destroy_cloud_config_vdi_after_boot")
 	vmSchema["id"] = &schema.Schema{
 		Type:     schema.TypeString,
 		Required: true,
@@ -117,6 +120,16 @@ func resourceVmSchema() map[string]*schema.Schema {
 		"cloud_config": &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
+		},
+		"destroy_cloud_config_vdi_after_boot": &schema.Schema{
+			Type:     schema.TypeBool,
+			Optional: true,
+			Default:  false,
+			RequiredWith: []string{
+				"cloud_config",
+			},
+			ForceNew:    true,
+			Description: "Determines whether the cloud config VDI should be deleted once the VM has booted. Defaults to `false`.",
 		},
 		"core_os": &schema.Schema{
 			Type:     schema.TypeBool,
@@ -412,14 +425,15 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		Boot: client.Boot{
 			Firmware: d.Get("hvm_boot_firmware").(string),
 		},
-		ExpNestedHvm:    d.Get("exp_nested_hvm").(bool),
-		NameLabel:       d.Get("name_label").(string),
-		NameDescription: d.Get("name_description").(string),
-		Template:        d.Get("template").(string),
-		CloudConfig:     d.Get("cloud_config").(string),
-		ResourceSet:     rs,
-		HA:              d.Get("high_availability").(string),
-		AutoPoweron:     d.Get("auto_poweron").(bool),
+		DestroyCloudConfigVdiAfterBoot: d.Get("destroy_cloud_config_vdi_after_boot").(bool),
+		ExpNestedHvm:                   d.Get("exp_nested_hvm").(bool),
+		NameLabel:                      d.Get("name_label").(string),
+		NameDescription:                d.Get("name_description").(string),
+		Template:                       d.Get("template").(string),
+		CloudConfig:                    d.Get("cloud_config").(string),
+		ResourceSet:                    rs,
+		HA:                             d.Get("high_availability").(string),
+		AutoPoweron:                    d.Get("auto_poweron").(bool),
 		CPUs: client.CPUs{
 			Number: d.Get("cpus").(int),
 		},
@@ -514,7 +528,7 @@ func sortDiskMapByPostion(networks []map[string]interface{}) []map[string]interf
 func disksToMapList(disks []client.Disk) []map[string]interface{} {
 	result := make([]map[string]interface{}, 0, len(disks))
 	for _, disk := range disks {
-		if disk.NameLabel == "XO CloudConfigDrive" {
+		if disk.NameLabel == defaultCloudConfigDiskName {
 			continue
 		}
 		diskMap := map[string]interface{}{

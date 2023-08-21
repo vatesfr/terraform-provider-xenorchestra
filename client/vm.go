@@ -122,13 +122,14 @@ type Vm struct {
 	// These fields are used for passing in disk inputs when
 	// creating Vms, however, this is not a real field as far
 	// as the XO api or XAPI is concerned
-	Disks                   []Disk              `json:"-"`
-	CloudNetworkConfig      string              `json:"-"`
-	VIFsMap                 []map[string]string `json:"-"`
-	WaitForIps              bool                `json:"-"`
-	Installation            Installation        `json:"-"`
-	ManagementAgentDetected bool                `json:"managementAgentDetected"`
-	PVDriversDetected       bool                `json:"pvDriversDetected"`
+	Disks                          []Disk              `json:"-"`
+	CloudNetworkConfig             string              `json:"-"`
+	VIFsMap                        []map[string]string `json:"-"`
+	WaitForIps                     bool                `json:"-"`
+	Installation                   Installation        `json:"-"`
+	ManagementAgentDetected        bool                `json:"managementAgentDetected"`
+	PVDriversDetected              bool                `json:"pvDriversDetected"`
+	DestroyCloudConfigVdiAfterBoot bool                `json:"-"`
 }
 
 type Installation struct {
@@ -230,6 +231,11 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 		"tags":              vmReq.Tags,
 		"auto_poweron":      vmReq.AutoPoweron,
 		"high_availability": vmReq.HA,
+	}
+
+	destroyCloudConfigVdiAfterBoot := vmReq.DestroyCloudConfigVdiAfterBoot
+	if destroyCloudConfigVdiAfterBoot {
+		params["destroyCloudConfigVdiAfterBoot"] = destroyCloudConfigVdiAfterBoot
 	}
 
 	videoram := vmReq.Videoram.Value
