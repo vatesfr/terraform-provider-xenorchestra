@@ -2,7 +2,6 @@ package xoa
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -21,9 +20,6 @@ func resourceXoaBondedNetwork() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Schema: map[string]*schema.Schema{
-			// Verify if network.set applies for bonded networks unconditionally or if it
-			// only works with a subset of the parameters
-
 			"automatic": &schema.Schema{
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -99,11 +95,7 @@ func resourceBondedNetworkCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 	if len(network.PIFs) < 1 {
-		return errors.New("network should contain more than one PIF")
-	}
-	fmt.Printf("[WARNING] attempting to set pif_ids\n")
-	if err := d.Set("pif_ids", pifsReq); err != nil {
-		return errors.New("failed to set pif_ids attribute.")
+		return errors.New("network should contain more than one PIF after creation")
 	}
 	return bondedNetworkToData(network, d)
 }

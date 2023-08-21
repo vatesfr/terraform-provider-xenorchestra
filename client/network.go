@@ -46,24 +46,19 @@ func (net Network) Compare(obj interface{}) bool {
 	return false
 }
 
-// type sharedNetworkRequestParams struct {
-// 	Pool        string `mapstructure:"pool"`
-// 	Name        string `mapstructure:"name"`
-// 	Description string `mapstructure:"description,omitempty"`
-// 	Mtu         int    `mapstructure:"mtu,omitempty"`
-// }
-
 type CreateNetworkRequest struct {
-	Pool        string `mapstructure:"pool"`
-	Name        string `mapstructure:"name"`
-	Description string `mapstructure:"description,omitempty"`
-	Mtu         int    `mapstructure:"mtu,omitempty"`
-
-	Nbd             bool   `mapstructure:"nbd,omitempty"`
-	PIF             string `mapstructure:"pif,omitempty"`
-	Vlan            int    `mapstructure:"vlan,omitempty"`
+	// The first set of members are shared between bonded and non bonded networks
+	// These should be kept in sync with the CreateBondedNetworkRequest struct
 	Automatic       bool   `mapstructure:"automatic"`
 	DefaultIsLocked bool   `mapstructure:"defaultIsLocked"`
+	Pool            string `mapstructure:"pool"`
+	Name            string `mapstructure:"name"`
+	Description     string `mapstructure:"description,omitempty"`
+	Mtu             int    `mapstructure:"mtu,omitempty"`
+
+	Nbd  bool   `mapstructure:"nbd,omitempty"`
+	PIF  string `mapstructure:"pif,omitempty"`
+	Vlan int    `mapstructure:"vlan,omitempty"`
 }
 
 // Nbd and Automatic are eventually consistent. This ensures that waitForModifyNetwork will
@@ -78,19 +73,18 @@ func (c CreateNetworkRequest) Propagated(obj interface{}) bool {
 	return false
 }
 
-// Does network.set apply for bonded networks? It uses the automatic and defaultIsLocked parameters.
-// That API call also allows for nbd, which is not supported for bonded networks to my knowledge
 type CreateBondedNetworkRequest struct {
-	Pool        string `mapstructure:"pool"`
-	Name        string `mapstructure:"name"`
-	Description string `mapstructure:"description,omitempty"`
-	Mtu         int    `mapstructure:"mtu,omitempty"`
+	// The first set of members are shared between bonded and non bonded networks
+	// These should be kept in sync with the CreateNetworkRequest struct
+	Automatic       bool   `mapstructure:"automatic"`
+	DefaultIsLocked bool   `mapstructure:"defaultIsLocked"`
+	Pool            string `mapstructure:"pool"`
+	Name            string `mapstructure:"name"`
+	Description     string `mapstructure:"description,omitempty"`
+	Mtu             int    `mapstructure:"mtu,omitempty"`
 
 	BondMode string   `mapstructure:"bondMode,omitempty"`
 	PIFs     []string `mapstructure:"pifs,omitempty"`
-
-	Automatic       bool `mapstructure:"automatic"`
-	DefaultIsLocked bool `mapstructure:"defaultIsLocked"`
 }
 
 func (c CreateBondedNetworkRequest) Propagated(obj interface{}) bool {
