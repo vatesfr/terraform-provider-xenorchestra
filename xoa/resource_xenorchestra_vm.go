@@ -280,7 +280,7 @@ func resourceVmSchema() map[string]*schema.Schema {
 		},
 		"disk": &schema.Schema{
 			Type:     schema.TypeList,
-			Required: true,
+			Optional: true,
 			Elem: &schema.Resource{
 				Schema: map[string]*schema.Schema{
 					"sr_id": &schema.Schema{
