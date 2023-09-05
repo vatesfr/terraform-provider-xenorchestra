@@ -14,28 +14,33 @@ var validTypes = []string{
 
 func resourceVDIRecord() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceVDICreate,
-		Read:   resourceVDIRead,
-		Update: resourceVDIUpdate,
-		Delete: resourceVDIDelete,
+		Description: "Creates a Xen Orchestra vdi resource.",
+		Create:      resourceVDICreate,
+		Read:        resourceVDIRead,
+		Update:      resourceVDIUpdate,
+		Delete:      resourceVDIDelete,
 		Schema: map[string]*schema.Schema{
 			"name_label": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Description: "The name label of the VDI",
+				Required:    true,
 			},
 			"sr_id": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:        schema.TypeString,
+				Description: "The id of the storage repository the VDI should be created in. Make sure the storage repository supports the file you are uploading! For example, ISOs should only be uploaded to ISO storage repositories.",
+				Required:    true,
+				ForceNew:    true,
 			},
 			"filepath": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				Description: "The file path to the ISO or vdi image that should be uploaded when the VDI is created.",
+				ForceNew:    true,
 			},
 			"type": &schema.Schema{
 				Type:         schema.TypeString,
 				Required:     true,
+				Description:  "Only `raw` uploads are supported today, but vhd support may be added in the future.",
 				ValidateFunc: validation.StringInSlice(validTypes, false),
 			},
 		},
