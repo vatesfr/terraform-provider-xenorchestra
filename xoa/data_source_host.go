@@ -27,9 +27,9 @@ func resourceHost() *schema.Resource {
 	// will cause problems for the host data source.
 	// Add this map key at runtime to allow for code reuse.
 	hostSchema["id"] = &schema.Schema{
-		Type:        schema.TypeString,
-		Required:    true,
-		Description: "The id of the host.",
+		Type:     schema.TypeString,
+		Required: true,
+		// Description: "The id of the host.",
 	}
 	return &schema.Resource{
 		Schema: hostSchema,
