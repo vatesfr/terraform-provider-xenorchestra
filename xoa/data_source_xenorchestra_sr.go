@@ -11,38 +11,50 @@ import (
 func dataSourceXoaStorageRepository() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceStorageRepositoryRead,
+		Description: `Provides information about a Storage repository to ease the lookup of VM storage information.
+
+**Note:** If there are multiple storage repositories that match terraform will fail.
+Ensure that your name_label, pool_id and tags identify a unique storage repository.`,
 		Schema: map[string]*schema.Schema{
 			"name_label": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
+				Description: "The name of the storage repository to look up",
+				Type:        schema.TypeString,
+				Required:    true,
 			},
 			"sr_type": &schema.Schema{
-				Type:     schema.TypeString,
-				Computed: true,
+				Description: "The type of storage repository (lvm, udev, iso, user, etc).",
+				Type:        schema.TypeString,
+				Computed:    true,
 			},
 			"pool_id": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
+				Description: "The Id of the pool the storage repository exists on.",
+				Type:        schema.TypeString,
+				Optional:    true,
 			},
 			"uuid": &schema.Schema{
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:        schema.TypeString,
+				Description: "uuid of the storage repository. This is equivalent to the id.",
+				Computed:    true,
 			},
 			"container": &schema.Schema{
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:        schema.TypeString,
+				Description: "The storage container.",
+				Computed:    true,
 			},
 			"size": &schema.Schema{
-				Type:     schema.TypeInt,
-				Computed: true,
+				Type:        schema.TypeInt,
+				Description: "The storage size.",
+				Computed:    true,
 			},
 			"physical_usage": &schema.Schema{
-				Type:     schema.TypeInt,
-				Computed: true,
+				Type:        schema.TypeInt,
+				Description: "The physical storage size.",
+				Computed:    true,
 			},
 			"usage": &schema.Schema{
-				Type:     schema.TypeInt,
-				Computed: true,
+				Type:        schema.TypeInt,
+				Description: "The current usage for this storage repository.",
+				Computed:    true,
 			},
 			"tags": resourceTags(),
 		},
