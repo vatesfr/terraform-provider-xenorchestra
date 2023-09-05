@@ -12,6 +12,12 @@ func dataSourceXoaHost() *schema.Resource {
 	return &schema.Resource{
 		Read:   dataSourceHostRead,
 		Schema: resourceHostSchema(),
+		Description: `Provides information about a host.
+
+**NOTE:** If there are multiple hosts with the same name
+Terraform will fail. Ensure that your names are unique when
+using the data source.
+		`,
 	}
 }
 
@@ -21,8 +27,9 @@ func resourceHost() *schema.Resource {
 	// will cause problems for the host data source.
 	// Add this map key at runtime to allow for code reuse.
 	hostSchema["id"] = &schema.Schema{
-		Type:     schema.TypeString,
-		Required: true,
+		Type:        schema.TypeString,
+		Required:    true,
+		Description: "The id of the host.",
 	}
 	return &schema.Resource{
 		Schema: hostSchema,
@@ -32,25 +39,30 @@ func resourceHost() *schema.Resource {
 func resourceHostSchema() map[string]*schema.Schema {
 	return map[string]*schema.Schema{
 		"name_label": &schema.Schema{
-			Type:     schema.TypeString,
-			Required: true,
+			Type:        schema.TypeString,
+			Required:    true,
+			Description: "The name label of the host.",
 		},
 		"pool_id": &schema.Schema{
-			Type:     schema.TypeString,
-			Computed: true,
+			Type:        schema.TypeString,
+			Computed:    true,
+			Description: "Id of the pool that the host belongs to.",
 		},
 		"cpus": &schema.Schema{
-			Type:     schema.TypeMap,
-			Computed: true,
-			Elem:     &schema.Schema{Type: schema.TypeInt},
+			Type:        schema.TypeMap,
+			Computed:    true,
+			Elem:        &schema.Schema{Type: schema.TypeInt},
+			Description: "Host cpu information. The 'cores' key will contain the number of cpu cores and the 'sockets' key will contain the number of sockets.",
 		},
 		"memory": &schema.Schema{
-			Type:     schema.TypeInt,
-			Computed: true,
+			Type:        schema.TypeInt,
+			Computed:    true,
+			Description: "The memory size of the host.",
 		},
 		"memory_usage": &schema.Schema{
-			Type:     schema.TypeInt,
-			Computed: true,
+			Type:        schema.TypeInt,
+			Computed:    true,
+			Description: "The memory usage of the host.",
 		},
 		"tags": resourceTags(),
 	}
