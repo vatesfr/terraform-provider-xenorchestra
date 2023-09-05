@@ -36,6 +36,8 @@ func resourceHost() *schema.Resource {
 	}
 }
 
+var cpusDesc string = "The 'cores' key will contain the number of cpu cores and the 'sockets' key will contain the number of sockets."
+
 func resourceHostSchema() map[string]*schema.Schema {
 	return map[string]*schema.Schema{
 		"name_label": &schema.Schema{
@@ -52,7 +54,7 @@ func resourceHostSchema() map[string]*schema.Schema {
 			Type:        schema.TypeMap,
 			Computed:    true,
 			Elem:        &schema.Schema{Type: schema.TypeInt},
-			Description: "Host cpu information. The 'cores' key will contain the number of cpu cores and the 'sockets' key will contain the number of sockets.",
+			Description: "CPU information about the host. " + cpusDesc,
 		},
 		"memory": &schema.Schema{
 			Type:        schema.TypeInt,
