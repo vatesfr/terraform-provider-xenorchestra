@@ -23,20 +23,23 @@ func resourceAcl() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"subject": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+				Description: "The uuid of the user account that the acl will apply to.",
 			},
 			"object": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+				Description: "The id of the object that will be able to be used by the subject.",
 			},
 			"action": &schema.Schema{
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice(validActionOptions, false),
+				Description:  "Must be one of admin, operator, viewer. See the [Xen orchestra docs](https://xen-orchestra.com/docs/acls.html) on ACLs for more details.",
 			},
 		},
 	}

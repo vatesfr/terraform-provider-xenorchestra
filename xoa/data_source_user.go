@@ -9,16 +9,19 @@ import (
 
 func dataSourceXoaUser() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceUserRead,
+		Read:        dataSourceUserRead,
+		Description: "Provides information about a Xen Orchestra user. If the Xen Orchestra user account you are using is not an admin, see the `search_in_session` parameter.",
 		Schema: map[string]*schema.Schema{
 			"username": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Description: "The username of the XO user.",
+				Required:    true,
 			},
 			"search_in_session": &schema.Schema{
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
+				Type:        schema.TypeBool,
+				Description: "A boolean which will search for the user in the current session (`session.getUser` Xen Orchestra RPC call). This allows a non admin user to look up their own user account.",
+				Optional:    true,
+				Default:     false,
 			},
 		},
 	}

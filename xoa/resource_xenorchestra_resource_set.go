@@ -12,45 +12,52 @@ var validLimitType []string = []string{"cpus", "disk", "memory"}
 
 func resourceResourceSet() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceSetCreate,
-		Read:   resourceSetRead,
-		Update: resourceSetUpdate,
-		Delete: resourceSetDelete,
+		Description: "Creates a Xen Orchestra resource set.",
+		Create:      resourceSetCreate,
+		Read:        resourceSetRead,
+		Update:      resourceSetUpdate,
+		Delete:      resourceSetDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Schema: map[string]*schema.Schema{
 			"name": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				Description: "The name of the resource set.",
 			},
 			"subjects": &schema.Schema{
 				Type: schema.TypeSet,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
-				Optional: true,
+				Optional:    true,
+				Description: "The uuids of the user accounts that should have access to the resource set.",
 			},
 			"objects": &schema.Schema{
 				Type: schema.TypeSet,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
-				Optional: true,
+				Optional:    true,
+				Description: "The uuids of the objects that are within scope of the resource set. A minimum of a storage repository, network and VM template are required for users to launch VMs.",
 			},
 			"limit": &schema.Schema{
-				Type:     schema.TypeSet,
-				Required: true,
+				Type:        schema.TypeSet,
+				Required:    true,
+				Description: "The limit applied to the resource set.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"type": &schema.Schema{
 							Type:         schema.TypeString,
+							Description:  "The type of resource set limit. Must be cpus, memory or disk.",
 							Required:     true,
 							ValidateFunc: validation.StringInSlice(validLimitType, false),
 						},
 						"quantity": &schema.Schema{
-							Type:     schema.TypeInt,
-							Required: true,
+							Type:        schema.TypeInt,
+							Description: "The numerical limit for the given type.",
+							Required:    true,
 						},
 					},
 				},

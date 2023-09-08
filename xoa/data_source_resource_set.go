@@ -11,10 +11,16 @@ import (
 func dataSourceXoaResourceSet() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceResourceSetRead,
+		Description: `Provides information about a resource set.
+
+**NOTE:** If there are multiple resource sets with the same name
+Terraform will fail. Ensure that your resource set names are unique when
+using the data source.`,
 		Schema: map[string]*schema.Schema{
 			"name": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				Description: "The name of the resource set to look up.",
 			},
 		},
 	}

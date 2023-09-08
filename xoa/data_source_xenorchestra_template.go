@@ -11,18 +11,25 @@ import (
 func dataSourceXoaTemplate() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceTemplateRead,
+		Description: `Provides information about a VM template that can be used for creating new VMs.
+
+**Note:** If there are multiple templates that match terraform will fail.
+Ensure that your name_label and pool_id identify a unique template.`,
 		Schema: map[string]*schema.Schema{
 			"name_label": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Description: "The name of the template to look up.",
+				Required:    true,
 			},
 			"uuid": &schema.Schema{
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:        schema.TypeString,
+				Description: "The uuid of the template.",
+				Computed:    true,
 			},
 			"pool_id": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:        schema.TypeString,
+				Description: "The id of the pool that the template belongs to.",
+				Optional:    true,
 			},
 		},
 	}
