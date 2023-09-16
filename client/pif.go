@@ -28,7 +28,12 @@ func (p PIF) Compare(obj interface{}) bool {
 		return false
 	}
 
-	if p.Vlan == otherPif.Vlan && p.Device == otherPif.Device {
+	networkIdExists := p.Network != ""
+	if networkIdExists && p.Network != otherPif.Network {
+		return false
+	}
+
+	if p.Vlan == otherPif.Vlan && (p.Device == "" || (p.Device == otherPif.Device)) {
 		return true
 	}
 	return false
