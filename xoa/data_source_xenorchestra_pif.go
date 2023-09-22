@@ -11,39 +11,51 @@ import (
 func dataSourceXoaPIF() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourcePIFRead,
+		Description: `Provides information about a physical network interface (PIF) of a XenServer host specified by the interface name or whether it is the management interface.
+
+**Note:** If there are multiple PIFs that match terraform will fail.
+Ensure that your device, vlan, host_id and other arguments identify a unique PIF.`,
 		Schema: map[string]*schema.Schema{
 			"attached": &schema.Schema{
-				Type:     schema.TypeBool,
-				Computed: true,
+				Type:        schema.TypeBool,
+				Computed:    true,
+				Description: "If the PIF is attached to the network.",
 			},
 			"device": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				Description: "The name of the network device. Examples include eth0, eth1, etc. See `ifconfig` for possible devices.",
 			},
 			"host": &schema.Schema{
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "The host the PIF is associated with.",
 			},
 			"network": &schema.Schema{
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "The network the PIF is associated with.",
 			},
 			"host_id": &schema.Schema{
-				Type:     schema.TypeString,
-				Computed: true,
-				Optional: true,
+				Type:        schema.TypeString,
+				Computed:    true,
+				Optional:    true,
+				Description: "The ID of the host that the PIF belongs to.",
 			},
 			"pool_id": &schema.Schema{
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "The pool the PIF is associated with.",
 			},
 			"uuid": &schema.Schema{
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "The uuid of the PIF.",
 			},
 			"vlan": &schema.Schema{
-				Type:     schema.TypeInt,
-				Required: true,
+				Type:        schema.TypeInt,
+				Required:    true,
+				Description: "The VLAN the PIF belongs to.",
 			},
 		},
 	}

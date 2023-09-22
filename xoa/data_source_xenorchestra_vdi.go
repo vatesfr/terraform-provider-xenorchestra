@@ -10,15 +10,21 @@ import (
 
 func dataSourceXoaVDI() *schema.Resource {
 	return &schema.Resource{
+		Description: `Provides information about a VDI (virtual disk image).
+
+**Note:** If there are multiple VDIs that match terraform will fail.
+Ensure that your name_label, pool_id and tags identify a unique VDI.`,
 		Read: dataSourceVDIRead,
 		Schema: map[string]*schema.Schema{
 			"name_label": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Description: "The name of the VDI to look up.",
+				Required:    true,
 			},
 			"pool_id": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
+				Description: "The ID of the pool the VDI belongs to. This is useful if you have a VDI with the same name on different pools.",
+				Type:        schema.TypeString,
+				Optional:    true,
 			},
 			"tags": resourceTags(),
 		},

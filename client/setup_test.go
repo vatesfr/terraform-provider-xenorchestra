@@ -24,9 +24,9 @@ func CreateNetwork(network *Network) {
 		os.Exit(1)
 	}
 
-	net, err := c.CreateNetwork(Network{
-		NameLabel: testNetworkName,
-		PoolId:    accTestPool.Id,
+	net, err := c.CreateNetwork(CreateNetworkRequest{
+		Name: testNetworkName,
+		Pool: accTestPool.Id,
 	})
 
 	if err != nil {

@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-var createNetwork = func(net client.Network, t *testing.T, times int) func() {
+var createNetwork = func(net client.CreateNetworkRequest, t *testing.T, times int) func() {
 	return func() {
 		for i := 0; i < times; i++ {
 			c, err := client.NewClient(client.GetConfigFromEnv())
@@ -28,12 +28,12 @@ var createNetwork = func(net client.Network, t *testing.T, times int) func() {
 	}
 }
 
-var getTestNetwork = func(poolId string) client.Network {
+var getTestNetwork = func(poolId string) client.CreateNetworkRequest {
 	nameLabel := fmt.Sprintf("%s-network-%d", accTestPrefix, testObjectIndex)
 	testObjectIndex++
-	return client.Network{
-		NameLabel: nameLabel,
-		PoolId:    poolId,
+	return client.CreateNetworkRequest{
+		Name: nameLabel,
+		Pool: poolId,
 	}
 }
 
@@ -46,7 +46,7 @@ func TestAccXONetworkDataSource_read(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				PreConfig: createNetwork(net, t, 1),
-				Config:    testAccXenorchestraDataSourceNetworkConfig(net.NameLabel),
+				Config:    testAccXenorchestraDataSourceNetworkConfig(net.Name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckXenorchestraDataSourceNetwork(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -89,7 +89,7 @@ func TestAccXONetworkDataSource_multipleCauseError(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				PreConfig: createNetwork(net, t, 2),
-				Config:    testAccXenorchestraDataSourceNetworkConfig(net.NameLabel),
+				Config:    testAccXenorchestraDataSourceNetworkConfig(net.Name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckXenorchestraDataSourceNetwork(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id")),

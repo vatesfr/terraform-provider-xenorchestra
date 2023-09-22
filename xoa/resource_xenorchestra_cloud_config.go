@@ -7,23 +7,26 @@ import (
 
 func resourceCloudConfigRecord() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceCloudConfigCreate,
-		Read:   resourceCloudConfigRead,
-		Delete: resourceCloudConfigDelete,
+		Description: "Creates a Xen Orchestra cloud config resource.",
+		Create:      resourceCloudConfigCreate,
+		Read:        resourceCloudConfigRead,
+		Delete:      resourceCloudConfigDelete,
 		Importer: &schema.ResourceImporter{
 			State: CloudConfigImport,
 		},
 
 		Schema: map[string]*schema.Schema{
 			"template": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+				Description: "The cloud init config. See the cloud init docs for more [information](https://cloudinit.readthedocs.io/en/latest/topics/examples.html).",
 			},
 			"name": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+				Description: "The name of the cloud config.",
 			},
 		},
 	}

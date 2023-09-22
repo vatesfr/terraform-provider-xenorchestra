@@ -7,20 +7,26 @@ import (
 
 func dataSourceXoaNetwork() *schema.Resource {
 	return &schema.Resource{
+		Description: `Provides information about a network of a Xenserver pool.
+
+**Note:** If there are multiple networks with the same name terraform will fail. Ensure that your network, pool_id and other arguments identify a unique network.`,
 		Read: dataSourceNetworkRead,
 		Schema: map[string]*schema.Schema{
 			"bridge": &schema.Schema{
-				Type:     schema.TypeString,
-				Computed: true,
-				Optional: true,
+				Type:        schema.TypeString,
+				Computed:    true,
+				Optional:    true,
+				Description: "The name of the bridge network interface.",
 			},
 			"name_label": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				Description: "The name of the network.",
 			},
 			"pool_id": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "The pool the network is associated with.",
 			},
 		},
 	}

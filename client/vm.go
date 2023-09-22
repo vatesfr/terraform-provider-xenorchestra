@@ -95,7 +95,7 @@ type Vm struct {
 	Boot               Boot              `json:"boot,omitempty"`
 	Type               string            `json:"type,omitempty"`
 	Id                 string            `json:"id,omitempty"`
-	AffinityHost       string            `json:"affinityHost,omitempty"`
+	AffinityHost       *string           `json:"affinityHost,omitempty"`
 	NameDescription    string            `json:"name_description"`
 	NameLabel          string            `json:"name_label"`
 	CPUs               CPUs              `json:"CPUs"`
@@ -122,13 +122,14 @@ type Vm struct {
 	// These fields are used for passing in disk inputs when
 	// creating Vms, however, this is not a real field as far
 	// as the XO api or XAPI is concerned
-	Disks                   []Disk              `json:"-"`
-	CloudNetworkConfig      string              `json:"-"`
-	VIFsMap                 []map[string]string `json:"-"`
-	WaitForIps              bool                `json:"-"`
-	Installation            Installation        `json:"-"`
-	ManagementAgentDetected bool                `json:"managementAgentDetected"`
-	PVDriversDetected       bool                `json:"pvDriversDetected"`
+	Disks                          []Disk              `json:"-"`
+	CloudNetworkConfig             string              `json:"-"`
+	VIFsMap                        []map[string]string `json:"-"`
+	WaitForIps                     bool                `json:"-"`
+	Installation                   Installation        `json:"-"`
+	ManagementAgentDetected        bool                `json:"managementAgentDetected"`
+	PVDriversDetected              bool                `json:"pvDriversDetected"`
+	DestroyCloudConfigVdiAfterBoot bool                `json:"-"`
 }
 
 type Installation struct {
@@ -212,7 +213,6 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 	}
 
 	params := map[string]interface{}{
-		"affinityHost":     vmReq.AffinityHost,
 		"bootAfterCreate":  true,
 		"name_label":       vmReq.NameLabel,
 		"name_description": vmReq.NameDescription,
@@ -225,10 +225,17 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 		"existingDisks":    existingDisks,
 		// TODO: (#145) Uncomment this once issues with secure_boot have been figured out
 		// "secureBoot":       vmReq.SecureBoot,
-		"expNestedHvm": vmReq.ExpNestedHvm,
-		"VDIs":         vdis,
-		"VIFs":         vmReq.VIFsMap,
-		"tags":         vmReq.Tags,
+		"expNestedHvm":      vmReq.ExpNestedHvm,
+		"VDIs":              vdis,
+		"VIFs":              vmReq.VIFsMap,
+		"tags":              vmReq.Tags,
+		"auto_poweron":      vmReq.AutoPoweron,
+		"high_availability": vmReq.HA,
+	}
+
+	destroyCloudConfigVdiAfterBoot := vmReq.DestroyCloudConfigVdiAfterBoot
+	if destroyCloudConfigVdiAfterBoot {
+		params["destroyCloudConfigVdiAfterBoot"] = destroyCloudConfigVdiAfterBoot
 	}
 
 	videoram := vmReq.Videoram.Value
@@ -239,6 +246,11 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 	firmware := vmReq.Boot.Firmware
 	if firmware != "" {
 		params["hvmBootFirmware"] = firmware
+	}
+
+	affinityHost := vmReq.AffinityHost
+	if affinityHost != nil {
+		params["affinityHost"] = affinityHost
 	}
 
 	vga := vmReq.Vga
@@ -317,7 +329,6 @@ func createVdiMap(disk Disk) map[string]interface{} {
 func (c *Client) UpdateVm(vmReq Vm) (*Vm, error) {
 	params := map[string]interface{}{
 		"id":                vmReq.Id,
-		"affinityHost":      vmReq.AffinityHost,
 		"name_label":        vmReq.NameLabel,
 		"name_description":  vmReq.NameDescription,
 		"auto_poweron":      vmReq.AutoPoweron,
@@ -337,6 +348,15 @@ func (c *Client) UpdateVm(vmReq Vm) (*Vm, error) {
 
 		// cpusMask, cpuWeight and cpuCap can be changed at runtime to an integer value or null
 		// coresPerSocket is null or a number of cores per socket. Putting an invalid value doesn't seem to cause an error :(
+	}
+
+	affinityHost := vmReq.AffinityHost
+	if affinityHost != nil {
+		if *affinityHost == "" {
+			params["affinityHost"] = nil
+		} else {
+			params["affinityHost"] = *affinityHost
+		}
 	}
 
 	videoram := vmReq.Videoram.Value
