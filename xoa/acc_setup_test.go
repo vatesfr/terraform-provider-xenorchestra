@@ -27,38 +27,38 @@ func TestMain(m *testing.M) {
 	// This leverages the existing flag defined in the terraform-plugin-sdk
 	// repo defined below
 	// https://github.com/hashicorp/terraform-plugin-sdk/blob/2c03a32a9d1be63a12eb18aaf12d2c5270c42346/helper/resource/testing.go#L58
-	flag.Parse()
-	flagSweep := flag.Lookup("sweep")
+        flag.Parse()
+        flagSweep := flag.Lookup("sweep")
 
 	if flagSweep != nil && flagSweep.Value.String() != "" {
-		resource.TestMain(m)
-	} else {
-		_, runSetup := os.LookupEnv("TF_ACC")
+	        _, runSetup := os.LookupEnv("TF_ACC")
 
-		if runSetup {
-			client.FindPoolForTests(&accTestPool)
-			client.FindPIFForTests(&accTestPIF)
-			client.FindTemplateForTests(&testTemplate, accTestPool.Id, "XOA_TEMPLATE")
-			client.FindTemplateForTests(&disklessTestTemplate, accTestPool.Id, "XOA_DISKLESS_TEMPLATE")
-			client.FindHostForTests(accTestPool.Master, &accTestHost)
-			client.FindNetworkForTests(accTestPool.Id, &accDefaultNetwork)
-			client.FindStorageRepositoryForTests(accTestPool, &accDefaultSr, accTestPrefix)
-			client.FindIsoStorageRepositoryForTests(accTestPool, &accIsoSr, accTestPrefix, "XOA_ISO_SR")
-			client.CreateUser(&accUser)
-			testIsoName = os.Getenv("XOA_ISO")
-		}
+	        if runSetup {
+	        	fmt.Println("Running sweeping")
+                        resource.TestMain(m)
 
-		code := m.Run()
+	        	client.FindPoolForTests(&accTestPool)
+	        	client.FindPIFForTests(&accTestPIF)
+	        	client.FindTemplateForTests(&testTemplate, accTestPool.Id, "XOA_TEMPLATE")
+	        	client.FindTemplateForTests(&disklessTestTemplate, accTestPool.Id, "XOA_DISKLESS_TEMPLATE")
+	        	client.FindHostForTests(accTestPool.Master, &accTestHost)
+	        	client.FindNetworkForTests(accTestPool.Id, &accDefaultNetwork)
+	        	client.FindStorageRepositoryForTests(accTestPool, &accDefaultSr, accTestPrefix)
+	        	client.FindIsoStorageRepositoryForTests(accTestPool, &accIsoSr, accTestPrefix, "XOA_ISO_SR")
+	        	client.CreateUser(&accUser)
+	        	testIsoName = os.Getenv("XOA_ISO")
+	        	fmt.Printf("Found the following pool: %v sr: %v\n", accTestPool, accDefaultSr)
 
-		if runSetup {
-			client.RemoveNetworksWithNamePrefix(accTestPrefix)("")
-			client.RemoveVDIsWithPrefix(accTestPrefix)("")
-			client.RemoveResourceSetsWithNamePrefix(accTestPrefix)("")
-			client.RemoveTagFromAllObjects(accTestPrefix)("")
-			client.RemoveUsersWithPrefix(accTestPrefix)("")
-			client.RemoveCloudConfigsWithPrefix(accTestPrefix)("")
-		}
+	                code := m.Run()
+	        	client.RemoveNetworksWithNamePrefix(accTestPrefix)("")
+	        	client.RemoveVDIsWithPrefix(accTestPrefix)("")
+	        	client.RemoveResourceSetsWithNamePrefix(accTestPrefix)("")
+	        	client.RemoveTagFromAllObjects(accTestPrefix)("")
+	        	client.RemoveUsersWithPrefix(accTestPrefix)("")
+	        	client.RemoveCloudConfigsWithPrefix(accTestPrefix)("")
+	                os.Exit(code)
+                }
+        }
 
-		os.Exit(code)
-	}
+	
 }
