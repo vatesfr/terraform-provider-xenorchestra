@@ -2,6 +2,8 @@ package xoa
 
 import (
 	"errors"
+	"fmt"
+	"log"
 
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -40,21 +42,21 @@ func resourceXoaNetwork() *schema.Resource {
 				Optional: true,
 				Default:  netDefaultDesc,
 			},
-			"pif_id": &schema.Schema{
+			"source_pif_device": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
 				RequiredWith: []string{
 					"vlan",
 				},
 				ForceNew:    true,
-				Description: "The pif (uuid) that should be used for this network.",
+				Description: "The PIF device (eth0, eth1, etc) that will be used as an input during network creation. This parameter is required if a vlan is specified.",
 			},
 			"vlan": &schema.Schema{
 				Type:     schema.TypeInt,
 				Optional: true,
 				Default:  0,
 				RequiredWith: []string{
-					"pif_id",
+					"source_pif_device",
 				},
 				ForceNew:    true,
 				Description: "The vlan to use for the network. Defaults to `0` meaning no VLAN.",
@@ -85,6 +87,16 @@ func resourceXoaNetwork() *schema.Resource {
 func resourceNetworkCreate(d *schema.ResourceData, m interface{}) error {
 	c := m.(client.XOClient)
 
+	var pifId string
+	if sourcePIFDevice := d.Get("source_pif_device").(string); sourcePIFDevice != "" {
+		pif, err := getNetworkCreationSourcePIF(c, sourcePIFDevice, d.Get("pool_id").(string))
+
+		if err != nil {
+			return err
+		}
+		pifId = pif.Id
+	}
+
 	network, err := c.CreateNetwork(client.CreateNetworkRequest{
 		Automatic:       d.Get("automatic").(bool),
 		DefaultIsLocked: d.Get("default_is_locked").(bool),
@@ -94,31 +106,63 @@ func resourceNetworkCreate(d *schema.ResourceData, m interface{}) error {
 		Mtu:             d.Get("mtu").(int),
 		Nbd:             d.Get("nbd").(bool),
 		Vlan:            d.Get("vlan").(int),
-		PIF:             d.Get("pif_id").(string),
+		PIF:             pifId,
 	})
 	if err != nil {
 		return err
 	}
-	vlan, err := getVlanForNetwork(c, network)
+	vlan, pifDevice, err := getVlanForNetwork(c, network)
 	if err != nil {
 		return err
 	}
-	return networkToData(network, vlan, d)
+	return networkToData(network, vlan, pifDevice, d)
 }
 
-func getVlanForNetwork(c client.XOClient, net *client.Network) (int, error) {
+// This function returns the PIF specified the given device name on the pool's primary host. In order to create
+// networks with a VLAN, a PIF for the given device must be provided. Xen Orchestra uses the primary host's PIF
+// for this and so we emulate that behavior.
+func getNetworkCreationSourcePIF(c client.XOClient, pifDevice, poolId string) (*client.PIF, error) {
+	pools, err := c.GetPools(client.Pool{Id: poolId})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(pools) != 1 {
+		return nil, errors.New(fmt.Sprintf("expected to find a single pool, instead found %d", len(pools)))
+	}
+
+	pool := pools[0]
+	pifs, err := c.GetPIF(client.PIF{
+		Host:   pool.Master,
+		Vlan:   -1,
+		Device: pifDevice,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(pifs) != 1 {
+		return nil, errors.New(fmt.Sprintf("expected to find a single PIF, instead found %d. %+v", len(pifs), pifs))
+	}
+
+	return &pifs[0], nil
+}
+
+// Returns the VLAN and device name for the given network.
+func getVlanForNetwork(c client.XOClient, net *client.Network) (int, string, error) {
 	if len(net.PIFs) > 0 {
 		pifs, err := c.GetPIF(client.PIF{Id: net.PIFs[0]})
 		if err != nil {
-			return -1, err
+			return -1, "", err
 		}
 
 		if len(pifs) != 1 {
-			return -1, errors.New("expected to find single PIF")
+			return -1, "", errors.New("expected to find single PIF")
 		}
-		return pifs[0].Vlan, nil
+		return pifs[0].Vlan, pifs[0].Device, nil
 	}
-	return 0, nil
+	return 0, "", nil
 }
 
 func resourceNetworkRead(d *schema.ResourceData, m interface{}) error {
@@ -135,11 +179,11 @@ func resourceNetworkRead(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	vlan, err := getVlanForNetwork(c, net)
+	vlan, pifDevice, err := getVlanForNetwork(c, net)
 	if err != nil {
 		return err
 	}
-	return networkToData(net, vlan, d)
+	return networkToData(net, vlan, pifDevice, d)
 }
 
 func resourceNetworkUpdate(d *schema.ResourceData, m interface{}) error {
@@ -178,11 +222,12 @@ func resourceNetworkDelete(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
-func networkToData(network *client.Network, vlan int, d *schema.ResourceData) error {
+func networkToData(network *client.Network, vlan int, pifDevice string, d *schema.ResourceData) error {
 	d.SetId(network.Id)
 	if err := d.Set("name_label", network.NameLabel); err != nil {
 		return err
 	}
+	log.Printf("This is being called\n")
 	if err := d.Set("name_description", network.NameDescription); err != nil {
 		return err
 	}
@@ -202,6 +247,9 @@ func networkToData(network *client.Network, vlan int, d *schema.ResourceData) er
 		return err
 	}
 	if err := d.Set("vlan", vlan); err != nil {
+		return err
+	}
+	if err := d.Set("source_pif_device", pifDevice); err != nil {
 		return err
 	}
 	return nil
