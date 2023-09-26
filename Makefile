@@ -36,5 +36,7 @@ test: testclient testacc
 testclient:
 	cd client; go test $(TEST) -v -count 1
 
-testacc: sweep
-	TF_ACC=1 $(TF_LOG) go test $(TEST) -parallel $(GOMAXPROCS) -v -count 1 -timeout $(TIMEOUT)
+testacc:
+	TF_ACC=1 $(TF_LOG) go test $(TEST) -parallel $(GOMAXPROCS) -v -count 1 -timeout $(TIMEOUT) -sweep=true
+ci:
+	TF_ACC=1 gotestsum --debug --rerun-fails=5 --max-fails=15 --packages=./xoa  -- ./xoa -v -count=1 -timeout=$(TIMEOUT) -sweep=true -parallel=$(GOMAXPROCS)

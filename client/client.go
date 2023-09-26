@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cenkalti/backoff"
+	"github.com/cenkalti/backoff/v3"
 	gorillawebsocket "github.com/gorilla/websocket"
 	"github.com/sourcegraph/jsonrpc2"
 	"github.com/sourcegraph/jsonrpc2/websocket"
@@ -251,20 +251,20 @@ func (c *Client) Call(method string, params, result interface{}) error {
 			rpcErr, ok := err.(*jsonrpc2.Error)
 
 			if !ok {
-				return backoff.PermanentError{err}
+				return backoff.Permanent(err)
 			}
 
-			if IsRetryableError(rpcErr) {
+			if IsRetryableError(*rpcErr) {
 				return err
 			}
 
 			data := rpcErr.Data
 
 			if data == nil {
-				return backoff.PermanentError{err}
+				return backoff.Permanent(err)
 			}
 
-			return backoff.PermanentError{errors.New(fmt.Sprintf("%s: %s", err, *data))}
+			return backoff.Permanent(errors.New(fmt.Sprintf("%s: %s", err, *data)))
 		}
 		return nil
 	}
