@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cenkalti/backoff"
 	gorillawebsocket "github.com/gorilla/websocket"
 	"github.com/sourcegraph/jsonrpc2"
 	"github.com/sourcegraph/jsonrpc2/websocket"
@@ -227,33 +228,51 @@ func NewClient(config Config) (XOClient, error) {
 	}, nil
 }
 
-func (c *Client) Call(method string, params, result interface{}, opt ...jsonrpc2.CallOption) error {
-	err := c.rpc.Call(context.Background(), method, params, result, opt...)
-	var callRes interface{}
-	t := reflect.TypeOf(result)
-	if t == nil || t.Kind() != reflect.Ptr {
-		callRes = result
-	} else {
-		callRes = reflect.ValueOf(result).Elem()
+func IsRetryableError(err jsonrpc2.Error) bool {
+	if err.Code == 11 {
+		return true
 	}
-	log.Printf("[TRACE] Made rpc call `%s` with params: %v and received %+v: result with error: %v\n", method, params, callRes, err)
+	return false
+}
 
-	if err != nil {
-		rpcErr, ok := err.(*jsonrpc2.Error)
-
-		if !ok {
-			return err
+func (c *Client) Call(method string, params, result interface{}) error {
+	operation := func() error {
+		err := c.rpc.Call(context.Background(), method, params, result)
+		var callRes interface{}
+		t := reflect.TypeOf(result)
+		if t == nil || t.Kind() != reflect.Ptr {
+			callRes = result
+		} else {
+			callRes = reflect.ValueOf(result).Elem()
 		}
+		log.Printf("[TRACE] Made rpc call `%s` with params: %v and received %+v: result with error: %v\n", method, params, callRes, err)
 
-		data := rpcErr.Data
+		if err != nil {
+			rpcErr, ok := err.(*jsonrpc2.Error)
 
-		if data == nil {
-			return err
+			if !ok {
+				return backoff.PermanentError{err}
+			}
+
+			if IsRetryableError(rpcErr) {
+				return err
+			}
+
+			data := rpcErr.Data
+
+			if data == nil {
+				return backoff.PermanentError{err}
+			}
+
+			return backoff.PermanentError{errors.New(fmt.Sprintf("%s: %s", err, *data))}
 		}
-
-		return errors.New(fmt.Sprintf("%s: %s", err, *data))
+		return nil
 	}
-	return nil
+
+	bo := backoff.NewExponentialBackOff()
+	// TODO(ddelnano): See if we need to update from the default 15 mins
+	// bo.MaxElapsedTime = maxElapsedTime
+	return backoff.Retry(operation, bo)
 }
 
 type RefreshComparison interface {
