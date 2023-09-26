@@ -20,8 +20,12 @@ type PIF struct {
 func (p PIF) Compare(obj interface{}) bool {
 	otherPif := obj.(PIF)
 
-	if p.Id != "" && otherPif.Id == p.Id {
-		return true
+	if p.Id != "" {
+		if otherPif.Id == p.Id {
+			return true
+		} else {
+			return false
+		}
 	}
 	hostIdExists := p.Host != ""
 	if hostIdExists && p.Host != otherPif.Host {
