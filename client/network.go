@@ -218,7 +218,6 @@ func (c *Client) GetNetwork(netReq Network) (*Network, error) {
 	if len(nets) > 1 {
 		return nil, errors.New(fmt.Sprintf("Your query returned more than one result: %+v. Use `pool_id` or other fields to filter the result down to a single network", nets))
 	}
-	fmt.Printf("[DEBUG] Found network %v\n", nets[0])
 
 	return &nets[0], nil
 }
