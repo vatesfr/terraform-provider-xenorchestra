@@ -11,15 +11,20 @@ import (
 
 func dataSourceXoaCloudConfig() *schema.Resource {
 	return &schema.Resource{
+		Description: `Provides information about cloud config.
+
+**NOTE:** If there are multiple cloud configs with the same name Terraform will fail. Ensure that your names are unique when using the data source.`,
 		Read: dataSourceCloudConfigRead,
 		Schema: map[string]*schema.Schema{
 			"name": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				Description: "The name of the cloud config you want to look up.",
 			},
 			"template": &schema.Schema{
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "The contents of the cloud-config.",
 			},
 		},
 	}

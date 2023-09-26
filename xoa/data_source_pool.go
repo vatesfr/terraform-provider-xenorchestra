@@ -11,24 +11,29 @@ import (
 
 func dataSourceXoaPool() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourcePoolRead,
+		Read:        dataSourcePoolRead,
+		Description: "Provides information about a pool.",
 		Schema: map[string]*schema.Schema{
 			"name_label": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				Description: "The name_label of the pool to look up.",
 			},
 			"description": &schema.Schema{
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "The description of the pool.",
 			},
 			"master": &schema.Schema{
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "The id of the primary instance in the pool.",
 			},
 			"cpus": &schema.Schema{
-				Type:     schema.TypeMap,
-				Computed: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
+				Type:        schema.TypeMap,
+				Computed:    true,
+				Elem:        &schema.Schema{Type: schema.TypeString},
+				Description: "CPU information about the pool. " + cpusDesc,
 			},
 		},
 	}

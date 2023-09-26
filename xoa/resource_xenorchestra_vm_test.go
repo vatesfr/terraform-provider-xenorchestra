@@ -384,6 +384,60 @@ func TestAccXenorchestraVm_createAndPlanWithNonExistantVm(t *testing.T) {
 	})
 }
 
+func TestAccXenorchestraVm_createWithDestroyCloudConfigDrive(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
+	verifyCloudConfigDiskDeleted := func() {
+		c, err := client.NewClient(client.GetConfigFromEnv())
+		if err != nil {
+			t.Fatalf("failed to create client with error: %v", err)
+		}
+
+		vm, err := c.GetVm(client.Vm{
+			NameLabel: vmName,
+		})
+
+		if err != nil {
+			t.Fatalf("failed to find VM with error: %v", err)
+		}
+
+		vmDisks, err := c.GetDisks(vm)
+		if err != nil {
+			t.Fatalf("failed to get Vm's disks with error: %v", err)
+		}
+
+		for _, disk := range vmDisks {
+			if disk.NameLabel == defaultCloudConfigDiskName {
+				t.Errorf("expected the VM to have its cloud config VDI removed, instead found: %v", disk)
+			}
+		}
+	}
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigWithDestroyCloudConfigAfterBoot(vmName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
+				Destroy: false,
+			},
+			{
+				PreConfig: verifyCloudConfigDiskDeleted,
+				Config:    testAccVmConfigWithDestroyCloudConfigAfterBoot(vmName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
+				PlanOnly: true,
+			},
+		},
+	})
+}
+
 func TestAccXenorchestraVm_createWhenWaitingForIp(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
@@ -1656,6 +1710,39 @@ resource "xenorchestra_vm" "bar" {
     network {
 	network_id = "${data.xenorchestra_network.network.id}"
     }
+
+    disk {
+      sr_id = "%s"
+      name_label = "disk 1"
+      size = 10001317888
+    }
+}
+`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+}
+
+// This sets destroy_cloud_config_vdi_after_boot and wait_for_ip. The former is required for
+// the test expectations while the latter is to ensure the test holds its assertions until the
+// disk was actually deleted. The XO api uses the guest metrics to determine when it can remove
+// the disk, so an IP address allocation happens at the same time.
+func testAccVmConfigWithDestroyCloudConfigAfterBoot(vmName string) string {
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
+data "xenorchestra_network" "network" {
+    name_label = "%s"
+    pool_id = "%s"
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 4295000000
+    cpus  = 1
+    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    name_label = "%s"
+    name_description = "description"
+    template = "${data.xenorchestra_template.template.id}"
+    destroy_cloud_config_vdi_after_boot = true
+    network {
+	network_id = "${data.xenorchestra_network.network.id}"
+    }
+    wait_for_ip = true
 
     disk {
       sr_id = "%s"

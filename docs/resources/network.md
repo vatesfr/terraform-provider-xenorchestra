@@ -17,16 +17,17 @@ data "xenorchestra_host" "host1" {
   name_label = "Your host"
 }
 
-data "xenorchestra_pif" "pif" {
-  device = "eth0"
-  vlan = -1
-  host_id = data.xenorchestra_host.host1.id
-}
-
-resource "xenorchestra_network" "network" {
+# Create a single server network private network
+resource "xenorchestra_network" "private_network" {
   name_label = "new network name"
   pool_id = data.xenorchestra_host.host1.pool_id
-  pif_id = data.xenorchestra_pif.pif.id
+}
+
+# Create a network with a 22 VLAN tag from the eth0 device
+resource "xenorchestra_network" "vlan_network" {
+  name_label = "new network name"
+  pool_id = data.xenorchestra_host.host1.pool_id
+  source_pif_device = "eth0"
   vlan = 22
 }
 ```
@@ -46,7 +47,7 @@ resource "xenorchestra_network" "network" {
 - `mtu` (Number) The MTU of the network. Defaults to `1500` if unspecified.
 - `name_description` (String)
 - `nbd` (Boolean) Whether the network should use a network block device. Defaults to `false` if unspecified.
-- `pif_id` (String) The pif (uuid) that should be used for this network.
+- `source_pif_device` (String) The PIF device (eth0, eth1, etc) that will be used as an input during network creation. This parameter is required if a vlan is specified.
 - `vlan` (Number) The vlan to use for the network. Defaults to `0` meaning no VLAN.
 
 ### Read-Only

@@ -12,24 +12,28 @@ import (
 func dataSourceXoaVms() *schema.Resource {
 
 	return &schema.Resource{
-		Read: dataSourceVmsRead,
+		Description: "Use this data source to filter Xenorchestra VMs by certain criteria (pool_id, power_state or host) for use in other resources.",
+		Read:        dataSourceVmsRead,
 		Schema: map[string]*schema.Schema{
 			"vms": &schema.Schema{
-				Type:     schema.TypeList,
-				Computed: true,
-				Elem:     resourceVm(),
+				Type:        schema.TypeList,
+				Computed:    true,
+				Elem:        resourceVm(),
+				Description: "A list of information for all vms found in this pool.",
 			},
 			"pool_id": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Description: "The ID of the pool the VM belongs to.",
+				Required:    true,
 			},
 			"host": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
 			},
 			"power_state": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:        schema.TypeString,
+				Description: "The power state of the vms. (Running, Halted)",
+				Optional:    true,
 			},
 		},
 	}

@@ -35,6 +35,42 @@ func TestAccXONetwork_create(t *testing.T) {
 	)
 }
 
+func TestAccXONetwork_import(t *testing.T) {
+	if accTestPIF.Id == "" {
+		t.Skip()
+	}
+	resourceName := "xenorchestra_network.network"
+	nameLabel := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
+	desc := "Non default description"
+	nbd := "false"
+	mtu := "1500"
+	vlan := "23"
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccXenorchestraNetworkConfigNonDefaultsWithVlan(nameLabel, desc, mtu, nbd, vlan),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckXenorchestraNetwork(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "name_label"),
+					resource.TestCheckResourceAttrSet(resourceName, "name_description"),
+					resource.TestCheckResourceAttrSet(resourceName, "pool_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "mtu"),
+					resource.TestCheckResourceAttrSet(resourceName, "source_pif_device"),
+					resource.TestCheckResourceAttrSet(resourceName, "vlan")),
+			},
+		},
+	},
+	)
+}
+
 func TestAccXONetwork_createWithVlanRequiresPIF(t *testing.T) {
 	if accTestPIF.Id == "" {
 		t.Skip()
@@ -46,11 +82,11 @@ func TestAccXONetwork_createWithVlanRequiresPIF(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config:      testAccXenorchestraNetworkConfigWithoutVlan(nameLabel),
-				ExpectError: regexp.MustCompile("all of `pif_id,vlan` must be specified"),
+				ExpectError: regexp.MustCompile("all of `source_pif_device,vlan` must be specified"),
 			},
 			{
 				Config:      testAccXenorchestraNetworkConfigWithoutPIF(nameLabel),
-				ExpectError: regexp.MustCompile("all of `pif_id,vlan` must be specified"),
+				ExpectError: regexp.MustCompile("all of `source_pif_device,vlan` must be specified"),
 			},
 		},
 	},
@@ -80,6 +116,7 @@ func TestAccXONetwork_createWithNonDefaults(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "name_description", desc),
 					resource.TestCheckResourceAttr(resourceName, "pool_id", accTestPIF.PoolId),
 					resource.TestCheckResourceAttr(resourceName, "mtu", mtu),
+					resource.TestCheckResourceAttrSet(resourceName, "source_pif_device"),
 					resource.TestCheckResourceAttr(resourceName, "vlan", vlan),
 					resource.TestCheckResourceAttr(resourceName, "nbd", nbd)),
 			},
@@ -205,7 +242,7 @@ var testAccXenorchestraNetworkConfigWithoutVlan = func(name string) string {
 resource "xenorchestra_network" "network" {
     name_label = "%s"
     pool_id = "%s"
-    pif_id = data.xenorchestra_pif.pif.id
+    source_pif_device = "eth1"
 }
 `, name, accTestPIF.PoolId)
 }
@@ -234,22 +271,16 @@ resource "xenorchestra_network" "network" {
 
 var testAccXenorchestraNetworkConfigNonDefaultsWithVlan = func(name, desc, mtu, nbd, vlan string) string {
 	return fmt.Sprintf(`
-data "xenorchestra_pif" "pif" {
-    device = "eth1"
-    vlan = -1
-    host_id = "%s"
-}
-
 resource "xenorchestra_network" "network" {
     name_label = "%s"
     name_description = "%s"
     pool_id = "%s"
     mtu = %s
     nbd = %s
-    pif_id = data.xenorchestra_pif.pif.id
+    source_pif_device = "eth0"
     vlan = %s
 }
-`, accTestPIF.Host, name, desc, accTestPIF.PoolId, mtu, nbd, vlan)
+`, name, desc, accTestPIF.PoolId, mtu, nbd, vlan)
 }
 
 var testAccXenorchestraNetworkConfigInPlaceUpdates = func(name, desc, nbd, automatic, isLocked string) string {

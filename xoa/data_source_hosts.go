@@ -9,29 +9,35 @@ import (
 
 func dataSourceXoaHosts() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceHostsRead,
+		Read:        dataSourceHostsRead,
+		Description: "Use this data source to filter Xenorchestra hosts by certain criteria (name_label, tags) for use in other resources.",
 		Schema: map[string]*schema.Schema{
 			"master": &schema.Schema{
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "The primary host of the pool.",
 			},
 			"hosts": &schema.Schema{
-				Type:     schema.TypeList,
-				Computed: true,
-				Elem:     resourceHost(),
+				Type:        schema.TypeList,
+				Computed:    true,
+				Elem:        resourceHost(),
+				Description: "The resulting hosts after applying the argument filtering.",
 			},
 			"pool_id": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				Description: "The pool id used to filter the resulting hosts by.",
 			},
 			"tags": resourceTags(),
 			"sort_by": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "The host field to sort the results by (id and name_label are supported).",
 			},
 			"sort_order": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "Valid options are `asc` or `desc` and sort order is applied to `sort_by` argument.",
 			},
 		},
 	}
