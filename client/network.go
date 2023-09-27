@@ -47,15 +47,21 @@ func (net Network) Compare(obj interface{}) bool {
 }
 
 type CreateNetworkRequest struct {
-	Pool            string `mapstructure:"pool"`
-	Name            string `mapstructure:"name"`
-	Nbd             bool   `mapstructure:"nbd,omitempty"`
-	Description     string `mapstructure:"description,omitempty"`
-	Mtu             int    `mapstructure:"mtu,omitempty"`
-	PIF             string `mapstructure:"pif,omitempty"`
-	Vlan            int    `mapstructure:"vlan,omitempty"`
+	// The first set of members are shared between bonded and non bonded networks
+	// These should be kept in sync with the CreateBondedNetworkRequest struct
+	// Refactoring these fields to an embedded struct means that the caller must
+	// know the embedded structs existance. Since the list is relatively small
+	// this was deemed a more appropriate tradeoff to make the API nicer.
 	Automatic       bool   `mapstructure:"automatic"`
 	DefaultIsLocked bool   `mapstructure:"defaultIsLocked"`
+	Pool            string `mapstructure:"pool"`
+	Name            string `mapstructure:"name"`
+	Description     string `mapstructure:"description,omitempty"`
+	Mtu             int    `mapstructure:"mtu,omitempty"`
+
+	Nbd  bool   `mapstructure:"nbd,omitempty"`
+	PIF  string `mapstructure:"pif,omitempty"`
+	Vlan int    `mapstructure:"vlan,omitempty"`
 }
 
 // Nbd and Automatic are eventually consistent. This ensures that waitForModifyNetwork will
@@ -68,6 +74,24 @@ func (c CreateNetworkRequest) Propagated(obj interface{}) bool {
 		return true
 	}
 	return false
+}
+
+type CreateBondedNetworkRequest struct {
+	// The first set of members are shared between bonded and non bonded networks
+	// These should be kept in sync with the CreateNetworkRequest struct
+	Automatic       bool   `mapstructure:"automatic"`
+	DefaultIsLocked bool   `mapstructure:"defaultIsLocked"`
+	Pool            string `mapstructure:"pool"`
+	Name            string `mapstructure:"name"`
+	Description     string `mapstructure:"description,omitempty"`
+	Mtu             int    `mapstructure:"mtu,omitempty"`
+
+	BondMode string   `mapstructure:"bondMode,omitempty"`
+	PIFs     []string `mapstructure:"pifs,omitempty"`
+}
+
+func (c CreateBondedNetworkRequest) Propagated(obj interface{}) bool {
+	return true
 }
 
 type UpdateNetworkRequest struct {
@@ -116,6 +140,34 @@ func (c *Client) CreateNetwork(netReq CreateNetworkRequest) (*Network, error) {
 		})
 	}
 
+	return c.waitForModifyNetwork(id, netReq, 10*time.Second)
+}
+
+func (c *Client) CreateBondedNetwork(netReq CreateBondedNetworkRequest) (*Network, error) {
+	var params map[string]interface{}
+	mapstructure.Decode(netReq, &params)
+
+	delete(params, "automatic")
+	delete(params, "defaultIsLocked")
+
+	log.Printf("[DEBUG] params for network.createBonded: %#v", params)
+
+	var result map[string]interface{}
+	err := c.Call("network.createBonded", params, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	id := result["uuid"].(string)
+	// Neither automatic nor defaultIsLocked can be specified in the network.create RPC.
+	// Update them afterwards if the user requested it during creation.
+	if netReq.Automatic || netReq.DefaultIsLocked {
+		_, err = c.UpdateNetwork(UpdateNetworkRequest{
+			Id:              id,
+			Automatic:       netReq.Automatic,
+			DefaultIsLocked: netReq.DefaultIsLocked,
+		})
+	}
 	return c.waitForModifyNetwork(id, netReq, 10*time.Second)
 }
 

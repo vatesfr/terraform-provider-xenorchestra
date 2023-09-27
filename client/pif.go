@@ -7,14 +7,16 @@ import (
 )
 
 type PIF struct {
-	Device   string `json:"device"`
-	Host     string `json:"$host"`
-	Network  string `json:"$network"`
-	Id       string `json:"id"`
-	Uuid     string `json:"uuid"`
-	PoolId   string `json:"$poolId"`
-	Attached bool   `json:"attached"`
-	Vlan     int    `json:"vlan"`
+	Device       string `json:"device"`
+	Host         string `json:"$host"`
+	Network      string `json:"$network"`
+	Id           string `json:"id"`
+	Uuid         string `json:"uuid"`
+	PoolId       string `json:"$poolId"`
+	Attached     bool   `json:"attached"`
+	Vlan         int    `json:"vlan"`
+	IsBondMaster bool   `json:"isBondMaster,omitempty"`
+	IsBondSlave  bool   `json:"isBondSlave,omitempty"`
 }
 
 func (p PIF) Compare(obj interface{}) bool {
