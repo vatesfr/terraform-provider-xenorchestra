@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cenkalti/backoff/v3"
 	gorillawebsocket "github.com/gorilla/websocket"
 	"github.com/sourcegraph/jsonrpc2"
 	"github.com/sourcegraph/jsonrpc2/websocket"
@@ -228,33 +229,56 @@ func NewClient(config Config) (XOClient, error) {
 	}, nil
 }
 
-func (c *Client) Call(method string, params, result interface{}, opt ...jsonrpc2.CallOption) error {
-	err := c.rpc.Call(context.Background(), method, params, result, opt...)
-	var callRes interface{}
-	t := reflect.TypeOf(result)
-	if t == nil || t.Kind() != reflect.Ptr {
-		callRes = result
-	} else {
-		callRes = reflect.ValueOf(result).Elem()
+func IsRetryableError(err jsonrpc2.Error) bool {
+	// Error code 11 corresponds to an error condition where a VM is missing PV drivers.
+	// https://github.com/vatesfr/xen-orchestra/blob/a3a2fda157fa30af4b93d34c99bac550f7c82bbc/packages/xo-common/api-errors.js#L95
+
+	// During the boot process, there is a race condition where the PV drivers aren't available yet and
+	// making XO api calls during this time can return a VM_MISSING_PV_DRIVERS error. These errors can
+	// be treated as retryable since we want to wait until the VM has finished booting and its PV driver
+	// is initialized.
+	if err.Code == 11 {
+		return true
 	}
-	log.Printf("[TRACE] Made rpc call `%s` with params: %v and received %+v: result with error: %v\n", method, params, callRes, err)
+	return false
+}
 
-	if err != nil {
-		rpcErr, ok := err.(*jsonrpc2.Error)
-
-		if !ok {
-			return err
+func (c *Client) Call(method string, params, result interface{}) error {
+	operation := func() error {
+		err := c.rpc.Call(context.Background(), method, params, result)
+		var callRes interface{}
+		t := reflect.TypeOf(result)
+		if t == nil || t.Kind() != reflect.Ptr {
+			callRes = result
+		} else {
+			callRes = reflect.ValueOf(result).Elem()
 		}
+		log.Printf("[TRACE] Made rpc call `%s` with params: %v and received %+v: result with error: %v\n", method, params, callRes, err)
 
-		data := rpcErr.Data
+		if err != nil {
+			rpcErr, ok := err.(*jsonrpc2.Error)
 
-		if data == nil {
-			return err
+			if !ok {
+				return backoff.Permanent(err)
+			}
+
+			if IsRetryableError(*rpcErr) {
+				return err
+			}
+
+			data := rpcErr.Data
+
+			if data == nil {
+				return backoff.Permanent(err)
+			}
+
+			return backoff.Permanent(errors.New(fmt.Sprintf("%s: %s", err, *data)))
 		}
-
-		return errors.New(fmt.Sprintf("%s: %s", err, *data))
+		return nil
 	}
-	return nil
+
+	bo := backoff.NewExponentialBackOff()
+	return backoff.Retry(operation, bo)
 }
 
 type RefreshComparison interface {
