@@ -237,7 +237,7 @@ func IsRetryableError(err jsonrpc2.Error) bool {
 	// making XO api calls during this time can return a VM_MISSING_PV_DRIVERS error. These errors can
 	// be treated as retryable since we want to wait until the VM has finished booting and its PV driver
 	// is initialized.
-	if err.Code == 11 {
+	if err.Code == 11 || err.Code == 14 {
 		return true
 	}
 	return false
