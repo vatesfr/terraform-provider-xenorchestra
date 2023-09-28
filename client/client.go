@@ -229,7 +229,14 @@ func NewClient(config Config) (XOClient, error) {
 }
 
 func IsRetryableError(err jsonrpc2.Error) bool {
-	if err.Code == 11 {
+	// Error code 11 corresponds to an error condition where a VM is missing PV drivers.
+	// https://github.com/vatesfr/xen-orchestra/blob/a3a2fda157fa30af4b93d34c99bac550f7c82bbc/packages/xo-common/api-errors.js#L95
+
+	// During the boot process, there is a race condition where the PV drivers aren't available yet and
+	// making XO api calls during this time can return a VM_MISSING_PV_DRIVERS error. These errors can
+	// be treated as retryable since we want to wait until the VM has finished booting and its PV driver
+	// is initialized.
+	if err.Code == 11 || err.Code == 14 {
 		return true
 	}
 	return false
