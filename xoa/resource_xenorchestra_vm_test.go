@@ -1130,7 +1130,7 @@ func TestAccXenorchestraVm_addVifAndRemoveVif(t *testing.T) {
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccVmConfig(vmName),
+				Config: testAccVmConfigWithWaitForIp(vmName, "true"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -1694,6 +1694,10 @@ resource "xenorchestra_vm" "bar" {
 }
 
 func testAccVmConfig(vmName string) string {
+	return testAccVmConfigWithWaitForIp(vmName, "false")
+}
+
+func testAccVmConfigWithWaitForIp(vmName, waitForIp string) string {
 	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
 data "xenorchestra_network" "network" {
     name_label = "%s"
@@ -1716,8 +1720,9 @@ resource "xenorchestra_vm" "bar" {
       name_label = "disk 1"
       size = 10001317888
     }
+    wait_for_ip = %s
 }
-`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id, waitForIp)
 }
 
 // This sets destroy_cloud_config_vdi_after_boot and wait_for_ip. The former is required for
