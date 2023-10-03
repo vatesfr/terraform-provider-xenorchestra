@@ -119,16 +119,31 @@ type XOClient interface {
 }
 
 type Client struct {
-	rpc        jsonrpc2.JSONRPC2
-	httpClient http.Client
-	restApiURL *url.URL
+	RetryMode    RetryMode
+	RetryMaxTime time.Duration
+	rpc          jsonrpc2.JSONRPC2
+	httpClient   http.Client
+	restApiURL   *url.URL
 }
+
+type RetryMode int
+
+const (
+	None RetryMode = iota // specifies that no retries will be made
+	// Specifies that exponential backoff will be used for certain retryable errors. When
+	// a guest is booting there is the potential for a race condition if the given action
+	// relies on the existance of a PV driver (unplugging / plugging a device). This open
+	// allows the provider to retry these errors until the guest is initialized.
+	Backoff
+)
 
 type Config struct {
 	Url                string
 	Username           string
 	Password           string
 	InsecureSkipVerify bool
+	RetryMode          RetryMode
+	RetryMaxTime       time.Duration
 }
 
 var dialer = gorillawebsocket.Dialer{
@@ -223,13 +238,20 @@ func NewClient(config Config) (XOClient, error) {
 		},
 	}
 	return &Client{
-		rpc:        c,
-		httpClient: httpClient,
-		restApiURL: restApiURL,
+		RetryMode:    config.RetryMode,
+		RetryMaxTime: config.RetryMaxTime,
+		rpc:          c,
+		httpClient:   httpClient,
+		restApiURL:   restApiURL,
 	}, nil
 }
 
-func IsRetryableError(err jsonrpc2.Error) bool {
+func (c *Client) IsRetryableError(err jsonrpc2.Error) bool {
+
+	if c.RetryMode == None {
+		return false
+	}
+
 	// Error code 11 corresponds to an error condition where a VM is missing PV drivers.
 	// https://github.com/vatesfr/xen-orchestra/blob/a3a2fda157fa30af4b93d34c99bac550f7c82bbc/packages/xo-common/api-errors.js#L95
 
@@ -262,7 +284,7 @@ func (c *Client) Call(method string, params, result interface{}) error {
 				return backoff.Permanent(err)
 			}
 
-			if IsRetryableError(*rpcErr) {
+			if c.IsRetryableError(*rpcErr) {
 				return err
 			}
 
@@ -278,6 +300,7 @@ func (c *Client) Call(method string, params, result interface{}) error {
 	}
 
 	bo := backoff.NewExponentialBackOff()
+	bo.MaxElapsedTime = c.RetryMaxTime
 	return backoff.Retry(operation, bo)
 }
 

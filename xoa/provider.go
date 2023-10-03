@@ -1,8 +1,21 @@
 package xoa
 
 import (
+	"errors"
+	"fmt"
+	"regexp"
+	"time"
+
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+var (
+	retryModeMap = map[string]client.RetryMode{
+		"none":    client.None,
+		"backoff": client.Backoff,
+	}
 )
 
 func Provider() *schema.Provider {
@@ -32,6 +45,20 @@ func Provider() *schema.Provider {
 				Default:     false,
 				DefaultFunc: schema.EnvDefaultFunc("XOA_INSECURE", nil),
 				Description: "Whether SSL should be verified or not. Can be set via the XOA_INSECURE environment variable.",
+			},
+			"retry_mode": &schema.Schema{
+				Type:         schema.TypeString,
+				Optional:     true,
+				DefaultFunc:  schema.EnvDefaultFunc("XOA_RETRY_MODE", "backoff"),
+				Description:  "Specifies if retries should be attempted for requests that require eventual . Can be set via the XOA_RETRY_MODE environment variable.",
+				ValidateFunc: validation.StringInSlice([]string{"backoff", "none"}, false),
+			},
+			"retry_max_time": &schema.Schema{
+				Type:         schema.TypeString,
+				Optional:     true,
+				DefaultFunc:  schema.EnvDefaultFunc("XOA_RETRY_MAX_TIME", "5m"),
+				Description:  "If `retry_mode` is set, this specifies the duration for which the backoff method will continue retries. Can be set via the `XOA_RETRY_MAX_TIME` environment variable",
+				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[0-9]+(\.[0-9]+)?(ms|s|m|h)$`), "must be a number immediately followed by ms (milliseconds), s (seconds), m (minutes), or h (hours). For example, \"30s\" for 30 seconds."),
 			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
@@ -66,11 +93,26 @@ func xoaConfigure(d *schema.ResourceData) (interface{}, error) {
 	username := d.Get("username").(string)
 	password := d.Get("password").(string)
 	insecure := d.Get("insecure").(bool)
+	retryMode := d.Get("retry_mode").(string)
+	retryMaxTime := d.Get("retry_max_time").(string)
+
+	duration, err := time.ParseDuration(retryMaxTime)
+	if err != nil {
+		return client.Config{}, err
+	}
+
+	retry, ok := retryModeMap[retryMode]
+	if !ok {
+		return client.Config{}, errors.New(fmt.Sprintf("retry mode provided invalid: %s", retryMode))
+	}
+
 	config := client.Config{
 		Url:                url,
 		Username:           username,
 		Password:           password,
 		InsecureSkipVerify: insecure,
+		RetryMode:          retry,
+		RetryMaxTime:       duration,
 	}
 	return client.NewClient(config)
 }
