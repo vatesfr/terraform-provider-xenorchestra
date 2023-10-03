@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cenkalti/backoff/v3"
 	gorillawebsocket "github.com/gorilla/websocket"
 	"github.com/sourcegraph/jsonrpc2"
 	"github.com/sourcegraph/jsonrpc2/websocket"
@@ -118,16 +119,31 @@ type XOClient interface {
 }
 
 type Client struct {
-	rpc        jsonrpc2.JSONRPC2
-	httpClient http.Client
-	restApiURL *url.URL
+	RetryMode    RetryMode
+	RetryMaxTime time.Duration
+	rpc          jsonrpc2.JSONRPC2
+	httpClient   http.Client
+	restApiURL   *url.URL
 }
+
+type RetryMode int
+
+const (
+	None RetryMode = iota // specifies that no retries will be made
+	// Specifies that exponential backoff will be used for certain retryable errors. When
+	// a guest is booting there is the potential for a race condition if the given action
+	// relies on the existance of a PV driver (unplugging / plugging a device). This open
+	// allows the provider to retry these errors until the guest is initialized.
+	Backoff
+)
 
 type Config struct {
 	Url                string
 	Username           string
 	Password           string
 	InsecureSkipVerify bool
+	RetryMode          RetryMode
+	RetryMaxTime       time.Duration
 }
 
 var dialer = gorillawebsocket.Dialer{
@@ -222,39 +238,70 @@ func NewClient(config Config) (XOClient, error) {
 		},
 	}
 	return &Client{
-		rpc:        c,
-		httpClient: httpClient,
-		restApiURL: restApiURL,
+		RetryMode:    config.RetryMode,
+		RetryMaxTime: config.RetryMaxTime,
+		rpc:          c,
+		httpClient:   httpClient,
+		restApiURL:   restApiURL,
 	}, nil
 }
 
-func (c *Client) Call(method string, params, result interface{}, opt ...jsonrpc2.CallOption) error {
-	err := c.rpc.Call(context.Background(), method, params, result, opt...)
-	var callRes interface{}
-	t := reflect.TypeOf(result)
-	if t == nil || t.Kind() != reflect.Ptr {
-		callRes = result
-	} else {
-		callRes = reflect.ValueOf(result).Elem()
+func (c *Client) IsRetryableError(err jsonrpc2.Error) bool {
+
+	if c.RetryMode == None {
+		return false
 	}
-	log.Printf("[TRACE] Made rpc call `%s` with params: %v and received %+v: result with error: %v\n", method, params, callRes, err)
 
-	if err != nil {
-		rpcErr, ok := err.(*jsonrpc2.Error)
+	// Error code 11 corresponds to an error condition where a VM is missing PV drivers.
+	// https://github.com/vatesfr/xen-orchestra/blob/a3a2fda157fa30af4b93d34c99bac550f7c82bbc/packages/xo-common/api-errors.js#L95
 
-		if !ok {
-			return err
-		}
-
-		data := rpcErr.Data
-
-		if data == nil {
-			return err
-		}
-
-		return errors.New(fmt.Sprintf("%s: %s", err, *data))
+	// During the boot process, there is a race condition where the PV drivers aren't available yet and
+	// making XO api calls during this time can return a VM_MISSING_PV_DRIVERS error. These errors can
+	// be treated as retryable since we want to wait until the VM has finished booting and its PV driver
+	// is initialized.
+	if err.Code == 11 || err.Code == 14 {
+		return true
 	}
-	return nil
+	return false
+}
+
+func (c *Client) Call(method string, params, result interface{}) error {
+	operation := func() error {
+		err := c.rpc.Call(context.Background(), method, params, result)
+		var callRes interface{}
+		t := reflect.TypeOf(result)
+		if t == nil || t.Kind() != reflect.Ptr {
+			callRes = result
+		} else {
+			callRes = reflect.ValueOf(result).Elem()
+		}
+		log.Printf("[TRACE] Made rpc call `%s` with params: %v and received %+v: result with error: %v\n", method, params, callRes, err)
+
+		if err != nil {
+			rpcErr, ok := err.(*jsonrpc2.Error)
+
+			if !ok {
+				return backoff.Permanent(err)
+			}
+
+			if c.IsRetryableError(*rpcErr) {
+				return err
+			}
+
+			data := rpcErr.Data
+
+			if data == nil {
+				return backoff.Permanent(err)
+			}
+
+			return backoff.Permanent(errors.New(fmt.Sprintf("%s: %s", err, *data)))
+		}
+		return nil
+	}
+
+	bo := backoff.NewExponentialBackOff()
+	bo.MaxElapsedTime = c.RetryMaxTime
+	return backoff.Retry(operation, bo)
 }
 
 type RefreshComparison interface {
