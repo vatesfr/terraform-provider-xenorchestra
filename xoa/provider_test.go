@@ -52,4 +52,10 @@ func testAccPreCheck(t *testing.T) {
 	if v := os.Getenv("XOA_ISO_SR"); v == "" {
 		t.Fatal("The XOA_ISO_SR environment variable must be set")
 	}
+	if v := os.Getenv("XOA_RETRY_MAX_TIME"); v == "" {
+		t.Fatal("The XOA_RETRY_MAX_TIME environment variable must be set")
+	}
+	if v := os.Getenv("XOA_RETRY_MODE"); v == "" {
+		t.Fatal("The XOA_RETRY_MODE environment variable must be set")
+	}
 }
