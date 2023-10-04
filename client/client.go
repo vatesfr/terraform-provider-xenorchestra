@@ -275,6 +275,7 @@ func NewClient(config Config) (XOClient, error) {
 
 func (c *Client) IsRetryableError(err jsonrpc2.Error) bool {
 
+	fmt.Printf("[ERROR] retry mode: %d and timeout %v, Handling jsonrpc2: %v\n", c.RetryMode, c.RetryMaxTime, err)
 	if c.RetryMode == None {
 		return false
 	}
