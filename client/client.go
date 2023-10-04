@@ -151,11 +151,20 @@ var dialer = gorillawebsocket.Dialer{
 	WriteBufferSize: MaxMessageSize,
 }
 
+var (
+	retryModeMap = map[string]RetryMode{
+		"none":    None,
+		"backoff": Backoff,
+	}
+)
+
 func GetConfigFromEnv() Config {
 	var wsURL string
 	var username string
 	var password string
 	insecure := false
+	retryMode := None
+	retryMaxTime := 5 * time.Minute
 	if v := os.Getenv("XOA_URL"); v != "" {
 		wsURL = v
 	}
@@ -168,11 +177,29 @@ func GetConfigFromEnv() Config {
 	if v := os.Getenv("XOA_INSECURE"); v != "" {
 		insecure = true
 	}
+	if v := os.Getenv("XOA_RETRY_MODE"); v != "" {
+		retry, ok := retryModeMap[v]
+		if !ok {
+			fmt.Println("[ERROR] failed to set retry mode, disabling retries")
+		} else {
+			retryMode = retry
+		}
+	}
+	if v := os.Getenv("XOA_RETRY_MAX_TIME"); v != "" {
+		duration, err := time.ParseDuration(v)
+		if err == nil {
+			retryMaxTime = duration
+		} else {
+			fmt.Println("[ERROR] failed to set retry mode, disabling retries\n")
+		}
+	}
 	return Config{
 		Url:                wsURL,
 		Username:           username,
 		Password:           password,
 		InsecureSkipVerify: insecure,
+		RetryMode:          retryMode,
+		RetryMaxTime:       retryMaxTime,
 	}
 }
 
@@ -248,6 +275,7 @@ func NewClient(config Config) (XOClient, error) {
 
 func (c *Client) IsRetryableError(err jsonrpc2.Error) bool {
 
+	fmt.Printf("[ERROR] retry mode: %d and timeout %v, Handling jsonrpc2: %v\n", c.RetryMode, c.RetryMaxTime, err)
 	if c.RetryMode == None {
 		return false
 	}
