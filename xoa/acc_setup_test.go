@@ -31,11 +31,12 @@ func TestMain(m *testing.M) {
 	flagSweep := flag.Lookup("sweep")
 
 	if flagSweep != nil && flagSweep.Value.String() != "" {
-		resource.TestMain(m)
-	} else {
 		_, runSetup := os.LookupEnv("TF_ACC")
 
 		if runSetup {
+			fmt.Println("Running sweeping")
+			resource.TestMain(m)
+
 			client.FindPoolForTests(&accTestPool)
 			client.FindPIFForTests(&accTestPIF)
 			client.FindTemplateForTests(&testTemplate, accTestPool.Id, "XOA_TEMPLATE")
@@ -46,19 +47,17 @@ func TestMain(m *testing.M) {
 			client.FindIsoStorageRepositoryForTests(accTestPool, &accIsoSr, accTestPrefix, "XOA_ISO_SR")
 			client.CreateUser(&accUser)
 			testIsoName = os.Getenv("XOA_ISO")
-		}
+			fmt.Printf("Found the following pool: %v sr: %v\n", accTestPool, accDefaultSr)
 
-		code := m.Run()
-
-		if runSetup {
+			code := m.Run()
 			client.RemoveNetworksWithNamePrefix(accTestPrefix)("")
 			client.RemoveVDIsWithPrefix(accTestPrefix)("")
 			client.RemoveResourceSetsWithNamePrefix(accTestPrefix)("")
 			client.RemoveTagFromAllObjects(accTestPrefix)("")
 			client.RemoveUsersWithPrefix(accTestPrefix)("")
 			client.RemoveCloudConfigsWithPrefix(accTestPrefix)("")
+			os.Exit(code)
 		}
-
-		os.Exit(code)
 	}
+
 }
