@@ -383,6 +383,14 @@ func resourceRecord() *schema.Resource {
 		Read:        resourceVmRead,
 		Update:      resourceVmUpdate,
 		Delete:      resourceVmDelete,
+		// SchemaVersion: 1,
+		// StateUpgraders: []schema.StateUpgrader{
+		// 	{
+		// 		Type:    state.ResourceVmResourceV0().CoreConfigSchema().ImpliedType(),
+		// 		Upgrade: state.VmStateUpgradeV0,
+		// 		Version: 0,
+		// 	},
+		// },
 		Importer: &schema.ResourceImporter{
 			State: RecordImport,
 		},
