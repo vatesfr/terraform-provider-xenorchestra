@@ -12,6 +12,7 @@ import (
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
 	"github.com/ddelnano/terraform-provider-xenorchestra/xoa/internal"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -1492,6 +1493,7 @@ func TestAccXenorchestraVm_createWithV0StateMigration(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckNoResourceAttr(resourceName, "destroy_cloud_config_vdi_after_boot"),
 				),
 			},
 			{
@@ -1501,13 +1503,42 @@ func TestAccXenorchestraVm_createWithV0StateMigration(t *testing.T) {
 						VersionConstraint: "0.25.0",
 					},
 				},
-				Config: testAccVmConfig(vmName),
+				Config: testAccVmConfigWithWaitForIp(vmName, "true"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckNoResourceAttr(resourceName, "destroy_cloud_config_vdi_after_boot"),
 				),
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: true,
+			},
+			{
+				ProviderFactories: map[string]func() (*schema.Provider, error){
+					"xenorchestra": func() (*schema.Provider, error) {
+						return testAccFailToDeleteVmProvider, nil
+					},
+				},
+				Config: testAccVmConfigWithWaitForIp(vmName, "true"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "destroy_cloud_config_vdi_after_boot", "false"),
+				),
+			},
+			{
+				ProviderFactories: map[string]func() (*schema.Provider, error){
+					"xenorchestra": func() (*schema.Provider, error) {
+						return Provider(), nil
+					},
+				},
+				Config: testAccVmConfigWithWaitForIp(vmName, "true"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "destroy_cloud_config_vdi_after_boot", "false"),
+				),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
 			},
 		},
 	})
