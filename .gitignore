@@ -6,3 +6,4 @@ main.tf
 terraform.tfstate*
 dist/
 vendor
+xoa/testdata/alpine-virt-3.17.0-x86_64.iso
