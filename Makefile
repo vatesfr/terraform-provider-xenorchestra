@@ -1,4 +1,4 @@
-.PHONY: import testacc testclient test dist
+.PHONY: import testacc testclient test dist ci
 
 TIMEOUT ?= 40m
 GOMAXPROCS ?= 5
@@ -36,7 +36,12 @@ test: testclient testacc
 testclient:
 	cd client; go test $(TEST) -v -count 1
 
-testacc:
+testacc: xoa/testdata/alpine-virt-3.17.0-x86_64.iso
 	TF_ACC=1 $(TF_LOG) go test $(TEST) -parallel $(GOMAXPROCS) -v -count 1 -timeout $(TIMEOUT) -sweep=true
-ci:
+
+# This file was previously stored in the git repo with git lfs. GitHub
+# has a very low quota for number of allowed clones and so this needed
+# to be removed from the repo. Add a target to enforce that the CI system
+# has copied that file into place before the tests run
+ci: xoa/testdata/alpine-virt-3.17.0-x86_64.iso
 	TF_ACC=1 gotestsum --debug --rerun-fails=5 --max-fails=15 --packages=./xoa  -- ./xoa -v -count=1 -timeout=$(TIMEOUT) -sweep=true -parallel=$(GOMAXPROCS)
