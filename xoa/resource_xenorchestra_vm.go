@@ -227,6 +227,11 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 			Default:     0,
 			Optional:    true,
 		},
+		"use_graceful_termination": &schema.Schema{
+			Type:     schema.TypeBool,
+			Default:  false,
+			Optional: true,
+		},
 		// TODO: (#145) Uncomment this once issues with secure_boot have been figured out
 		// "secure_boot": &schema.Schema{
 		// 	Type:     schema.TypeBool,
@@ -915,9 +920,24 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 
 func resourceVmDelete(d *schema.ResourceData, m interface{}) error {
 	c := m.(client.XOClient)
+	gracefulTermination := d.Get("use_graceful_termination").(bool)
+	vmId := d.Id()
 
-	err := c.DeleteVm(d.Id())
+	if gracefulTermination {
+		vm, err := c.GetVm(client.Vm{Id: vmId})
+		if err != nil {
+			return err
+		}
 
+		if vm.PowerState == "Running" {
+			err = c.HaltVm(vmId)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	err := c.DeleteVm(vmId)
 	if err != nil {
 		return err
 	}

@@ -128,6 +128,7 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 * `vga` - (Optional) The video adapter the VM should use. Possible values include std and cirrus.
 * `videoram` - (Optional) The videoram option the VM should use. Possible values include 1, 2, 4, 8, 16
 * `start_delay` - (Optional) Number of seconds the VM should be delayed from starting
+* `use_graceful_termination` - (Optional) If true the VM will be shutdown before it is terminated when destroyed. Defaults to false.
 
 ## Timeouts
 

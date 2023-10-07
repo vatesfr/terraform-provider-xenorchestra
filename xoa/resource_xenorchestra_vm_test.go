@@ -1014,6 +1014,68 @@ func TestAccXenorchestraVm_createWithMutipleDisks(t *testing.T) {
 	})
 }
 
+func TestAccXenorchestraVm_gracefulTermination(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccGracefulVmTerminationProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigWithGracefulTermination(vmName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id")),
+			},
+			{
+				Config:  testAccVmConfigWithGracefulTermination(vmName),
+				Destroy: true,
+			},
+		},
+	})
+}
+
+// Reference: https://github.com/terra-farm/terraform-provider-xenorchestra/pull/212
+func TestAccXenorchestraVm_gracefulTerminationForShutdownVm(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
+	shutdownVm := func() {
+		c, err := client.NewClient(client.GetConfigFromEnv())
+		if err != nil {
+			t.Fatalf("failed to create client with error: %v", err)
+		}
+
+		vm, err := c.GetVm(client.Vm{
+			NameLabel: vmName,
+		})
+
+		err = c.HaltVm(vm.Id)
+
+		if err != nil {
+			t.Fatalf("failed to halt VM with error: %v", err)
+		}
+	}
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccGracefulVmTerminationProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigWithGracefulTermination(vmName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id")),
+			},
+			{
+				PreConfig: shutdownVm,
+				Config:    testAccVmConfig(vmName),
+				Destroy:   true,
+			},
+		},
+	})
+}
+
 func TestAccXenorchestraVm_addAndRemoveDisksToVm(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
@@ -1754,6 +1816,35 @@ resource "xenorchestra_vm" "bar" {
       name_label = "disk 1"
       size = 10001317888
     }
+}
+`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+}
+
+func testAccVmConfigWithGracefulTermination(vmName string) string {
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
+data "xenorchestra_network" "network" {
+    name_label = "%s"
+    pool_id = "%s"
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 4295000000
+    cpus  = 1
+    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    name_label = "%s"
+    name_description = "description"
+    template = "${data.xenorchestra_template.template.id}"
+    network {
+	network_id = "${data.xenorchestra_network.network.id}"
+    }
+
+    disk {
+      sr_id = "%s"
+      name_label = "disk 1"
+      size = 10001317888
+    }
+
+    use_graceful_termination = true
 }
 `, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
