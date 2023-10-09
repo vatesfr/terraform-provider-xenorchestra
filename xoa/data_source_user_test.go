@@ -91,11 +91,13 @@ data "xenorchestra_user" "user" {
 func testAccXenorchestraDataSourceUserInCurrentSessionConfig(username string) string {
 	return fmt.Sprintf(`
 provider "xenorchestra" {
+    alias = "user_in_session"
     username = "%s"
     password = "password"
 }
 
 data "xenorchestra_user" "user" {
+    provider = xenorchestra.user_in_session
     username = "%s"
     search_in_session = true
 }

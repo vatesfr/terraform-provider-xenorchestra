@@ -480,17 +480,17 @@ func TestAccXenorchestraVm_ensureVmsInResourceSetsCanBeUpdatedByNonAdminUsers(t 
 			// Create a VM using the resource set from the previous step
 			{
 				Config: providerCredentials(accUser.Email, accUserPassword) +
-					testAccVmManagedResourceSetConfig(vmName),
+					testAccVmManagedResourceSetWithDescriptionConfig(vmName, "", "provider = xenorchestra.non_admin_user"),
 			},
 			// Verify that the non admin user can update the VM. This is the main assertion of the test
 			{
 				Config: providerCredentials(accUser.Email, accUserPassword) +
-					testAccVmManagedResourceSetWithDescriptionConfig(vmName, "new description"),
+					testAccVmManagedResourceSetWithDescriptionConfig(vmName, "new description", "provider = xenorchestra.non_admin_user"),
 			},
 			// Re-run with the admin user so that it can delete the resource set and cloud config
 			{
 				Config: providerCredentials(adminUser, adminPassword) +
-					testAccVmManagedResourceSetConfig(vmName),
+					testAccVmManagedResourceSetWithDescriptionConfig(vmName, "", "provider = xenorchestra.non_admin_user"),
 			},
 		},
 	})
@@ -2362,6 +2362,7 @@ resource "xenorchestra_vm" "bar" {
 func providerCredentials(username, password string) string {
 	return fmt.Sprintf(`
 provider "xenorchestra" {
+  alias = "non_admin_user"
   username = "%s"
   password = "%s"
 }
@@ -2369,13 +2370,14 @@ provider "xenorchestra" {
 }
 
 func testAccVmManagedResourceSetConfig(vmName string) string {
-	return testAccVmManagedResourceSetWithDescriptionConfig(vmName, "")
+	return testAccVmManagedResourceSetWithDescriptionConfig(vmName, "", "")
 }
 
-func testAccVmManagedResourceSetWithDescriptionConfig(vmName, nameDescription string) string {
+func testAccVmManagedResourceSetWithDescriptionConfig(vmName, nameDescription string, providerAlias string) string {
 	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccVmResourceSet(vmName) + fmt.Sprintf(`
 
 resource "xenorchestra_vm" "bar" {
+    %s
     memory_max = 4295000000
     cpus  = 1
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
@@ -2393,7 +2395,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, vmName, nameDescription, accDefaultSr.Id)
+`, providerAlias, vmName, nameDescription, accDefaultSr.Id)
 }
 
 func testAccVmResourceSet(vmName string) string {
