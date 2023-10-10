@@ -3,7 +3,7 @@
 TIMEOUT ?= 40m
 GOMAXPROCS ?= 5
 ifdef TEST
-    TEST := ./... -run '$(TEST)'
+    TEST := github.com/ddelnano/terraform-provider-xenorchestra/xoa -run '$(TEST)'
 else
     TEST := ./...
 endif
