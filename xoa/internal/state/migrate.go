@@ -201,12 +201,6 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 				Default:     0,
 				Optional:    true,
 			},
-			// TODO: (#145) Uncomment this once issues with secure_boot have been figured out
-			// "secure_boot": &schema.Schema{
-			// 	Type:     schema.TypeBool,
-			// 	Default:  false,
-			// 	Optional: true,
-			// },
 			"host": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
