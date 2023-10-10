@@ -12,6 +12,7 @@ import (
 
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
 	"github.com/ddelnano/terraform-provider-xenorchestra/xoa/internal"
+	"github.com/ddelnano/terraform-provider-xenorchestra/xoa/internal/state"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -378,19 +379,19 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 func resourceRecord() *schema.Resource {
 	duration := 5 * time.Minute
 	return &schema.Resource{
-		Description: "Creates a Xen Orchestra vm resource.",
-		Create:      resourceVmCreate,
-		Read:        resourceVmRead,
-		Update:      resourceVmUpdate,
-		Delete:      resourceVmDelete,
-		// SchemaVersion: 1,
-		// StateUpgraders: []schema.StateUpgrader{
-		// 	{
-		// 		Type:    state.ResourceVmResourceV0().CoreConfigSchema().ImpliedType(),
-		// 		Upgrade: state.VmStateUpgradeV0,
-		// 		Version: 0,
-		// 	},
-		// },
+		Description:   "Creates a Xen Orchestra vm resource.",
+		Create:        resourceVmCreate,
+		Read:          resourceVmRead,
+		Update:        resourceVmUpdate,
+		Delete:        resourceVmDelete,
+		SchemaVersion: 1,
+		StateUpgraders: []schema.StateUpgrader{
+			{
+				Type:    state.ResourceVmResourceV0().CoreConfigSchema().ImpliedType(),
+				Upgrade: state.VmStateUpgradeV0,
+				Version: 0,
+			},
+		},
 		Importer: &schema.ResourceImporter{
 			State: RecordImport,
 		},
