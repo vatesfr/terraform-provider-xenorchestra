@@ -108,6 +108,7 @@ type Vm struct {
 	PoolId             string            `json:"$poolId"`
 	Template           string            `json:"template"`
 	AutoPoweron        bool              `json:"auto_poweron"`
+	BootAfterCreate    bool              `json:"bootAfterCreate"`
 	HA                 string            `json:"high_availability"`
 	CloudConfig        string            `json:"cloudConfig"`
 	ResourceSet        *FlatResourceSet  `json:"resourceSet"`
@@ -213,7 +214,7 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 	}
 
 	params := map[string]interface{}{
-		"bootAfterCreate":  true,
+		"bootAfterCreate":  vmReq.BootAfterCreate,
 		"name_label":       vmReq.NameLabel,
 		"name_description": vmReq.NameDescription,
 		"template":         vmReq.Template,
@@ -302,7 +303,7 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 		return nil, err
 	}
 
-	err = c.waitForModifyVm(vmId, vmReq.WaitForIps, createTime)
+	err = c.waitForModifyVm(vmId, vmReq.WaitForIps, vmReq.BootAfterCreate, createTime)
 
 	if err != nil {
 		return nil, err
@@ -549,8 +550,26 @@ func (c *Client) waitForVmState(id string, stateConf StateChangeConf) error {
 	return err
 }
 
-func (c *Client) waitForModifyVm(id string, waitForIp bool, timeout time.Duration) error {
-	if !waitForIp {
+func (c *Client) waitForModifyVm(id string, waitForIp bool, bootAfterCreate bool, timeout time.Duration) error {
+	if !bootAfterCreate {
+		refreshFn := func() (result interface{}, state string, err error) {
+			vm, err := c.GetVm(Vm{Id: id})
+
+			if err != nil {
+				return vm, "", err
+			}
+
+			return vm, vm.PowerState, nil
+		}
+		stateConf := &StateChangeConf{
+			Pending: []string{"Running"},
+			Refresh: refreshFn,
+			Target:  []string{"Halted", "Stopped"},
+			Timeout: timeout,
+		}
+		_, err := stateConf.WaitForState()
+		return err
+	} else if !waitForIp {
 		refreshFn := func() (result interface{}, state string, err error) {
 			vm, err := c.GetVm(Vm{Id: id})
 

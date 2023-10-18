@@ -111,9 +111,10 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 * `hvm_boot_firmware` - (Optional) The firmware to use for the VM. Possible values are `bios` and `uefi`. Defaults to empty string.
 * `exp_nested_hvm` - (Optional) Boolean parameter that allows a VM to use nested virtualization.
 * `installation_method` - (Optional) This cannot be used with `cdrom`. Possible values are `network` which allows a VM to boot via PXE.
-* `auto_poweron` - (Optional) If the VM will automatically turn on. Defaults to `false`.
+* `auto_poweron` - (Optional) If the VM will automatically turn on along with the host. Defaults to `false`.
+* `bootaftercreate` - (Optional) Specifies whether Terraform should boot the VM after creation. Value is ignored after initial creation. Defaults to `true`.
 * `affinity_host` - (Optional) The preferred host you would like the VM to run on. If changed on an existing VM it will require a reboot for the VM to be rescheduled.
-* `wait_for_ip` - (Optional) Whether terraform should wait until IP addresses are present on the VM's network interfaces before considering it created. This only works if guest-tools are installed in the VM. Defaults to false.
+* `wait_for_ip` - (Optional) Whether terraform should wait until IP addresses are present on the VM's network interfaces before considering it created. This only works if guest-tools are installed in the VM. Has no effect when `bootaftercreate` is set to `false`. Defaults to false.
 * `cdrom` - (Optional) The ISO that should be attached to VM. This allows you to create a VM from a diskless template (any templates available from `xe template-list`) and install the OS from the following ISO.
     * `id` - The ID of the ISO (VDI) to attach to the VM. This can be easily provided by using the `vdi` data source.
 * `network` - (Required) The network the VM will use

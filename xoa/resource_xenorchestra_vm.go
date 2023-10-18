@@ -244,6 +244,13 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 			Description: "Whether terraform should wait until IP addresses are present on the VM's network interfaces before considering it created. This only works if guest-tools are installed in the VM. Defaults to false.",
 			Optional:    true,
 		},
+		"bootaftercreate": &schema.Schema{
+			Type:             schema.TypeBool,
+			Default:          true,
+			Description:      "Whether Terraform should boot the VM after creation. Defaults to true.",
+			Optional:         true,
+			DiffSuppressFunc: suppressDiffchanges,
+		},
 		"cdrom": &schema.Schema{
 			Type:          schema.TypeList,
 			Optional:      true,
@@ -482,6 +489,7 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 	createVmParams := client.Vm{
+		BootAfterCreate:   d.Get("bootaftercreate").(bool),
 		BlockedOperations: blockedOperations,
 		Boot: client.Boot{
 			Firmware: d.Get("hvm_boot_firmware").(string),
@@ -1345,5 +1353,14 @@ func suppressAttachedDiffWhenHalted(k, old, new string, d *schema.ResourceData) 
 		suppress = false
 	}
 	log.Printf("[DEBUG] VM '%s' attribute has transitioned from '%s' to '%s' when PowerState '%s'. Suppress diff: %t", k, old, new, powerState, suppress)
+	return
+}
+
+func suppressDiffchanges(k, old, new string, d *schema.ResourceData) (suppress bool) {
+	if old == "" {
+		suppress = false
+	} else {
+		suppress = true
+	}
 	return
 }
