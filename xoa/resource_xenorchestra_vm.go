@@ -34,6 +34,13 @@ var validFirmware = []string{
 	"uefi",
 }
 
+var validPowerState = []string{
+	"Running",
+	"Halted",
+	"Paused",
+	"Suspended",
+}
+
 var validInstallationMethods = []string{
 	"network",
 }
@@ -107,9 +114,11 @@ func resourceVmSchema() map[string]*schema.Schema {
 			ValidateFunc: validation.StringInSlice(validFirmware, false),
 		},
 		"power_state": &schema.Schema{
-			Description: "The power state of the VM. This can be Running, Halted, Paused or Suspended.",
-			Type:        schema.TypeString,
-			Computed:    true,
+			Description:  "The power state of the VM. This can be Running, Halted, Paused or Suspended.",
+			Type:         schema.TypeString,
+			ValidateFunc: validation.StringInSlice(validPowerState, false),
+			Optional:     true,
+			Default:      "Running",
 		},
 		"installation_method": &schema.Schema{
 			Type:          schema.TypeString,
@@ -495,6 +504,7 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		ResourceSet:                    rs,
 		HA:                             d.Get("high_availability").(string),
 		AutoPoweron:                    d.Get("auto_poweron").(bool),
+		PowerState:                     d.Get("power_state").(string),
 		CPUs: client.CPUs{
 			Number: d.Get("cpus").(int),
 		},
@@ -876,7 +886,14 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		vmReq.AffinityHost = &affinityHost
 	}
 
-	if haltForUpdates {
+	haltRequested := false
+	if newPowerState := d.GetChange("power_state"); d.HasChange("power_state") && newPowerState == "Halted" {
+		haltRequested = true
+	}
+
+	startRequested := false
+
+	if haltForUpdates || haltRequested {
 		err := c.HaltVm(id)
 
 		if err != nil {
