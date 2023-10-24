@@ -311,7 +311,7 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 		}
 	}
 
-	err = c.waitForModifyVm(vmId, vmReq.WaitForIps, createTime)
+	err = c.waitForModifyVm(vmId, vmReq.PowerState, vmReq.WaitForIps, createTime)
 
 	if err != nil {
 		return nil, err
@@ -558,8 +558,20 @@ func (c *Client) waitForVmState(id string, stateConf StateChangeConf) error {
 	return err
 }
 
-func (c *Client) waitForModifyVm(id string, waitForIp bool, timeout time.Duration) error {
+func (c *Client) waitForModifyVm(id, desiredPowerState string, waitForIp bool, timeout time.Duration) error {
 	if !waitForIp {
+		var pending []string
+		target := desiredPowerState
+		switch desiredPowerState {
+		case "Running":
+			pending = []string{"Halted", "Stopped"}
+		case "Stopped":
+			pending = []string{"Running", "Halted"}
+		case "Halted":
+			pending = []string{"Stopped", "Running"}
+		default:
+			return errors.New(fmt.Sprintf("Invalid VM power state requested: %s\n", desiredPowerState))
+		}
 		refreshFn := func() (result interface{}, state string, err error) {
 			vm, err := c.GetVm(Vm{Id: id})
 
@@ -570,9 +582,9 @@ func (c *Client) waitForModifyVm(id string, waitForIp bool, timeout time.Duratio
 			return vm, vm.PowerState, nil
 		}
 		stateConf := &StateChangeConf{
-			Pending: []string{"Halted", "Stopped"},
+			Pending: pending,
 			Refresh: refreshFn,
-			Target:  []string{"Running"},
+			Target:  []string{target},
 			Timeout: timeout,
 		}
 		_, err := stateConf.WaitForState()
