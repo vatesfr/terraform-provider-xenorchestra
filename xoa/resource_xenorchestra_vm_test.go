@@ -12,6 +12,7 @@ import (
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
 	"github.com/ddelnano/terraform-provider-xenorchestra/xoa/internal"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -480,17 +481,17 @@ func TestAccXenorchestraVm_ensureVmsInResourceSetsCanBeUpdatedByNonAdminUsers(t 
 			// Create a VM using the resource set from the previous step
 			{
 				Config: providerCredentials(accUser.Email, accUserPassword) +
-					testAccVmManagedResourceSetConfig(vmName),
+					testAccVmManagedResourceSetWithDescriptionConfig(vmName, "", "provider = xenorchestra.non_admin_user"),
 			},
 			// Verify that the non admin user can update the VM. This is the main assertion of the test
 			{
 				Config: providerCredentials(accUser.Email, accUserPassword) +
-					testAccVmManagedResourceSetWithDescriptionConfig(vmName, "new description"),
+					testAccVmManagedResourceSetWithDescriptionConfig(vmName, "new description", "provider = xenorchestra.non_admin_user"),
 			},
 			// Re-run with the admin user so that it can delete the resource set and cloud config
 			{
 				Config: providerCredentials(adminUser, adminPassword) +
-					testAccVmManagedResourceSetConfig(vmName),
+					testAccVmManagedResourceSetWithDescriptionConfig(vmName, "", "provider = xenorchestra.non_admin_user"),
 			},
 		},
 	})
@@ -1130,7 +1131,7 @@ func TestAccXenorchestraVm_addVifAndRemoveVif(t *testing.T) {
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccVmConfig(vmName),
+				Config: testAccVmConfigWithWaitForIp(vmName, "true"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -1474,6 +1475,75 @@ func TestAccXenorchestraVm_diskAndNetworkAttachmentIgnoredWhenHalted(t *testing.
 	})
 }
 
+func TestAccXenorchestraVm_createWithV0StateMigration(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"xenorchestra": {
+						Source:            "terra-farm/xenorchestra",
+						VersionConstraint: "0.24.2",
+					},
+				},
+				Config: testAccVmConfig(vmName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckNoResourceAttr(resourceName, "destroy_cloud_config_vdi_after_boot"),
+				),
+			},
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"xenorchestra": {
+						Source:            "terra-farm/xenorchestra",
+						VersionConstraint: "0.25.0",
+					},
+				},
+				Config: testAccVmConfigWithWaitForIp(vmName, "true"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckNoResourceAttr(resourceName, "destroy_cloud_config_vdi_after_boot"),
+				),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				ProviderFactories: map[string]func() (*schema.Provider, error){
+					"xenorchestra": func() (*schema.Provider, error) {
+						return testAccFailToDeleteVmProvider, nil
+					},
+				},
+				Config: testAccVmConfigWithWaitForIp(vmName, "true"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "destroy_cloud_config_vdi_after_boot", "false"),
+				),
+			},
+			{
+				ProviderFactories: map[string]func() (*schema.Provider, error){
+					"xenorchestra": func() (*schema.Provider, error) {
+						return Provider(), nil
+					},
+				},
+				Config: testAccVmConfigWithWaitForIp(vmName, "true"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "destroy_cloud_config_vdi_after_boot", "false"),
+				),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+}
+
 func testAccVmExists(resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]
@@ -1694,6 +1764,10 @@ resource "xenorchestra_vm" "bar" {
 }
 
 func testAccVmConfig(vmName string) string {
+	return testAccVmConfigWithWaitForIp(vmName, "false")
+}
+
+func testAccVmConfigWithWaitForIp(vmName, waitForIp string) string {
 	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
 data "xenorchestra_network" "network" {
     name_label = "%s"
@@ -1716,8 +1790,9 @@ resource "xenorchestra_vm" "bar" {
       name_label = "disk 1"
       size = 10001317888
     }
+    wait_for_ip = %s
 }
-`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id, waitForIp)
 }
 
 // This sets destroy_cloud_config_vdi_after_boot and wait_for_ip. The former is required for
@@ -2357,6 +2432,7 @@ resource "xenorchestra_vm" "bar" {
 func providerCredentials(username, password string) string {
 	return fmt.Sprintf(`
 provider "xenorchestra" {
+  alias = "non_admin_user"
   username = "%s"
   password = "%s"
 }
@@ -2364,13 +2440,14 @@ provider "xenorchestra" {
 }
 
 func testAccVmManagedResourceSetConfig(vmName string) string {
-	return testAccVmManagedResourceSetWithDescriptionConfig(vmName, "")
+	return testAccVmManagedResourceSetWithDescriptionConfig(vmName, "", "")
 }
 
-func testAccVmManagedResourceSetWithDescriptionConfig(vmName, nameDescription string) string {
+func testAccVmManagedResourceSetWithDescriptionConfig(vmName, nameDescription string, providerAlias string) string {
 	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccVmResourceSet(vmName) + fmt.Sprintf(`
 
 resource "xenorchestra_vm" "bar" {
+    %s
     memory_max = 4295000000
     cpus  = 1
     cloud_config = "${xenorchestra_cloud_config.bar.template}"
@@ -2388,7 +2465,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, vmName, nameDescription, accDefaultSr.Id)
+`, providerAlias, vmName, nameDescription, accDefaultSr.Id)
 }
 
 func testAccVmResourceSet(vmName string) string {

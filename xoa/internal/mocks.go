@@ -34,15 +34,29 @@ func newFailToStartAndHaltClient(config client.Config) (client.XOClient, error) 
 }
 
 func GetFailToStartAndHaltXOClient(d *schema.ResourceData) (interface{}, error) {
-	url := d.Get("url").(string)
-	username := d.Get("username").(string)
-	password := d.Get("password").(string)
-	insecure := d.Get("insecure").(bool)
-	config := client.Config{
-		Url:                url,
-		Username:           username,
-		Password:           password,
-		InsecureSkipVerify: insecure,
+	return newFailToStartAndHaltClient(client.GetConfigFromEnv())
+}
+
+type failToDeleteVmXOClient struct {
+	*client.Client
+}
+
+func (c *failToDeleteVmXOClient) DeleteVm(id string) error {
+	return errors.New("client.DeleteVm should not be called")
+}
+
+func newFailToDeleteVmClient(config client.Config) (client.XOClient, error) {
+	xoClient, err := client.NewClient(config)
+
+	if err != nil {
+		return nil, err
 	}
-	return newFailToStartAndHaltClient(config)
+
+	c := xoClient.(*client.Client)
+
+	return &failToDeleteVmXOClient{c}, nil
+}
+
+func GetFailToDeleteVmXOClient(d *schema.ResourceData) (interface{}, error) {
+	return newFailToDeleteVmClient(client.GetConfigFromEnv())
 }
