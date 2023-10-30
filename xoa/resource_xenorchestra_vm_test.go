@@ -1500,7 +1500,7 @@ func TestAccXenorchestraVm_diskAndNetworkAttachmentIgnoredWhenHalted(t *testing.
 			},
 			{
 				PreConfig: shutdownVm,
-				Config:    testAccVmConfig(vmName),
+				Config:    testAccVmConfigWithPowerState(vmName, "Halted"),
 				PlanOnly:  true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
