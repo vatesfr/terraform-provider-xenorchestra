@@ -886,34 +886,47 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		vmReq.AffinityHost = &affinityHost
 	}
 
-	haltRequested := false
-	if newPowerState := d.GetChange("power_state"); d.HasChange("power_state") && newPowerState == "Halted" {
-		haltRequested = true
-	}
+	haltPerformed := false
 
-	startRequested := false
-
-	if haltForUpdates || haltRequested {
+	if haltForUpdates {
 		err := c.HaltVm(id)
 
 		if err != nil {
 			return err
 		}
+		haltPerformed = true
 	}
 	vm, err = c.UpdateVm(vmReq)
 
-	if haltForUpdates {
-		err := c.StartVm(vmReq.Id)
-
-		if err != nil {
-			return err
-		}
+	if err != nil {
+		return err
 	}
 
 	log.Printf("[DEBUG] Retrieved vm after update: %+v\n", vm)
 
-	if err != nil {
-		return err
+	powerStateChanged := d.HasChange("power_state")
+	_, newPowerState := d.GetChange("power_state")
+	log.Printf("[DEBUG] powerStateChanged=%t newPowerState=%s\n", powerStateChanged, newPowerState)
+	if haltForUpdates || powerStateChanged {
+		switch newPowerState {
+		case "Running":
+			err := c.StartVm(vmReq.Id)
+
+			if err != nil {
+				return err
+			}
+		case "Halted":
+			if haltPerformed {
+				// Nothing here since we are already halted
+			} else {
+
+				err := c.HaltVm(id)
+
+				if err != nil {
+					return err
+				}
+			}
+		}
 	}
 
 	if d.HasChange("tags") {
@@ -1357,8 +1370,12 @@ func extractIpsFromNetworks(networks map[string]string) []guestNetwork {
 func suppressAttachedDiffWhenHalted(k, old, new string, d *schema.ResourceData) (suppress bool) {
 	powerState := d.Get("power_state").(string)
 	suppress = true
+	ok := d.HasChange("power_state")
+	if ok {
+		log.Printf("[DEBUG] Power state has been changed\n")
+	}
 
-	if powerState == "Running" {
+	if !ok && powerState == "Running" {
 		suppress = false
 	}
 	log.Printf("[DEBUG] VM '%s' attribute has transitioned from '%s' to '%s' when PowerState '%s'. Suppress diff: %t", k, old, new, powerState, suppress)
