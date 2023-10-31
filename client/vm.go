@@ -17,6 +17,13 @@ type allObjectResponse struct {
 	Objects map[string]Vm `json:"-"`
 }
 
+const (
+	HaltedPowerState    string = "Halted"
+	PausedPowerState    string = "Paused"
+	RunningPowerState   string = "Running"
+	SuspendedPowerState string = "Suspended"
+)
+
 type CPUs struct {
 	Number int `json:"number"`
 	Max    int `json:"max"`
@@ -434,8 +441,8 @@ func (c *Client) StartVm(id string) error {
 	return c.waitForVmState(
 		id,
 		StateChangeConf{
-			Pending: []string{"Halted", "Stopped"},
-			Target:  []string{"Running"},
+			Pending: []string{HaltedPowerState},
+			Target:  []string{RunningPowerState},
 			Timeout: 2 * time.Minute,
 		},
 	)
@@ -463,8 +470,8 @@ func (c *Client) HaltVm(id string) error {
 	return c.waitForVmState(
 		id,
 		StateChangeConf{
-			Pending: []string{"Running", "Stopped"},
-			Target:  []string{"Halted"},
+			Pending: []string{RunningPowerState},
+			Target:  []string{HaltedPowerState},
 			Timeout: 2 * time.Minute,
 		},
 	)
@@ -558,17 +565,15 @@ func (c *Client) waitForVmState(id string, stateConf StateChangeConf) error {
 	return err
 }
 
-func (c *Client) waitForModifyVm(id, desiredPowerState string, waitForIp bool, timeout time.Duration) error {
+func (c *Client) waitForModifyVm(id string, desiredPowerState string, waitForIp bool, timeout time.Duration) error {
 	if !waitForIp {
 		var pending []string
 		target := desiredPowerState
 		switch desiredPowerState {
-		case "Running":
-			pending = []string{"Halted", "Stopped"}
-		case "Stopped":
-			pending = []string{"Running", "Halted"}
-		case "Halted":
-			pending = []string{"Stopped", "Running"}
+		case RunningPowerState:
+			pending = []string{HaltedPowerState}
+		case HaltedPowerState:
+			pending = []string{RunningPowerState}
 		default:
 			return errors.New(fmt.Sprintf("Invalid VM power state requested: %s\n", desiredPowerState))
 		}
@@ -598,7 +603,7 @@ func (c *Client) waitForModifyVm(id, desiredPowerState string, waitForIp bool, t
 			}
 
 			l := len(vm.Addresses)
-			if l == 0 || vm.PowerState != "Running" {
+			if l == 0 || vm.PowerState != RunningPowerState {
 				return vm, "Waiting", nil
 			}
 
