@@ -35,10 +35,10 @@ var validFirmware = []string{
 }
 
 var validPowerState = []string{
-	"Running",
-	"Halted",
-	"Paused",
-	"Suspended",
+	client.HaltedPowerState,
+	client.PausedPowerState,
+	client.RunningPowerState,
+	client.SuspendedPowerState,
 }
 
 var validInstallationMethods = []string{
@@ -118,7 +118,7 @@ func resourceVmSchema() map[string]*schema.Schema {
 			Type:         schema.TypeString,
 			ValidateFunc: validation.StringInSlice(validPowerState, false),
 			Optional:     true,
-			Default:      "Running",
+			Default:      client.RunningPowerState,
 		},
 		"installation_method": &schema.Schema{
 			Type:          schema.TypeString,
@@ -909,13 +909,13 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 	log.Printf("[DEBUG] powerStateChanged=%t newPowerState=%s\n", powerStateChanged, newPowerState)
 	if haltForUpdates || powerStateChanged {
 		switch newPowerState {
-		case "Running":
+		case client.RunningPowerState:
 			err := c.StartVm(vmReq.Id)
 
 			if err != nil {
 				return err
 			}
-		case "Halted":
+		case client.HaltedPowerState:
 			if haltPerformed {
 				// Nothing here since we are already halted
 			} else {
@@ -1375,7 +1375,7 @@ func suppressAttachedDiffWhenHalted(k, old, new string, d *schema.ResourceData) 
 		log.Printf("[DEBUG] Power state has been changed\n")
 	}
 
-	if !ok && powerState == "Running" {
+	if !ok && powerState == client.RunningPowerState {
 		suppress = false
 	}
 	log.Printf("[DEBUG] VM '%s' attribute has transitioned from '%s' to '%s' when PowerState '%s'. Suppress diff: %t", k, old, new, powerState, suppress)

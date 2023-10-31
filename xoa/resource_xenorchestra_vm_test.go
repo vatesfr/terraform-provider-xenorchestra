@@ -343,8 +343,8 @@ func TestAccXenorchestraVm_createWithShorterResourceTimeout(t *testing.T) {
 func TestAccXenorchestraVm_createWithPowerStateChanges(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
-	runningPowerState := "Running"
-	stoppedPowerState := "Halted"
+	runningPowerState := client.RunningPowerState
+	stoppedPowerState := client.HaltedPowerState
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
