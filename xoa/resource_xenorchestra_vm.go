@@ -909,6 +909,18 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 	log.Printf("[DEBUG] powerStateChanged=%t newPowerState=%s\n", powerStateChanged, newPowerState)
 	if haltForUpdates || powerStateChanged {
 		switch newPowerState {
+		case client.PausedPowerState:
+			err := c.PauseVm(vmReq.Id)
+
+			if err != nil {
+				return err
+			}
+		case client.SuspendedPowerState:
+			err := c.SuspendVm(vmReq.Id)
+
+			if err != nil {
+				return err
+			}
 		case client.RunningPowerState:
 			err := c.StartVm(vmReq.Id)
 
@@ -916,10 +928,8 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 				return err
 			}
 		case client.HaltedPowerState:
-			if haltPerformed {
-				// Nothing here since we are already halted
-			} else {
-
+			// If the VM wasn't halted as part of the update, perform the halt now
+			if !haltPerformed {
 				err := c.HaltVm(id)
 
 				if err != nil {

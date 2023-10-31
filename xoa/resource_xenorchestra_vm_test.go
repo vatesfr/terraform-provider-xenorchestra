@@ -375,6 +375,72 @@ func TestAccXenorchestraVm_createWithPowerStateChanges(t *testing.T) {
 	})
 }
 
+func TestAccXenorchestraVm_createAndSuspend(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigWithPowerState(vmName, client.RunningPowerState),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "power_state", client.RunningPowerState)),
+			},
+			{
+				Config: testAccVmConfigWithPowerState(vmName, client.SuspendedPowerState),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "power_state", client.SuspendedPowerState)),
+			},
+			{
+				Config: testAccVmConfigWithPowerState(vmName, client.RunningPowerState),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "power_state", client.RunningPowerState)),
+			},
+		},
+	})
+}
+
+func TestAccXenorchestraVm_createAndPause(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigWithPowerState(vmName, client.RunningPowerState),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "power_state", client.RunningPowerState)),
+			},
+			{
+				Config: testAccVmConfigWithPowerState(vmName, client.PausedPowerState),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "power_state", client.PausedPowerState)),
+			},
+			{
+				Config: testAccVmConfigWithPowerState(vmName, client.RunningPowerState),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "power_state", client.RunningPowerState)),
+			},
+		},
+	})
+}
+
 func TestAccXenorchestraVm_createAndPlanWithNonExistantVm(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
