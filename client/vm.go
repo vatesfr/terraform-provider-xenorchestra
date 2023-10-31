@@ -182,6 +182,42 @@ func (v Vm) Compare(obj interface{}) bool {
 	return false
 }
 
+func (c *Client) SuspendVm(id string) error {
+	return c.changeVmState(id, "suspend", []string{SuspendedPowerState}, []string{RunningPowerState}, 2*time.Minute)
+}
+
+func (c *Client) changeVmState(id, action string, target, pending []string, timeout time.Duration) error {
+	// PV drivers are necessary for the XO api to issue a graceful shutdown.
+	// See https://github.com/terra-farm/terraform-provider-xenorchestra/issues/220
+	// for more details.
+	if err := c.waitForPVDriversDetected(id); err != nil {
+		return errors.New(
+			fmt.Sprintf("failed to gracefully %s vm (%s) since PV drivers were never detected", action, id))
+	}
+
+	params := map[string]interface{}{
+		"id": id,
+	}
+	var success bool
+	err := c.Call(fmt.Sprintf("vm.%s", action), params, &success)
+
+	if err != nil {
+		return err
+	}
+	return c.waitForVmState(
+		id,
+		StateChangeConf{
+			Pending: pending,
+			Target:  target,
+			Timeout: timeout,
+		},
+	)
+}
+
+func (c *Client) PauseVm(id string) error {
+	return c.changeVmState(id, "pause", []string{PausedPowerState}, []string{RunningPowerState}, 2*time.Minute)
+}
+
 func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 	tmpl, err := c.GetTemplate(Template{
 		Id: vmReq.Template,
@@ -445,32 +481,7 @@ func (c *Client) StartVm(id string) error {
 }
 
 func (c *Client) HaltVm(id string) error {
-	// PV drivers are necessary for the XO api to issue a graceful shutdown.
-	// See https://github.com/terra-farm/terraform-provider-xenorchestra/issues/220
-	// for more details.
-	if err := c.waitForPVDriversDetected(id); err != nil {
-		return errors.New(
-			fmt.Sprintf("failed to gracefully halt vm (%s) since PV drivers were never detected", id))
-	}
-
-	params := map[string]interface{}{
-		"id": id,
-	}
-	var success bool
-	// TODO: This can block indefinitely before we get to the waitForVmHalt
-	err := c.Call("vm.stop", params, &success)
-
-	if err != nil {
-		return err
-	}
-	return c.waitForVmState(
-		id,
-		StateChangeConf{
-			Pending: []string{RunningPowerState},
-			Target:  []string{HaltedPowerState},
-			Timeout: 2 * time.Minute,
-		},
-	)
+	return c.changeVmState(id, "stop", []string{HaltedPowerState}, []string{RunningPowerState}, 2*time.Minute)
 }
 
 func (c *Client) DeleteVm(id string) error {

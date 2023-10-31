@@ -38,6 +38,8 @@ type XOClient interface {
 	DeleteVm(id string) error
 	HaltVm(id string) error
 	StartVm(id string) error
+	SuspendVm(id string) error
+	PauseVm(id string) error
 
 	GetCloudConfigByName(name string) ([]CloudConfig, error)
 	CreateCloudConfig(name, template string) (*CloudConfig, error)
