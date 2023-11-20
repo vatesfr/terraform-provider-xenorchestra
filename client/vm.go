@@ -213,7 +213,7 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 	}
 
 	params := map[string]interface{}{
-		"bootAfterCreate":  true,
+		"bootAfterCreate":  false,
 		"name_label":       vmReq.NameLabel,
 		"name_description": vmReq.NameDescription,
 		"template":         vmReq.Template,
@@ -298,6 +298,11 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 	var vmId string
 	err = c.Call("vm.create", params, &vmId)
 
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.StartVm(vmId)
 	if err != nil {
 		return nil, err
 	}
