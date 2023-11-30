@@ -236,6 +236,7 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 	destroyCloudConfigVdiAfterBoot := vmReq.DestroyCloudConfigVdiAfterBoot
 	if destroyCloudConfigVdiAfterBoot {
 		params["destroyCloudConfigVdiAfterBoot"] = destroyCloudConfigVdiAfterBoot
+		params["bootAfterCreate"] = true
 	}
 
 	videoram := vmReq.Videoram.Value
@@ -302,9 +303,12 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 		return nil, err
 	}
 
-	err = c.StartVm(vmId)
-	if err != nil {
-		return nil, err
+	bootAfterCreate := params["bootAfterCreate"].(bool)
+	if !bootAfterCreate {
+		err = c.StartVm(vmId)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	err = c.waitForModifyVm(vmId, vmReq.WaitForIps, createTime)
