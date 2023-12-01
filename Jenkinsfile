@@ -23,13 +23,19 @@ pipeline {
   stages {
     stage('BuildAndTest') {
     matrix {
-
+      axes {
+        axis {
+          name 'TF_VERSION'
+          values 'v0.14.11'
+        }
+      }
       stages {
         stage('Test') {
 
           steps {
             // Output will be something like "go version go1.19 darwin/arm64"
             sh 'go version'
+            echo "${TF_VERSION} ${TF_ACC} ${XOA_DISKLESS_TEMPLATE}"
             sh 'cp /opt/terraform-provider-xenorchestra/testdata/images/alpine-virt-3.17.0-x86_64.iso xoa/testdata/alpine-virt-3.17.0-x86_64.iso'
             sh 'make ci'
           }
