@@ -1,6 +1,20 @@
 pipeline {
   // Run on an agent where we want to use Go
   agent any
+  environment {
+    XOA_URL               = credentials("terraform-provider-xoa-url")
+    XOA_USER              = credentials("terraform-provider-xoa-user")
+    XOA_PASSWORD          = credentials("terraform-provider-xoa-password")
+    XOA_POOL              = credentials("terraform-provider-xoa-pool")
+    XOA_TEMPLATE          = credentials("terraform-provider-xoa-template")
+    XOA_DISKLESS_TEMPLATE = credentials("terraform-provider-xoa-diskless-template")
+    XOA_ISO               = credentials("terraform-provider-xoa-iso")
+    XOA_ISO_SR            = credentials("terraform-provider-xoa-iso-sr")
+    XOA_NETWORK           = credentials("terraform-provider-xoa-network")
+    XOA_RETRY_MAX_TIME    = credentials("terraform-provider-xoa-retry-max-time")
+    XOA_RETRY_MODE        = credentials("terraform-provider-xoa-retry-mode")
+    TF_ACC                = 1
+  }
 
   // Ensure the desired Go version is installed for all stages,
   // using the name defined in the Global Tool Configuration
