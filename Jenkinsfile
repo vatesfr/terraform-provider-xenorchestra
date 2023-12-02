@@ -1,5 +1,4 @@
 pipeline {
-  // Run on an agent where we want to use Go
   agent any
   environment {
     XOA_URL               = credentials("terraform-provider-xoa-url")
@@ -13,7 +12,6 @@ pipeline {
     XOA_NETWORK           = credentials("terraform-provider-xoa-network")
     XOA_RETRY_MAX_TIME    = credentials("terraform-provider-xoa-retry-max-time")
     XOA_RETRY_MODE        = credentials("terraform-provider-xoa-retry-mode")
-    TF_ACC                = 1
   }
 
   // Ensure the desired Go version is installed for all stages,
@@ -31,11 +29,7 @@ pipeline {
       }
       stages {
         stage('Test') {
-
           steps {
-            // Output will be something like "go version go1.19 darwin/arm64"
-            sh 'go version'
-            echo "${TF_VERSION} ${TF_ACC} ${XOA_DISKLESS_TEMPLATE}"
             sh 'cp /opt/terraform-provider-xenorchestra/testdata/images/alpine-virt-3.17.0-x86_64.iso xoa/testdata/alpine-virt-3.17.0-x86_64.iso'
             sh 'make ci'
           }
