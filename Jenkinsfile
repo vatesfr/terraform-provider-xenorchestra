@@ -24,7 +24,7 @@ pipeline {
       axes {
         axis {
           name 'TF_VERSION'
-          values 'v0.14.11'
+          values 'v0.14.11', 'v1.6.5'
         }
       }
       stages {
