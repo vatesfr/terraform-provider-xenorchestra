@@ -2,6 +2,7 @@
 
 TIMEOUT ?= 40m
 GOMAXPROCS ?= 5
+TF_VERSION ?= v0.14.11
 ifdef TEST
     TEST := github.com/ddelnano/terraform-provider-xenorchestra/xoa -run '$(TEST)'
 else
@@ -44,4 +45,4 @@ testacc: xoa/testdata/alpine-virt-3.17.0-x86_64.iso
 # to be removed from the repo. Add a target to enforce that the CI system
 # has copied that file into place before the tests run
 ci: xoa/testdata/alpine-virt-3.17.0-x86_64.iso
-	TF_ACC=1 gotestsum --debug --rerun-fails=5 --max-fails=15 --packages=./xoa  -- ./xoa -v -count=1 -timeout=$(TIMEOUT) -sweep=true -parallel=$(GOMAXPROCS)
+	TF_ACC_TERRAFORM_VERSION=$(TF_VERSION) TF_ACC=1 gotestsum --debug --rerun-fails=5 --max-fails=15 --packages=./xoa  -- ./xoa -v -count=1 -timeout=$(TIMEOUT) -sweep=true -parallel=$(GOMAXPROCS)
