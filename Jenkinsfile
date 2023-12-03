@@ -30,7 +30,7 @@ pipeline {
       stages {
         stage('Test') {
           steps {
-            lock(label: 'xoa-test-runner', quantity: 1) {
+            lock(label: 'xoa-test-runner', quantity: 1, resource: null) {
               sh 'cp /opt/terraform-provider-xenorchestra/testdata/images/alpine-virt-3.17.0-x86_64.iso xoa/testdata/alpine-virt-3.17.0-x86_64.iso'
               sh 'make ci'
             }
