@@ -1909,6 +1909,7 @@ resource "xenorchestra_vm" "bar" {
     network {
 	network_id = "${data.xenorchestra_network.network.id}"
     }
+    destroy_cloud_config_vdi_after_boot = true
 
     disk {
       sr_id = "%s"
