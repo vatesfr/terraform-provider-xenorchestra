@@ -312,6 +312,7 @@ func (c *Client) Call(method string, params, result interface{}) error {
 			}
 
 			if c.IsRetryableError(*rpcErr) {
+				log.Printf("[INFO] Retrying rpc call `%s`\n", method)
 				return err
 			}
 
