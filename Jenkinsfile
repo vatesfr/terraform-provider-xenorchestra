@@ -32,8 +32,6 @@ pipeline {
           steps {
             lock('xoa-test-runner') {
               sh 'cp /opt/terraform-provider-xenorchestra/testdata/images/alpine-virt-3.17.0-x86_64.iso xoa/testdata/alpine-virt-3.17.0-x86_64.iso'
-              sh 'echo ${XOA_RETRY_MAX_TIME}'
-              sh 'echo ${XOA_RETRY_MODE}'
               sh 'TF_VERSION=${TF_VERSION} make ci'
             }
           }
