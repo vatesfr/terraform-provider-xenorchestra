@@ -1,6 +1,7 @@
 package xoa
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -61,6 +62,16 @@ func resourceVm() *schema.Resource {
 		Schema:      vmSchema,
 		Description: "Creates a Xen Orchestra vm resource.",
 	}
+}
+
+func vmDestroyCloudConfigCustomizeDiff(ctx context.Context, diff *schema.ResourceDiff, v interface{}) error {
+	destroyCloudConfig := diff.Get("destroy_cloud_config_vdi_after_boot").(bool)
+	powerState := diff.Get("power_state").(string)
+
+	if destroyCloudConfig && powerState != client.RunningPowerState {
+		return errors.New(fmt.Sprintf("power_state must be `%s` when destroy_cloud_config_vdi_after_boot set to `true`", client.RunningPowerState))
+	}
+	return nil
 }
 
 func resourceVmSchema() map[string]*schema.Schema {
@@ -153,7 +164,7 @@ func resourceVmSchema() map[string]*schema.Schema {
 				"cloud_config",
 			},
 			ForceNew:    true,
-			Description: "Determines whether the cloud config VDI should be deleted once the VM has booted. Defaults to `false`.",
+			Description: "Determines whether the cloud config VDI should be deleted once the VM has booted. Defaults to `false`. If set to `true`, power_state must be set to `Running`.",
 		},
 		"core_os": &schema.Schema{
 			Type:     schema.TypeBool,
@@ -388,6 +399,7 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 func resourceRecord() *schema.Resource {
 	duration := 5 * time.Minute
 	return &schema.Resource{
+		CustomizeDiff: vmDestroyCloudConfigCustomizeDiff,
 		Description:   "Creates a Xen Orchestra vm resource.",
 		Create:        resourceVmCreate,
 		Read:          resourceVmRead,
