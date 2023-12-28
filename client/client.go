@@ -38,6 +38,8 @@ type XOClient interface {
 	DeleteVm(id string) error
 	HaltVm(id string) error
 	StartVm(id string) error
+	SuspendVm(id string) error
+	PauseVm(id string) error
 
 	GetCloudConfigByName(name string) ([]CloudConfig, error)
 	CreateCloudConfig(name, template string) (*CloudConfig, error)
@@ -190,7 +192,7 @@ func GetConfigFromEnv() Config {
 		if err == nil {
 			retryMaxTime = duration
 		} else {
-			fmt.Println("[ERROR] failed to set retry mode, disabling retries\n")
+			fmt.Println("[ERROR] failed to set retry mode, disabling retries")
 		}
 	}
 	return Config{

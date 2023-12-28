@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 
+	"github.com/ddelnano/terraform-provider-xenorchestra/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -355,7 +356,7 @@ func suppressAttachedDiffWhenHalted(k, old, new string, d *schema.ResourceData) 
 	powerState := d.Get("power_state").(string)
 	suppress = true
 
-	if powerState == "Running" {
+	if powerState == client.RunningPowerState {
 		suppress = false
 	}
 	log.Printf("[DEBUG] VM '%s' attribute has transitioned from '%s' to '%s' when PowerState '%s'. Suppress diff: %t", k, old, new, powerState, suppress)
