@@ -347,7 +347,7 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 	}
 
 	bootAfterCreate := params["bootAfterCreate"].(bool)
-	if !bootAfterCreate {
+	if !bootAfterCreate && vmReq.PowerState == RunningPowerState {
 		err = c.StartVm(vmId)
 		if err != nil {
 			return nil, err
