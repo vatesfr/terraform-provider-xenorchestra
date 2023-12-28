@@ -165,6 +165,8 @@ func resourceVmSchema() map[string]*schema.Schema {
 			Type:     schema.TypeInt,
 			Required: true,
 			Description: `The number of CPUs the VM will have. Updates to this field will cause a stop and start of the VM if the new CPU value is greater than the max CPU value. This can be determined with the following command:
+` + "```" +
+				`
 
 $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd0b8"}' | jq '.[].CPUs'
 {
@@ -173,7 +175,8 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 }
 		    
 # Updating the VM to use 3 CPUs would happen without stopping/starting the VM
-# Updating the VM to use 5 CPUs would stop/start the VM`,
+# Updating the VM to use 5 CPUs would stop/start the VM` + "```" + `
+`,
 		},
 		"memory_max": &schema.Schema{
 			Type:     schema.TypeInt,
