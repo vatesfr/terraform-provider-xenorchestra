@@ -340,6 +340,22 @@ func TestAccXenorchestraVm_createWithShorterResourceTimeout(t *testing.T) {
 	})
 }
 
+func TestAccXenorchestraVm_destroyCloudConfigRequiresRunningVm(t *testing.T) {
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config:      testAccVmConfigWithDestroyCloudConfigAfterBoot(vmName, client.HaltedPowerState),
+				ExpectError: regexp.MustCompile("power_state must be `Running` when destroy_cloud_config_vdi_after_boot set to `true`"),
+				PlanOnly:    true,
+			},
+		},
+	})
+}
+
 func TestAccXenorchestraVm_createWithPowerStateChanges(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
@@ -520,7 +536,7 @@ func TestAccXenorchestraVm_createWithDestroyCloudConfigDrive(t *testing.T) {
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccVmConfigWithDestroyCloudConfigAfterBoot(vmName),
+				Config: testAccVmConfigWithDestroyCloudConfigAfterBoot(vmName, client.RunningPowerState),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -529,7 +545,7 @@ func TestAccXenorchestraVm_createWithDestroyCloudConfigDrive(t *testing.T) {
 			},
 			{
 				PreConfig: verifyCloudConfigDiskDeleted,
-				Config:    testAccVmConfigWithDestroyCloudConfigAfterBoot(vmName),
+				Config:    testAccVmConfigWithDestroyCloudConfigAfterBoot(vmName, client.RunningPowerState),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -1929,7 +1945,7 @@ resource "xenorchestra_vm" "bar" {
 // the test expectations while the latter is to ensure the test holds its assertions until the
 // disk was actually deleted. The XO api uses the guest metrics to determine when it can remove
 // the disk, so an IP address allocation happens at the same time.
-func testAccVmConfigWithDestroyCloudConfigAfterBoot(vmName string) string {
+func testAccVmConfigWithDestroyCloudConfigAfterBoot(vmName string, powerState string) string {
 	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
 data "xenorchestra_network" "network" {
     name_label = "%s"
@@ -1947,6 +1963,7 @@ resource "xenorchestra_vm" "bar" {
     network {
 	network_id = "${data.xenorchestra_network.network.id}"
     }
+    power_state = "%s"
     wait_for_ip = true
 
     disk {
@@ -1955,7 +1972,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, powerState, accDefaultSr.Id)
 }
 
 func testAccVmConfigPXEBoot(vmName string) string {
