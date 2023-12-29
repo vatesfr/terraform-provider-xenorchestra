@@ -1,0 +1,33 @@
+---
+name: 'tfplugindocs'
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  tfplugindocs:
+    permissions:
+      contents: read
+      pull-requests: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.19 # Matching what github.com/hashicorp/terraform-plugin-docs uses
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v3
+      - name: Get dependencies
+        run: go mod download
+      - name: Run tfplugindocs
+        run: go generate ./...
+      - name: Fail if any files changed
+        shell: bash
+        run: |
+          if [[ $(git status --porcelain=v1 docs/ | wc -l) -ne 0 ]]; then
+            echo "Please ensure tfplugindocs changes are committed to docs/"
+            echo "Changed files:"
+            git diff --name-only docs/
+            git status docs/
+            exit 1
+          fi
