@@ -47,6 +47,7 @@ var validInstallationMethods = []string{
 }
 
 var defaultCloudConfigDiskName string = "XO CloudConfigDrive"
+var deviceSchemaDesc string = "Whether the device should be attached to the VM."
 
 func resourceVm() *schema.Resource {
 	vmSchema := resourceVmSchema()
@@ -185,6 +186,8 @@ func resourceVmSchema() map[string]*schema.Schema {
 			Type:     schema.TypeInt,
 			Required: true,
 			Description: `The number of CPUs the VM will have. Updates to this field will cause a stop and start of the VM if the new CPU value is greater than the max CPU value. This can be determined with the following command:
+` + "```" +
+				`
 
 $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd0b8"}' | jq '.[].CPUs'
 {
@@ -193,12 +196,17 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 }
 		    
 # Updating the VM to use 3 CPUs would happen without stopping/starting the VM
-# Updating the VM to use 5 CPUs would stop/start the VM`,
+# Updating the VM to use 5 CPUs would stop/start the VM
+` + "```" + `
+
+`,
 		},
 		"memory_max": &schema.Schema{
 			Type:     schema.TypeInt,
 			Required: true,
 			Description: `The amount of memory in bytes the VM will have. Updates to this field will case a stop and start of the VM if the new value is greater than the dynamic memory max. This can be determined with the following command:
+` + "```" + `
+
 
 $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd0b8"}' | jq '.[].memory.dynamic'
 [
@@ -207,7 +215,9 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 ]
 # Updating the VM to use 3GB of memory would happen without stopping/starting the VM
 # Updating the VM to use 5GB of memory would stop/start the VM
-			`,
+` + "```" + `
+
+`,
 		},
 		"resource_set": &schema.Schema{
 			Type:     schema.TypeString,
@@ -216,7 +226,7 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 		"ipv4_addresses": &schema.Schema{
 			Type:        schema.TypeList,
 			Computed:    true,
-			Description: "This is only accessible if guest-tools is installed in the VM and if `wait_for_ip` is set to true. This will contain a list of the ipv4 addresses across all network interfaces in order.",
+			Description: "This is only accessible if guest-tools is installed in the VM and if `wait_for_ip` is set to true. This will contain a list of the ipv4 addresses across all network interfaces in order. See the example terraform code for more details.",
 			Elem: &schema.Schema{
 				Type: schema.TypeString,
 			},
@@ -293,6 +303,7 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 						Type:             schema.TypeBool,
 						Default:          true,
 						Optional:         true,
+						Description:      deviceSchemaDesc,
 						DiffSuppressFunc: suppressAttachedDiffWhenHalted,
 					},
 					"device": &schema.Schema{
@@ -375,11 +386,13 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 						Type:             schema.TypeBool,
 						Default:          true,
 						Optional:         true,
+						Description:      deviceSchemaDesc,
 						DiffSuppressFunc: suppressAttachedDiffWhenHalted,
 					},
 					"position": &schema.Schema{
-						Type:     schema.TypeString,
-						Computed: true,
+						Type:        schema.TypeString,
+						Computed:    true,
+						Description: "Indicates the order of the block device.",
 					},
 					"vdi_id": &schema.Schema{
 						Type:     schema.TypeString,
@@ -399,8 +412,20 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 func resourceRecord() *schema.Resource {
 	duration := 5 * time.Minute
 	return &schema.Resource{
+		Description: `
+Creates a Xen Orchestra vm resource.
+
+## Differences with the Xen Orchestra UI
+
+### Cloudinit
+
+Xen Orchestra allows templating cloudinit config through its own custom mechanism:
+* "{name}" is replaced with the VM's name
+* "%" is replaced with the VM's index
+
+This does not work in terraform since that is applied on Xen Orchestra's client side (Javascript). Terraform provides a "templatefile" function that allows for a similar substitution. Please see the example below for more details.
+`,
 		CustomizeDiff: vmDestroyCloudConfigCustomizeDiff,
-		Description:   "Creates a Xen Orchestra vm resource.",
 		Create:        resourceVmCreate,
 		Read:          resourceVmRead,
 		Update:        resourceVmUpdate,
