@@ -1,6 +1,7 @@
 package xoa
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -34,6 +35,13 @@ var validFirmware = []string{
 	"uefi",
 }
 
+var validPowerState = []string{
+	client.HaltedPowerState,
+	client.PausedPowerState,
+	client.RunningPowerState,
+	client.SuspendedPowerState,
+}
+
 var validInstallationMethods = []string{
 	"network",
 }
@@ -55,6 +63,16 @@ func resourceVm() *schema.Resource {
 		Schema:      vmSchema,
 		Description: "Creates a Xen Orchestra vm resource.",
 	}
+}
+
+func vmDestroyCloudConfigCustomizeDiff(ctx context.Context, diff *schema.ResourceDiff, v interface{}) error {
+	destroyCloudConfig := diff.Get("destroy_cloud_config_vdi_after_boot").(bool)
+	powerState := diff.Get("power_state").(string)
+
+	if destroyCloudConfig && powerState != client.RunningPowerState {
+		return errors.New(fmt.Sprintf("power_state must be `%s` when destroy_cloud_config_vdi_after_boot set to `true`", client.RunningPowerState))
+	}
+	return nil
 }
 
 func resourceVmSchema() map[string]*schema.Schema {
@@ -108,9 +126,11 @@ func resourceVmSchema() map[string]*schema.Schema {
 			ValidateFunc: validation.StringInSlice(validFirmware, false),
 		},
 		"power_state": &schema.Schema{
-			Description: "The power state of the VM. This can be Running, Halted, Paused or Suspended.",
-			Type:        schema.TypeString,
-			Computed:    true,
+			Description:  "The power state of the VM. This can be Running, Halted, Paused or Suspended.",
+			Type:         schema.TypeString,
+			ValidateFunc: validation.StringInSlice(validPowerState, false),
+			Optional:     true,
+			Default:      client.RunningPowerState,
 		},
 		"installation_method": &schema.Schema{
 			Type:          schema.TypeString,
@@ -145,7 +165,7 @@ func resourceVmSchema() map[string]*schema.Schema {
 				"cloud_config",
 			},
 			ForceNew:    true,
-			Description: "Determines whether the cloud config VDI should be deleted once the VM has booted. Defaults to `false`.",
+			Description: "Determines whether the cloud config VDI should be deleted once the VM has booted. Defaults to `false`. If set to `true`, power_state must be set to `Running`.",
 		},
 		"core_os": &schema.Schema{
 			Type:     schema.TypeBool,
@@ -405,6 +425,7 @@ Xen Orchestra allows templating cloudinit config through its own custom mechanis
 
 This does not work in terraform since that is applied on Xen Orchestra's client side (Javascript). Terraform provides a "templatefile" function that allows for a similar substitution. Please see the example below for more details.
 `,
+		CustomizeDiff: vmDestroyCloudConfigCustomizeDiff,
 		Create:        resourceVmCreate,
 		Read:          resourceVmRead,
 		Update:        resourceVmUpdate,
@@ -520,6 +541,7 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		ResourceSet:                    rs,
 		HA:                             d.Get("high_availability").(string),
 		AutoPoweron:                    d.Get("auto_poweron").(bool),
+		PowerState:                     d.Get("power_state").(string),
 		CPUs: client.CPUs{
 			Number: d.Get("cpus").(int),
 		},
@@ -901,27 +923,57 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		vmReq.AffinityHost = &affinityHost
 	}
 
+	haltPerformed := false
+
 	if haltForUpdates {
 		err := c.HaltVm(id)
 
 		if err != nil {
 			return err
 		}
+		haltPerformed = true
 	}
 	vm, err = c.UpdateVm(vmReq)
 
-	if haltForUpdates {
-		err := c.StartVm(vmReq.Id)
-
-		if err != nil {
-			return err
-		}
+	if err != nil {
+		return err
 	}
 
 	log.Printf("[DEBUG] Retrieved vm after update: %+v\n", vm)
 
-	if err != nil {
-		return err
+	powerStateChanged := d.HasChange("power_state")
+	_, newPowerState := d.GetChange("power_state")
+	log.Printf("[DEBUG] powerStateChanged=%t newPowerState=%s\n", powerStateChanged, newPowerState)
+	if haltForUpdates || powerStateChanged {
+		switch newPowerState {
+		case client.PausedPowerState:
+			err := c.PauseVm(vmReq.Id)
+
+			if err != nil {
+				return err
+			}
+		case client.SuspendedPowerState:
+			err := c.SuspendVm(vmReq.Id)
+
+			if err != nil {
+				return err
+			}
+		case client.RunningPowerState:
+			err := c.StartVm(vmReq.Id)
+
+			if err != nil {
+				return err
+			}
+		case client.HaltedPowerState:
+			// If the VM wasn't halted as part of the update, perform the halt now
+			if !haltPerformed {
+				err := c.HaltVm(id)
+
+				if err != nil {
+					return err
+				}
+			}
+		}
 	}
 
 	if d.HasChange("tags") {
@@ -1365,8 +1417,12 @@ func extractIpsFromNetworks(networks map[string]string) []guestNetwork {
 func suppressAttachedDiffWhenHalted(k, old, new string, d *schema.ResourceData) (suppress bool) {
 	powerState := d.Get("power_state").(string)
 	suppress = true
+	ok := d.HasChange("power_state")
+	if ok {
+		log.Printf("[DEBUG] Power state has been changed\n")
+	}
 
-	if powerState == "Running" {
+	if !ok && powerState == client.RunningPowerState {
 		suppress = false
 	}
 	log.Printf("[DEBUG] VM '%s' attribute has transitioned from '%s' to '%s' when PowerState '%s'. Suppress diff: %t", k, old, new, powerState, suppress)

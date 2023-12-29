@@ -340,6 +340,123 @@ func TestAccXenorchestraVm_createWithShorterResourceTimeout(t *testing.T) {
 	})
 }
 
+func TestAccXenorchestraVm_destroyCloudConfigRequiresRunningVm(t *testing.T) {
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config:      testAccVmConfigWithDestroyCloudConfigAfterBoot(vmName, client.HaltedPowerState),
+				ExpectError: regexp.MustCompile("power_state must be `Running` when destroy_cloud_config_vdi_after_boot set to `true`"),
+				PlanOnly:    true,
+			},
+		},
+	})
+}
+
+func TestAccXenorchestraVm_createWithPowerStateChanges(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
+	runningPowerState := client.RunningPowerState
+	stoppedPowerState := client.HaltedPowerState
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigWithPowerState(vmName, stoppedPowerState),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "power_state", stoppedPowerState)),
+			},
+			{
+				Config: testAccVmConfigWithPowerState(vmName, runningPowerState),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "power_state", runningPowerState)),
+			},
+			{
+				Config: testAccVmConfigWithPowerState(vmName, stoppedPowerState),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "power_state", stoppedPowerState)),
+			},
+		},
+	})
+}
+
+func TestAccXenorchestraVm_createAndSuspend(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigWithPowerState(vmName, client.RunningPowerState),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "power_state", client.RunningPowerState)),
+			},
+			{
+				Config: testAccVmConfigWithPowerState(vmName, client.SuspendedPowerState),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "power_state", client.SuspendedPowerState)),
+			},
+			{
+				Config: testAccVmConfigWithPowerState(vmName, client.RunningPowerState),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "power_state", client.RunningPowerState)),
+			},
+		},
+	})
+}
+
+func TestAccXenorchestraVm_createAndPause(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigWithPowerState(vmName, client.RunningPowerState),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "power_state", client.RunningPowerState)),
+			},
+			{
+				Config: testAccVmConfigWithPowerState(vmName, client.PausedPowerState),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "power_state", client.PausedPowerState)),
+			},
+			{
+				Config: testAccVmConfigWithPowerState(vmName, client.RunningPowerState),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "power_state", client.RunningPowerState)),
+			},
+		},
+	})
+}
+
 func TestAccXenorchestraVm_createAndPlanWithNonExistantVm(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
@@ -419,7 +536,7 @@ func TestAccXenorchestraVm_createWithDestroyCloudConfigDrive(t *testing.T) {
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccVmConfigWithDestroyCloudConfigAfterBoot(vmName),
+				Config: testAccVmConfigWithDestroyCloudConfigAfterBoot(vmName, client.RunningPowerState),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -428,7 +545,7 @@ func TestAccXenorchestraVm_createWithDestroyCloudConfigDrive(t *testing.T) {
 			},
 			{
 				PreConfig: verifyCloudConfigDiskDeleted,
-				Config:    testAccVmConfigWithDestroyCloudConfigAfterBoot(vmName),
+				Config:    testAccVmConfigWithDestroyCloudConfigAfterBoot(vmName, client.RunningPowerState),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -1465,7 +1582,7 @@ func TestAccXenorchestraVm_diskAndNetworkAttachmentIgnoredWhenHalted(t *testing.
 			},
 			{
 				PreConfig: shutdownVm,
-				Config:    testAccVmConfig(vmName),
+				Config:    testAccVmConfigWithPowerState(vmName, "Halted"),
 				PlanOnly:  true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
@@ -1795,11 +1912,40 @@ resource "xenorchestra_vm" "bar" {
 `, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id, waitForIp)
 }
 
+func testAccVmConfigWithPowerState(vmName, powerState string) string {
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
+data "xenorchestra_network" "network" {
+    name_label = "%s"
+    pool_id = "%s"
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 4295000000
+    cpus  = 1
+    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    name_label = "%s"
+    name_description = "description"
+    template = "${data.xenorchestra_template.template.id}"
+    network {
+	network_id = "${data.xenorchestra_network.network.id}"
+    }
+
+    disk {
+      sr_id = "%s"
+      name_label = "disk 1"
+      size = 10001317888
+    }
+
+    power_state = "%s"
+}
+`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id, powerState)
+}
+
 // This sets destroy_cloud_config_vdi_after_boot and wait_for_ip. The former is required for
 // the test expectations while the latter is to ensure the test holds its assertions until the
 // disk was actually deleted. The XO api uses the guest metrics to determine when it can remove
 // the disk, so an IP address allocation happens at the same time.
-func testAccVmConfigWithDestroyCloudConfigAfterBoot(vmName string) string {
+func testAccVmConfigWithDestroyCloudConfigAfterBoot(vmName string, powerState string) string {
 	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
 data "xenorchestra_network" "network" {
     name_label = "%s"
@@ -1817,6 +1963,7 @@ resource "xenorchestra_vm" "bar" {
     network {
 	network_id = "${data.xenorchestra_network.network.id}"
     }
+    power_state = "%s"
     wait_for_ip = true
 
     disk {
@@ -1825,7 +1972,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, powerState, accDefaultSr.Id)
 }
 
 func testAccVmConfigPXEBoot(vmName string) string {
@@ -1909,6 +2056,7 @@ resource "xenorchestra_vm" "bar" {
     network {
 	network_id = "${data.xenorchestra_network.network.id}"
     }
+    destroy_cloud_config_vdi_after_boot = true
 
     disk {
       sr_id = "%s"
