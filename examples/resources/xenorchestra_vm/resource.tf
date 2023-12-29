@@ -59,3 +59,20 @@ resource "xenorchestra_vm" "bar" {
       create = "20m"
     }
 }
+
+# vm resource that uses wait_for_ip
+resource "xenorchestra_vm" "vm" {
+  ...
+  wait_for_ip = true
+  # Specify VM with two network interfaces
+  network {
+    ...
+  }
+  network {
+    ...
+  }
+}
+
+output "first-network-interface-ips" {
+  value = xenorchestra_vm.vm.network[0].ipv4_addresses
+}
