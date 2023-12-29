@@ -154,13 +154,14 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 - `core_os` (Boolean)
 - `cpu_cap` (Number)
 - `cpu_weight` (Number)
-- `destroy_cloud_config_vdi_after_boot` (Boolean) Determines whether the cloud config VDI should be deleted once the VM has booted. Defaults to `false`.
+- `destroy_cloud_config_vdi_after_boot` (Boolean) Determines whether the cloud config VDI should be deleted once the VM has booted. Defaults to `false`. If set to `true`, power_state must be set to `Running`.
 - `exp_nested_hvm` (Boolean) Boolean parameter that allows a VM to use nested virtualization.
 - `high_availability` (String) The restart priority for the VM. Possible values are `best-effort`, `restart` and empty string (no restarts on failure. Defaults to empty string
 - `host` (String)
 - `hvm_boot_firmware` (String) The firmware to use for the VM. Possible values are `bios` and `uefi`.
 - `installation_method` (String) This cannot be used with `cdrom`. Possible values are `network` which allows a VM to boot via PXE.
 - `name_description` (String) The description of the VM.
+- `power_state` (String) The power state of the VM. This can be Running, Halted, Paused or Suspended.
 - `resource_set` (String)
 - `start_delay` (Number) Number of seconds the VM should be delayed from starting.
 - `tags` (Set of String) The tags (labels) applied to the given entity.
@@ -174,7 +175,6 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 - `id` (String) The ID of this resource.
 - `ipv4_addresses` (List of String) This is only accessible if guest-tools is installed in the VM and if `wait_for_ip` is set to true. This will contain a list of the ipv4 addresses across all network interfaces in order. See the example terraform code for more details.
 - `ipv6_addresses` (List of String) This is only accessible if guest-tools is installed in the VM and if `wait_for_ip` is set to true. This will contain a list of the ipv6 addresses across all network interfaces in order.
-- `power_state` (String) The power state of the VM. This can be Running, Halted, Paused or Suspended.
 
 <a id="nestedblock--disk"></a>
 ### Nested Schema for `disk`
