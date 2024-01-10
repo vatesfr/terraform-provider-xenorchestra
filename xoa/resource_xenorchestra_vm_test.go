@@ -1738,9 +1738,9 @@ resource "xenorchestra_vm" "bar" {
     cpus  = 1
     name_label = "%s"
     name_description = "description"
-    template = "${data.xenorchestra_template.template.id}"
+    template = data.xenorchestra_template.template.id
     network {
-	network_id = "${data.xenorchestra_network.network.id}"
+	network_id = data.xenorchestra_network.network.id
     }
 
     disk {
@@ -1762,12 +1762,12 @@ data "xenorchestra_network" "network" {
 resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
-    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    cloud_config = xenorchestra_cloud_config.bar.template
     name_label = "%s"
     name_description = "description"
-    template = "${data.xenorchestra_template.template.id}"
+    template = data.xenorchestra_template.template.id
     network {
-	network_id = "${data.xenorchestra_network.network.id}"
+	network_id = data.xenorchestra_network.network.id
     }
 
     disk {
@@ -1798,12 +1798,12 @@ data "xenorchestra_network" "network" {
 resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
-    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    cloud_config = xenorchestra_cloud_config.bar.template
     name_label = "%s"
     name_description = "description"
-    template = "${data.xenorchestra_template.template.id}"
+    template = data.xenorchestra_template.template.id
     network {
-	network_id = "${data.xenorchestra_network.network.id}"
+	network_id = data.xenorchestra_network.network.id
     }
 
     cdrom {
@@ -1835,12 +1835,12 @@ data "xenorchestra_network" "network" {
 resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
-    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    cloud_config = xenorchestra_cloud_config.bar.template
     name_label = "%s"
     name_description = "description"
-    template = "${data.xenorchestra_template.template.id}"
+    template = data.xenorchestra_template.template.id
     network {
-	network_id = "${data.xenorchestra_network.network.id}"
+	network_id = data.xenorchestra_network.network.id
     }
 
     disk {
@@ -1862,12 +1862,12 @@ data "xenorchestra_network" "network" {
 resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
-    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    cloud_config = xenorchestra_cloud_config.bar.template
     name_label = "%s"
     name_description = "description"
-    template = "${data.xenorchestra_template.template.id}"
+    template = data.xenorchestra_template.template.id
     network {
-	network_id = "${data.xenorchestra_network.network.id}"
+	network_id = data.xenorchestra_network.network.id
     }
 
     disk {
@@ -1892,19 +1892,19 @@ data "xenorchestra_pool" "pool" {
 
 data "xenorchestra_network" "network" {
     name_label = "%s"
-    pool_id = "${data.xenorchestra_pool.pool.id}"
+    pool_id = data.xenorchestra_pool.pool.id
 }
 
 resource "xenorchestra_vm" "bar" {
-    affinity_host = "${data.xenorchestra_pool.pool.master}"
+    affinity_host = data.xenorchestra_pool.pool.master
     memory_max = 4295000000
     cpus  = 1
-    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    cloud_config = xenorchestra_cloud_config.bar.template
     name_label = "%s"
     name_description = "description"
-    template = "${data.xenorchestra_template.template.id}"
+    template = data.xenorchestra_template.template.id
     network {
-	network_id = "${data.xenorchestra_network.network.id}"
+	network_id = data.xenorchestra_network.network.id
     }
 
     disk {
@@ -1930,12 +1930,12 @@ data "xenorchestra_network" "network" {
 resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
-    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    cloud_config = xenorchestra_cloud_config.bar.template
     name_label = "%s"
     name_description = "description"
-    template = "${data.xenorchestra_template.template.id}"
+    template = data.xenorchestra_template.template.id
     network {
-	network_id = "${data.xenorchestra_network.network.id}"
+	network_id = data.xenorchestra_network.network.id
     }
 
     disk {
@@ -1958,12 +1958,12 @@ data "xenorchestra_network" "network" {
 resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
-    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    cloud_config = xenorchestra_cloud_config.bar.template
     name_label = "%s"
     name_description = "description"
-    template = "${data.xenorchestra_template.template.id}"
+    template = data.xenorchestra_template.template.id
     network {
-	network_id = "${data.xenorchestra_network.network.id}"
+	network_id = data.xenorchestra_network.network.id
     }
 
     disk {
@@ -1991,13 +1991,13 @@ data "xenorchestra_network" "network" {
 resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
-    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    cloud_config = xenorchestra_cloud_config.bar.template
     name_label = "%s"
     name_description = "description"
-    template = "${data.xenorchestra_template.template.id}"
+    template = data.xenorchestra_template.template.id
     destroy_cloud_config_vdi_after_boot = true
     network {
-	network_id = "${data.xenorchestra_network.network.id}"
+	network_id = data.xenorchestra_network.network.id
     }
     power_state = "%s"
     wait_for_ip = true
@@ -2021,12 +2021,12 @@ data "xenorchestra_network" "network" {
 resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
-    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    cloud_config = xenorchestra_cloud_config.bar.template
     name_label = "%s"
     name_description = "description"
-    template = "${data.xenorchestra_template.template.id}"
+    template = data.xenorchestra_template.template.id
     network {
-	network_id = "${data.xenorchestra_network.network.id}"
+	network_id = data.xenorchestra_network.network.id
     }
     installation_method = "network"
 
@@ -2054,12 +2054,12 @@ data "xenorchestra_network" "network" {
 resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
-    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    cloud_config = xenorchestra_cloud_config.bar.template
     name_label = "%s"
     name_description = "description"
-    template = "${data.xenorchestra_template.template.id}"
+    template = data.xenorchestra_template.template.id
     network {
-	network_id = "${data.xenorchestra_network.network.id}"
+	network_id = data.xenorchestra_network.network.id
     }
     cdrom {
 	id = data.xenorchestra_vdi.iso.id
@@ -2085,12 +2085,12 @@ data "xenorchestra_network" "network" {
 resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
-    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    cloud_config = xenorchestra_cloud_config.bar.template
     name_label = "%s"
     name_description = "description"
-    template = "${data.xenorchestra_template.template.id}"
+    template = data.xenorchestra_template.template.id
     network {
-	network_id = "${data.xenorchestra_network.network.id}"
+	network_id = data.xenorchestra_network.network.id
     }
     destroy_cloud_config_vdi_after_boot = true
 
@@ -2122,12 +2122,12 @@ data "xenorchestra_network" "network" {
 resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
-    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    cloud_config = xenorchestra_cloud_config.bar.template
     name_label = "%s"
     name_description = "description"
-    template = "${data.xenorchestra_template.template.id}"
+    template = data.xenorchestra_template.template.id
     network {
-	network_id = "${data.xenorchestra_network.network.id}"
+	network_id = data.xenorchestra_network.network.id
     }
 
     cdrom {
@@ -2154,12 +2154,12 @@ resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     wait_for_ip = true
     cpus  = 1
-    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    cloud_config = xenorchestra_cloud_config.bar.template
     name_label = "%s"
     name_description = "description"
-    template = "${data.xenorchestra_template.template.id}"
+    template = data.xenorchestra_template.template.id
     network {
-	network_id = "${data.xenorchestra_network.network.id}"
+	network_id = data.xenorchestra_network.network.id
     }
 
     disk {
@@ -2181,12 +2181,12 @@ data "xenorchestra_network" "network" {
 resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
-    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    cloud_config = xenorchestra_cloud_config.bar.template
     name_label = "%s"
     name_description = "description"
-    template = "${data.xenorchestra_template.template.id}"
+    template = data.xenorchestra_template.template.id
     network {
-	network_id = "${data.xenorchestra_network.network.id}"
+	network_id = data.xenorchestra_network.network.id
     }
 
     disk {
@@ -2209,10 +2209,10 @@ data "xenorchestra_network" "network" {
 resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
-    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    cloud_config = xenorchestra_cloud_config.bar.template
     name_label = "%s"
     name_description = "description"
-    template = "${data.xenorchestra_template.template.id}"
+    template = data.xenorchestra_template.template.id
     cloud_network_config = <<EOF
     network:
       version: 1
@@ -2223,7 +2223,7 @@ resource "xenorchestra_vm" "bar" {
           mac_address: c0:d6:9f:2c:e8:80
 EOF
     network {
-	network_id = "${data.xenorchestra_network.network.id}"
+	network_id = data.xenorchestra_network.network.id
     }
 
     disk {
@@ -2245,12 +2245,12 @@ data "xenorchestra_network" "network" {
 resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
-    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    cloud_config = xenorchestra_cloud_config.bar.template
     name_label = "%s"
     name_description = "description"
-    template = "${data.xenorchestra_template.template.id}"
+    template = data.xenorchestra_template.template.id
     network {
-	network_id = "${data.xenorchestra_network.network.id}"
+	network_id = data.xenorchestra_network.network.id
     }
 
     disk {
@@ -2273,12 +2273,12 @@ data "xenorchestra_network" "network" {
 resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
-    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    cloud_config = xenorchestra_cloud_config.bar.template
     name_label = "%s"
     name_description = "description"
-    template = "${data.xenorchestra_template.template.id}"
+    template = data.xenorchestra_template.template.id
     network {
-	network_id = "${data.xenorchestra_network.network.id}"
+	network_id = data.xenorchestra_network.network.id
     }
 
     disk {
@@ -2306,12 +2306,12 @@ data "xenorchestra_network" "network" {
 resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
-    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    cloud_config = xenorchestra_cloud_config.bar.template
     name_label = "%s"
     name_description = "description"
-    template = "${data.xenorchestra_template.template.id}"
+    template = data.xenorchestra_template.template.id
     network {
-	network_id = "${data.xenorchestra_network.network.id}"
+	network_id = data.xenorchestra_network.network.id
 	attached = true
     }
 
@@ -2334,12 +2334,12 @@ data "xenorchestra_network" "network" {
 resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
-    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    cloud_config = xenorchestra_cloud_config.bar.template
     name_label = "%s"
     name_description = "description"
-    template = "${data.xenorchestra_template.template.id}"
+    template = data.xenorchestra_template.template.id
     network {
-	network_id = "${data.xenorchestra_network.network.id}"
+	network_id = data.xenorchestra_network.network.id
 	attached = false
     }
 
@@ -2362,12 +2362,12 @@ data "xenorchestra_network" "network" {
 resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
-    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    cloud_config = xenorchestra_cloud_config.bar.template
     name_label = "%s"
     name_description = "description"
-    template = "${data.xenorchestra_template.template.id}"
+    template = data.xenorchestra_template.template.id
     network {
-	network_id = "${data.xenorchestra_network.network.id}"
+	network_id = data.xenorchestra_network.network.id
 	mac_address = "%s"
     }
 
@@ -2420,17 +2420,17 @@ data "xenorchestra_network" "network" {
 resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
-    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    cloud_config = xenorchestra_cloud_config.bar.template
     name_label = "%s"
     name_description = "description"
-    template = "${data.xenorchestra_template.template.id}"
+    template = data.xenorchestra_template.template.id
     network {
-	network_id = "${data.xenorchestra_network.network.id}"
+	network_id = data.xenorchestra_network.network.id
 	mac_address = "%s"
     }
 
     network {
-	network_id = "${data.xenorchestra_network.network.id}"
+	network_id = data.xenorchestra_network.network.id
 	mac_address = "%s"
     }
 
@@ -2458,15 +2458,15 @@ data "xenorchestra_network" "network2" {
 resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
-    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    cloud_config = xenorchestra_cloud_config.bar.template
     name_label = "%s"
     name_description = "description"
-    template = "${data.xenorchestra_template.template.id}"
+    template = data.xenorchestra_template.template.id
     network {
-	network_id = "${data.xenorchestra_network.network.id}"
+	network_id = data.xenorchestra_network.network.id
     }
     network {
-	network_id = "${data.xenorchestra_network.network2.id}"
+	network_id = data.xenorchestra_network.network2.id
     }
 
     disk {
@@ -2493,18 +2493,18 @@ data "xenorchestra_network" "network2" {
 resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
-    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    cloud_config = xenorchestra_cloud_config.bar.template
     name_label = "%s"
     name_description = "description"
-    template = "${data.xenorchestra_template.template.id}"
+    template = data.xenorchestra_template.template.id
     network {
-	network_id = "${data.xenorchestra_network.network.id}"
+	network_id = data.xenorchestra_network.network.id
     }
     network {
-	network_id = "${data.xenorchestra_network.network2.id}"
+	network_id = data.xenorchestra_network.network2.id
     }
     network {
-	network_id = "${data.xenorchestra_network.network2.id}"
+	network_id = data.xenorchestra_network.network2.id
     }
 
     disk {
@@ -2526,11 +2526,11 @@ data "xenorchestra_network" "network" {
 resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
-    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    cloud_config = xenorchestra_cloud_config.bar.template
     name_label = "%s"
-    template = "${data.xenorchestra_template.template.id}"
+    template = data.xenorchestra_template.template.id
     network {
-	network_id = "${data.xenorchestra_network.network.id}"
+	network_id = data.xenorchestra_network.network.id
     }
 
     disk {
@@ -2556,14 +2556,14 @@ data "xenorchestra_network" "network" {
 resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
-    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    cloud_config = xenorchestra_cloud_config.bar.template
     name_label = "%s"
     name_description = "%s"
-    template = "${data.xenorchestra_template.template.id}"
+    template = data.xenorchestra_template.template.id
     high_availability = "%s"
     auto_poweron = "%t"
     network {
-	network_id = "${data.xenorchestra_network.network.id}"
+	network_id = data.xenorchestra_network.network.id
     }
 
     disk {
@@ -2589,15 +2589,15 @@ data "xenorchestra_network" "network" {
 resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
-    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    cloud_config = xenorchestra_cloud_config.bar.template
     name_label = "%s"
     name_description = "%s"
-    affinity_host = "${data.xenorchestra_pool.pool.master}"
-    template = "${data.xenorchestra_template.template.id}"
+    affinity_host = data.xenorchestra_pool.pool.master
+    template = data.xenorchestra_template.template.id
     high_availability = "%s"
     auto_poweron = "%t"
     network {
-	network_id = "${data.xenorchestra_network.network.id}"
+	network_id = data.xenorchestra_network.network.id
     }
 
     disk {
@@ -2623,15 +2623,15 @@ data "xenorchestra_network" "network" {
 resource "xenorchestra_vm" "bar" {
     memory_max = %d
     cpus  = %d
-    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    cloud_config = xenorchestra_cloud_config.bar.template
     name_label = "%s"
     name_description = "%s"
-    affinity_host = "${data.xenorchestra_pool.pool.master}"
-    template = "${data.xenorchestra_template.template.id}"
+    affinity_host = data.xenorchestra_pool.pool.master
+    template = data.xenorchestra_template.template.id
     high_availability = "%s"
     auto_poweron = "%t"
     network {
-	network_id = "${data.xenorchestra_network.network.id}"
+	network_id = data.xenorchestra_network.network.id
     }
 
     disk {
@@ -2664,13 +2664,13 @@ resource "xenorchestra_vm" "bar" {
     %s
     memory_max = 4295000000
     cpus  = 1
-    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    cloud_config = xenorchestra_cloud_config.bar.template
     name_label = "%s"
     name_description = "%s"
-    template = "${data.xenorchestra_template.template.id}"
-    resource_set = "${xenorchestra_resource_set.rs.id}"
+    template = data.xenorchestra_template.template.id
+    resource_set = xenorchestra_resource_set.rs.id
     network {
-	network_id = "${data.xenorchestra_network.network.id}"
+	network_id = data.xenorchestra_network.network.id
     }
 
     disk {
@@ -2698,9 +2698,9 @@ resource "xenorchestra_resource_set" "rs" {
 
     // Add the template, storage repository and network to the resource set
     objects = [
-	"${data.xenorchestra_template.template.id}",
+	data.xenorchestra_template.template.id,
 	"%s",
-	"${data.xenorchestra_network.network.id}",
+	data.xenorchestra_network.network.id,
     ]
 
     limit {
@@ -2727,12 +2727,12 @@ func testAccVmConfigWithoutResourceSet(vmName string) string {
 resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
-    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    cloud_config = xenorchestra_cloud_config.bar.template
     name_label = "%s"
     name_description = "description"
-    template = "${data.xenorchestra_template.template.id}"
+    template = data.xenorchestra_template.template.id
     network {
-       network_id = "${data.xenorchestra_network.network.id}"
+       network_id = data.xenorchestra_network.network.id
     }
 
     disk {
