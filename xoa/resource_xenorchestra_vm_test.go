@@ -843,6 +843,42 @@ func TestAccXenorchestraVm_createWithCloudInitNetworkConfig(t *testing.T) {
 	})
 }
 
+func TestAccXenorchestraVm_createWithInvalidMacAddress(t *testing.T) {
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
+	invalidMac := "00-0a:83-b1:c0-01"
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config:      testAccVmConfigWithMacAddress(vmName, invalidMac),
+				ExpectError: regexp.MustCompile(`Mac Address is invalid`),
+			},
+		},
+	})
+}
+
+func TestAccXenorchestraVm_createWithSentinelPlanValue(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigWithMacAddressSentinelInput(vmName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "network.#", "1"),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
+			},
+		},
+	})
+}
+
 func TestAccXenorchestraVm_createWithDashedMacAddress(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
@@ -2342,6 +2378,36 @@ resource "xenorchestra_vm" "bar" {
     }
 }
 `, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, macAddress, accDefaultSr.Id)
+}
+
+func testAccVmConfigWithMacAddressSentinelInput(vmName string) string {
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
+resource "macaddress" "mac" {}
+
+data "xenorchestra_network" "network" {
+    name_label = "%s"
+    pool_id = "%s"
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 4295000000
+    cpus  = 1
+    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    name_label = "%s"
+    name_description = "description"
+    template = "${data.xenorchestra_template.template.id}"
+    network {
+	network_id = "${data.xenorchestra_network.network.id}"
+	mac_address = macaddress.mac.address
+    }
+
+    disk {
+      sr_id = "%s"
+      name_label = "disk 1"
+      size = 10001317888
+    }
+}
+`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithTwoMacAddresses(vmName, firstMac, secondMac string) string {

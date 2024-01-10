@@ -316,20 +316,11 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 						Required:    true,
 					},
 					"mac_address": &schema.Schema{
-						Type:        schema.TypeString,
-						Optional:    true,
-						Computed:    true,
-						Description: "The mac address of the network interface. This must be parsable by go's [net.ParseMAC function](https://golang.org/pkg/net/#ParseMAC). All mac addresses are stored in Terraform's state with [HardwareAddr's string representation](https://golang.org/pkg/net/#HardwareAddr.String) i.e. 00:00:5e:00:53:01",
-						StateFunc: func(val interface{}) string {
-
-							unformattedMac := val.(string)
-							mac, err := net.ParseMAC(unformattedMac)
-							if err != nil {
-								panic(fmt.Sprintf("Mac address `%s` was not parsable. This should never happened because Terraform's validation should happen before this is stored into state", unformattedMac))
-							}
-							return mac.String()
-
-						},
+						Type:             schema.TypeString,
+						Optional:         true,
+						Computed:         true,
+						Description:      "The mac address of the network interface. This must be parsable by go's [net.ParseMAC function](https://golang.org/pkg/net/#ParseMAC). All mac addresses are stored in Terraform's state with [HardwareAddr's string representation](https://golang.org/pkg/net/#HardwareAddr.String) i.e. 00:00:5e:00:53:01",
+						DiffSuppressFunc: suppressEquivalentMAC,
 						ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
 							mac_address := val.(string)
 							if _, err := net.ParseMAC(mac_address); err != nil {
@@ -1412,6 +1403,22 @@ func extractIpsFromNetworks(networks map[string]string) []guestNetwork {
 	}
 	log.Printf("[DEBUG] Extracted the following network interface ips: %v\n", devices)
 	return devices
+}
+
+func suppressEquivalentMAC(k, old, new string, d *schema.ResourceData) (suppress bool) {
+	fmt.Printf("[DEBUG] Comparing MACs old=%s new=%s\n", old, new)
+	if old == "" {
+		return false
+	}
+	newMAC, err := net.ParseMAC(new)
+	if err != nil {
+		return false
+	}
+	oldMAC, err := net.ParseMAC(old)
+	if err != nil {
+		return false
+	}
+	return oldMAC.String() == newMAC.String()
 }
 
 func suppressAttachedDiffWhenHalted(k, old, new string, d *schema.ResourceData) (suppress bool) {
