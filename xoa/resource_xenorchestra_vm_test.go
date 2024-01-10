@@ -862,7 +862,6 @@ func TestAccXenorchestraVm_createWithInvalidMacAddress(t *testing.T) {
 func TestAccXenorchestraVm_createWithSentinelPlanValue(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
-	// sentinelMac := "74D93920-ED26-11E3-AC10-0800200C9A66"
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -874,10 +873,6 @@ func TestAccXenorchestraVm_createWithSentinelPlanValue(t *testing.T) {
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttr(resourceName, "network.#", "1"),
-					// internal.TestCheckTypeSetElemNestedAttrs(resourceName, "network.*", map[string]string{
-					// 	// All mac addresses should be formatted to use colons
-					// 	"mac_address": getFormattedMac(macWithDashes),
-					// }),
 					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
 			},
 		},
