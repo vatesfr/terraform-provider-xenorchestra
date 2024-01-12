@@ -2392,12 +2392,12 @@ data "xenorchestra_network" "network" {
 resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
-    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    cloud_config = xenorchestra_cloud_config.bar.template
     name_label = "%s"
     name_description = "description"
-    template = "${data.xenorchestra_template.template.id}"
+    template = data.xenorchestra_template.template.id
     network {
-	network_id = "${data.xenorchestra_network.network.id}"
+	network_id = data.xenorchestra_network.network.id
 	mac_address = macaddress.mac.address
     }
 
