@@ -58,6 +58,7 @@ Read-Only:
 - `affinity_host` (String)
 - `auto_poweron` (Boolean)
 - `blocked_operations` (Set of String)
+- `clone_type` (String)
 - `cloud_config` (String)
 - `cloud_network_config` (String)
 - `core_os` (Boolean)

@@ -24,6 +24,11 @@ const (
 	SuspendedPowerState string = "Suspended"
 )
 
+const (
+	CloneTypeFastClone string = "fast"
+	CloneTypeFullClone string = "full"
+)
+
 type CPUs struct {
 	Number int `json:"number"`
 	Max    int `json:"max"`
@@ -137,6 +142,7 @@ type Vm struct {
 	ManagementAgentDetected        bool                `json:"managementAgentDetected"`
 	PVDriversDetected              bool                `json:"pvDriversDetected"`
 	DestroyCloudConfigVdiAfterBoot bool                `json:"-"`
+	CloneType                      string              `json:"-"`
 }
 
 type Installation struct {
@@ -256,7 +262,12 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 	}
 
 	params := map[string]interface{}{
-		"bootAfterCreate":  false,
+		"bootAfterCreate": false,
+		// TODO(ddelnano): Follow up and determine if the logic inside XO is correct or incorrect.
+		// From my testing the logic below does not work and it seems the XO getter is
+		// not called correctly (missing a preceeding '_')
+		// "clone": !useExistingDisks && vmReq.CloneType == CloneTypeFastClone,
+		"clone":            vmReq.CloneType == CloneTypeFastClone,
 		"name_label":       vmReq.NameLabel,
 		"name_description": vmReq.NameDescription,
 		"template":         vmReq.Template,

@@ -1,6 +1,7 @@
 package xoa
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"reflect"
@@ -440,17 +441,29 @@ func TestAccXenorchestraVm_createAndPause(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "power_state", client.RunningPowerState)),
 			},
 			{
-				Config: testAccVmConfigWithPowerState(vmName, client.PausedPowerState),
+				Config: testAccVmConfigWithPowerState(vmName, client.PausedPowerState) + testAccVmDiskVDIDataSource(),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrWith("data.xenorchestra_vdi.disk", "parent", func(value string) error {
+						if len(value) == 0 {
+							return errors.New("expected parent VDI to exist, instead received empty string (fully cloned VDI)")
+						}
+						return nil
+					}),
 					resource.TestCheckResourceAttr(resourceName, "power_state", client.PausedPowerState)),
 			},
 			{
-				Config: testAccVmConfigWithPowerState(vmName, client.RunningPowerState),
+				Config: testAccVmConfigWithPowerState(vmName, client.RunningPowerState) + testAccVmDiskVDIDataSource(),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrWith("data.xenorchestra_vdi.disk", "parent", func(value string) error {
+						if len(value) == 0 {
+							return errors.New("expected parent VDI to exist, instead received empty string (fully cloned VDI)")
+						}
+						return nil
+					}),
 					resource.TestCheckResourceAttr(resourceName, "power_state", client.RunningPowerState)),
 			},
 		},
@@ -497,6 +510,34 @@ func TestAccXenorchestraVm_createAndPlanWithNonExistantVm(t *testing.T) {
 				Config:             testAccVmConfig(vmName),
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
+}
+
+func TestAccXenorchestraVm_createWithFullClone(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	vdiDataSourceName := "data.xenorchestra_vdi.disk"
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigFullClone(vmName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
+			},
+			{
+				Config: testAccVmConfigFullClone(vmName) + testAccVmDiskVDIDataSource(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(vdiDataSourceName, "parent", ""),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "network.*.*", "data.xenorchestra_network.network", "id")),
 			},
 		},
 	})
@@ -1948,6 +1989,35 @@ resource "xenorchestra_vm" "bar" {
 `, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id, waitForIp)
 }
 
+func testAccVmConfigFullClone(vmName string) string {
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
+data "xenorchestra_network" "network" {
+    name_label = "%s"
+    pool_id = "%s"
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 4295000000
+    cpus  = 1
+    cloud_config = "${xenorchestra_cloud_config.bar.template}"
+    name_label = "%s"
+    name_description = "description"
+    template = "${data.xenorchestra_template.template.id}"
+    network {
+	network_id = "${data.xenorchestra_network.network.id}"
+    }
+
+    disk {
+      sr_id = "%s"
+      name_label = "disk 1"
+      size = 10001317888
+    }
+
+    clone_type = "full"
+}
+`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+}
+
 func testAccVmConfigWithPowerState(vmName, powerState string) string {
 	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
 data "xenorchestra_network" "network" {
@@ -2037,6 +2107,15 @@ resource "xenorchestra_vm" "bar" {
     }
 }
 `, accTestPool.Id, vmName, accDefaultSr.Id)
+}
+
+func testAccVmDiskVDIDataSource() string {
+	return fmt.Sprintf(`
+data "xenorchestra_vdi" "disk" {
+    id = xenorchestra_vm.bar.disk.0.vdi_id
+    pool_id = "%s"
+}
+`, accTestPool.Id)
 }
 
 func testAccVmConfigConflictingCdromAndInstallMethod(vmName string) string {
