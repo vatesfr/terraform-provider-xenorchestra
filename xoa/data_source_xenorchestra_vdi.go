@@ -21,6 +21,11 @@ Ensure that your name_label, pool_id and tags identify a unique VDI.`,
 				Description: "The name of the VDI to look up.",
 				Required:    true,
 			},
+			"parent": &schema.Schema{
+				Type:        schema.TypeString,
+				Description: "The ID of the parent VDI if one exists. An example of when a VDI will have a parent is when it was created from a VM fast clone.",
+				Computed:    true,
+			},
 			"pool_id": &schema.Schema{
 				Description: "The ID of the pool the VDI belongs to. This is useful if you have a VDI with the same name on different pools.",
 				Type:        schema.TypeString,
@@ -61,5 +66,6 @@ func dataSourceVDIRead(d *schema.ResourceData, m interface{}) error {
 	d.Set("name_label", vdi.NameLabel)
 	d.Set("pool_id", vdi.PoolId)
 	d.Set("tags", vdi.Tags)
+	d.Set("parent", vdi.Parent)
 	return nil
 }

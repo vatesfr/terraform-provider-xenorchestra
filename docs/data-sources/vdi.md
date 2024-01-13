@@ -42,3 +42,4 @@ resource "xenorchestra_vm" "demo-vm" {
 ### Read-Only
 
 - `id` (String) The ID of this resource.
+- `parent` (String) The ID of the parent VDI if one exists. An example of when a VDI will have a parent is when it was created from a VM fast clone.

@@ -21,6 +21,7 @@ func TestAccXenorchestraDataSource_vdi(t *testing.T) {
 					testAccCheckXenorchestraDataSourceVDI(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "name_label"),
+					resource.TestCheckResourceAttr(resourceName, "parent", ""),
 				),
 			},
 		},

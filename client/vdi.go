@@ -31,6 +31,7 @@ type VDI struct {
 	NameDescription string   `json:"name_description"`
 	Size            int      `json:"size"`
 	VBDs            []string `json:"$VBDs"`
+	Parent          string   `json:"parent",omitempty`
 	PoolId          string   `json:"$poolId"`
 	Tags            []string `json:"tags,omitempty"`
 }
