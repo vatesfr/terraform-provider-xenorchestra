@@ -9,18 +9,39 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-func TestAccXenorchestraDataSource_vdi(t *testing.T) {
+func TestAccXenorchestraDataSource_vdiById(t *testing.T) {
 	resourceName := "data.xenorchestra_vdi.vdi"
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccXenorchestraDataSourceVDIConfig(testIsoName),
+				Config: testAccXenorchestraDataSourceVDIConfigById(testIso.VDIId),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckXenorchestraDataSourceVDI(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "name_label"),
+					resource.TestCheckResourceAttr(resourceName, "parent", ""),
+				),
+			},
+		},
+	},
+	)
+}
+
+func TestAccXenorchestraDataSource_vdiByNameLabel(t *testing.T) {
+	resourceName := "data.xenorchestra_vdi.vdi"
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccXenorchestraDataSourceVDIConfig(testIso.NameLabel),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckXenorchestraDataSourceVDI(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "name_label"),
+					resource.TestCheckResourceAttr(resourceName, "parent", ""),
 				),
 			},
 		},
@@ -46,6 +67,33 @@ func TestAccXenorchestraDataSource_vdiNotFound(t *testing.T) {
 		},
 	},
 	)
+}
+
+func TestAccXenorchestraDataSource_vdiExactlyOneOfIdOrNameLabelRequired(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: `
+data "xenorchestra_vdi" "vdi" {
+    id = "test"
+    name_label = "test"
+}
+			    `,
+				ExpectError: regexp.MustCompile(`Invalid combination of arguments`),
+			},
+		},
+	},
+	)
+}
+
+func testAccXenorchestraDataSourceVDIConfigById(id string) string {
+	return fmt.Sprintf(`
+data "xenorchestra_vdi" "vdi" {
+    id = "%s"
+}
+`, id)
 }
 
 func testAccXenorchestraDataSourceVDIConfig(nameLabel string) string {
