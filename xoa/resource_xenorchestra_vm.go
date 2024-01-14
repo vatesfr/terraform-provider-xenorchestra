@@ -541,6 +541,7 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		NameDescription:                d.Get("name_description").(string),
 		Template:                       d.Get("template").(string),
 		CloudConfig:                    d.Get("cloud_config").(string),
+		CloneType:                      d.Get("clone_type").(string),
 		ResourceSet:                    rs,
 		HA:                             d.Get("high_availability").(string),
 		AutoPoweron:                    d.Get("auto_poweron").(bool),
