@@ -16,10 +16,22 @@ func dataSourceXoaVDI() *schema.Resource {
 Ensure that your name_label, pool_id and tags identify a unique VDI.`,
 		Read: dataSourceVDIRead,
 		Schema: map[string]*schema.Schema{
+			"id": &schema.Schema{
+				Type:         schema.TypeString,
+				Description:  "The ID of the VDI.",
+				Computed:     true,
+				Optional:     true,
+				ExactlyOneOf: []string{"name_label"},
+			},
 			"name_label": &schema.Schema{
 				Type:        schema.TypeString,
 				Description: "The name of the VDI to look up.",
-				Required:    true,
+				Optional:    true,
+			},
+			"parent": &schema.Schema{
+				Type:        schema.TypeString,
+				Description: "The ID of the parent VDI if one exists. An example of when a VDI will have a parent is when it was created from a VM fast clone.",
+				Computed:    true,
 			},
 			"pool_id": &schema.Schema{
 				Description: "The ID of the pool the VDI belongs to. This is useful if you have a VDI with the same name on different pools.",
@@ -34,11 +46,13 @@ Ensure that your name_label, pool_id and tags identify a unique VDI.`,
 func dataSourceVDIRead(d *schema.ResourceData, m interface{}) error {
 	c := m.(client.XOClient)
 
+	id := d.Get("id").(string)
 	nameLabel := d.Get("name_label").(string)
 	poolId := d.Get("pool_id").(string)
 	tags := d.Get("tags").(*schema.Set).List()
 
 	vdi := client.VDI{
+		VDIId:     id,
 		NameLabel: nameLabel,
 		PoolId:    poolId,
 		Tags:      tagsFromInterfaceSlice(tags),
@@ -61,5 +75,6 @@ func dataSourceVDIRead(d *schema.ResourceData, m interface{}) error {
 	d.Set("name_label", vdi.NameLabel)
 	d.Set("pool_id", vdi.PoolId)
 	d.Set("tags", vdi.Tags)
+	d.Set("parent", vdi.Parent)
 	return nil
 }

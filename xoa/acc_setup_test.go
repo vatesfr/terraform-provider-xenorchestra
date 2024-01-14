@@ -21,7 +21,7 @@ var accUser client.User = client.User{Email: fmt.Sprintf("%s-%s", accTestPrefix,
 var testTemplate client.Template
 var accTestPIF client.PIF
 var disklessTestTemplate client.Template
-var testIsoName string
+var testIso client.VDI
 
 func TestMain(m *testing.M) {
 	// This leverages the existing flag defined in the terraform-plugin-sdk
@@ -46,7 +46,7 @@ func TestMain(m *testing.M) {
 			client.FindStorageRepositoryForTests(accTestPool, &accDefaultSr, accTestPrefix)
 			client.FindIsoStorageRepositoryForTests(accTestPool, &accIsoSr, accTestPrefix, "XOA_ISO_SR")
 			client.CreateUser(&accUser)
-			testIsoName = os.Getenv("XOA_ISO")
+			client.FindVDIForTests(accTestPool, &testIso, "XOA_ISO")
 			fmt.Printf("Found the following pool: %v sr: %v\n", accTestPool, accDefaultSr)
 
 			code := m.Run()

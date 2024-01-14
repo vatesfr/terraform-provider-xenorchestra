@@ -31,6 +31,7 @@ type VDI struct {
 	NameDescription string   `json:"name_description"`
 	Size            int      `json:"size"`
 	VBDs            []string `json:"$VBDs"`
+	Parent          string   `json:"parent",omitempty`
 	PoolId          string   `json:"$poolId"`
 	Tags            []string `json:"tags,omitempty"`
 }
@@ -396,4 +397,31 @@ func RemoveVDIsWithPrefix(prefix string) func(string) error {
 		}
 		return nil
 	}
+}
+
+func FindVDIForTests(pool Pool, isoVdi *VDI, isoNameEnvVar string) {
+	isoName, found := os.LookupEnv(isoNameEnvVar)
+	if !found {
+		fmt.Println(fmt.Sprintf("The %s environment variable must be set for the tests", isoNameEnvVar))
+		os.Exit(-1)
+	}
+
+	c, err := NewClient(GetConfigFromEnv())
+	if err != nil {
+		fmt.Printf("failed to create client with error: %v", err)
+		os.Exit(-1)
+	}
+
+	vdiReq := VDI{
+		PoolId:    pool.Id,
+		NameLabel: isoName,
+	}
+	vdi, err := c.GetVDI(vdiReq)
+
+	if err != nil {
+		fmt.Printf("failed to find an iso vdi with error: %v\n", err)
+		os.Exit(-1)
+	}
+
+	*isoVdi = vdi
 }

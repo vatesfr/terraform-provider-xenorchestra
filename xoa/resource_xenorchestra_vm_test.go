@@ -1816,7 +1816,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testIsoName, accTestPool.Id, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+`, testIso.NameLabel, accTestPool.Id, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithoutISO(vmName string) string {
@@ -1849,7 +1849,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testIsoName, accTestPool.Id, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+`, testIso.NameLabel, accTestPool.Id, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithTags(vmName, tag, secondTag string) string {
@@ -2072,7 +2072,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testIsoName, accTestPool.Id, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+`, testIso.NameLabel, accTestPool.Id, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithShortTimeout(vmName string) string {
@@ -2140,7 +2140,7 @@ resource "xenorchestra_vm" "bar" {
       size = 10001317888
     }
 }
-`, testIsoName, accTestPool.Id, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+`, testIso.NameLabel, accTestPool.Id, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
 func testAccVmConfigWaitForIp(vmName string) string {
