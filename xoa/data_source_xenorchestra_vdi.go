@@ -16,10 +16,17 @@ func dataSourceXoaVDI() *schema.Resource {
 Ensure that your name_label, pool_id and tags identify a unique VDI.`,
 		Read: dataSourceVDIRead,
 		Schema: map[string]*schema.Schema{
+			"id": &schema.Schema{
+				Type:         schema.TypeString,
+				Description:  "The ID of the VDI.",
+				Computed:     true,
+				Optional:     true,
+				AtLeastOneOf: []string{"name_label"},
+			},
 			"name_label": &schema.Schema{
 				Type:        schema.TypeString,
 				Description: "The name of the VDI to look up.",
-				Required:    true,
+				Optional:    true,
 			},
 			"parent": &schema.Schema{
 				Type:        schema.TypeString,
@@ -39,11 +46,13 @@ Ensure that your name_label, pool_id and tags identify a unique VDI.`,
 func dataSourceVDIRead(d *schema.ResourceData, m interface{}) error {
 	c := m.(client.XOClient)
 
+	id := d.Get("id").(string)
 	nameLabel := d.Get("name_label").(string)
 	poolId := d.Get("pool_id").(string)
 	tags := d.Get("tags").(*schema.Set).List()
 
 	vdi := client.VDI{
+		VDIId:     id,
 		NameLabel: nameLabel,
 		PoolId:    poolId,
 		Tags:      tagsFromInterfaceSlice(tags),
