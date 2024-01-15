@@ -262,12 +262,8 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 	}
 
 	params := map[string]interface{}{
-		"bootAfterCreate": false,
-		// TODO(ddelnano): Follow up and determine if the logic inside XO is correct or incorrect.
-		// From my testing the logic below does not work and it seems the XO getter is
-		// not called correctly (missing a preceeding '_')
-		// "clone": !useExistingDisks && vmReq.CloneType == CloneTypeFastClone,
-		"clone":            vmReq.CloneType == CloneTypeFastClone,
+		"bootAfterCreate":  false,
+		"clone":            useExistingDisks && vmReq.CloneType == CloneTypeFastClone,
 		"name_label":       vmReq.NameLabel,
 		"name_description": vmReq.NameDescription,
 		"template":         vmReq.Template,
