@@ -283,6 +283,10 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 		"high_availability": vmReq.HA,
 	}
 
+	if !params["clone"].(bool) && vmReq.CloneType == CloneTypeFastClone {
+		fmt.Printf("[WARN] A fast clone was requested but falling back to full due to lack of disk template support\n")
+	}
+
 	destroyCloudConfigVdiAfterBoot := vmReq.DestroyCloudConfigVdiAfterBoot
 	if destroyCloudConfigVdiAfterBoot {
 		params["destroyCloudConfigVdiAfterBoot"] = destroyCloudConfigVdiAfterBoot

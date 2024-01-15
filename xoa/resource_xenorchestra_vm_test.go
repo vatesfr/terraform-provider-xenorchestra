@@ -770,6 +770,7 @@ func TestAccXenorchestraVm_createWithTags(t *testing.T) {
 
 func TestAccXenorchestraVm_createWithDisklessTemplateAndISO(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
+	vdiDataSourceName := "data.xenorchestra_vdi.disk"
 	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -783,6 +784,16 @@ func TestAccXenorchestraVm_createWithDisklessTemplateAndISO(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttr(resourceName, "cdrom.#", "1"),
 					internal.TestCheckTypeSetElemAttrPair(resourceName, "cdrom.0.*", "data.xenorchestra_vdi.iso", "id"),
+				),
+			},
+			{
+				Config: testAccVmConfigWithISO(vmName) + testAccVmDiskVDIDataSource(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "cdrom.#", "1"),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "cdrom.0.*", "data.xenorchestra_vdi.iso", "id"),
+					resource.TestCheckResourceAttr(vdiDataSourceName, "parent", ""),
 				),
 			},
 		},
