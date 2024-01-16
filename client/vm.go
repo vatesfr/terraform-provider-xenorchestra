@@ -24,6 +24,11 @@ const (
 	SuspendedPowerState string = "Suspended"
 )
 
+const (
+	CloneTypeFastClone string = "fast"
+	CloneTypeFullClone string = "full"
+)
+
 type CPUs struct {
 	Number int `json:"number"`
 	Max    int `json:"max"`
@@ -137,6 +142,7 @@ type Vm struct {
 	ManagementAgentDetected        bool                `json:"managementAgentDetected"`
 	PVDriversDetected              bool                `json:"pvDriversDetected"`
 	DestroyCloudConfigVdiAfterBoot bool                `json:"-"`
+	CloneType                      string              `json:"-"`
 }
 
 type Installation struct {
@@ -257,6 +263,7 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 
 	params := map[string]interface{}{
 		"bootAfterCreate":  false,
+		"clone":            useExistingDisks && vmReq.CloneType == CloneTypeFastClone,
 		"name_label":       vmReq.NameLabel,
 		"name_description": vmReq.NameDescription,
 		"template":         vmReq.Template,
@@ -274,6 +281,10 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 		"tags":              vmReq.Tags,
 		"auto_poweron":      vmReq.AutoPoweron,
 		"high_availability": vmReq.HA,
+	}
+
+	if !params["clone"].(bool) && vmReq.CloneType == CloneTypeFastClone {
+		fmt.Printf("[WARN] A fast clone was requested but falling back to full due to lack of disk template support\n")
 	}
 
 	destroyCloudConfigVdiAfterBoot := vmReq.DestroyCloudConfigVdiAfterBoot

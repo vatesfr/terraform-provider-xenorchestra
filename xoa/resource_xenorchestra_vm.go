@@ -35,6 +35,11 @@ var validFirmware = []string{
 	"uefi",
 }
 
+var validCloneType = []string{
+	client.CloneTypeFastClone,
+	client.CloneTypeFullClone,
+}
+
 var validPowerState = []string{
 	client.HaltedPowerState,
 	client.PausedPowerState,
@@ -105,6 +110,13 @@ func resourceVmSchema() map[string]*schema.Schema {
 			Description: "The content of the cloud-init network configuration for the VM (uses [version 1](https://cloudinit.readthedocs.io/en/latest/topics/network-config-format-v1.html))",
 			Type:        schema.TypeString,
 			Optional:    true,
+		},
+		"clone_type": &schema.Schema{
+			Description:  "The type of clone to perform for the VM. Possible values include `fast` or `full` and defaults to `fast`. In order to perform a `full` clone, the VM template must not be a disk template.",
+			Type:         schema.TypeString,
+			Optional:     true,
+			Default:      client.CloneTypeFastClone,
+			ValidateFunc: validation.StringInSlice(validCloneType, false),
 		},
 		"auto_poweron": &schema.Schema{
 			Type:        schema.TypeBool,
@@ -529,6 +541,7 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		NameDescription:                d.Get("name_description").(string),
 		Template:                       d.Get("template").(string),
 		CloudConfig:                    d.Get("cloud_config").(string),
+		CloneType:                      d.Get("clone_type").(string),
 		ResourceSet:                    rs,
 		HA:                             d.Get("high_availability").(string),
 		AutoPoweron:                    d.Get("auto_poweron").(bool),
