@@ -24,7 +24,7 @@ pipeline {
       axes {
         axis {
           name 'TF_VERSION'
-          values 'terraform-v0.14.11', 'terraform-v1.6.6'
+          values 'terraform-v0.14.11', 'terraform-v1.7.0'
         }
       }
       stages {
