@@ -89,6 +89,13 @@ resource "xenorchestra_vm" "bar" {
     timeouts {
       create = "20m"
     }
+
+    // Note: Xen Orchestra populates values within Xenstore and will need ignored via
+    // lifecycle ignore_changes or modeled in your terraform code
+    xenstore = {
+      key1 = "val1"
+      key2 = "val2"
+    }
 }
 
 # vm resource that uses wait_for_ip
@@ -170,6 +177,7 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 - `vga` (String) The video adapter the VM should use. Possible values include std and cirrus.
 - `videoram` (Number) The videoram option the VM should use. Possible values include 1, 2, 4, 8, 16
 - `wait_for_ip` (Boolean) Whether terraform should wait until IP addresses are present on the VM's network interfaces before considering it created. This only works if guest-tools are installed in the VM. Defaults to false.
+- `xenstore` (Map of String) The key value pairs to be populated in xenstore.
 
 ### Read-Only
 

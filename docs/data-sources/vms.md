@@ -85,6 +85,7 @@ Read-Only:
 - `vga` (String)
 - `videoram` (Number)
 - `wait_for_ip` (Boolean)
+- `xenstore` (Map of String)
 
 <a id="nestedobjatt--vms--disk"></a>
 ### Nested Schema for `vms.disk`
