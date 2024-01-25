@@ -58,6 +58,13 @@ resource "xenorchestra_vm" "bar" {
     timeouts {
       create = "20m"
     }
+
+    // Note: Xen Orchestra populates values within Xenstore and will need ignored via
+    // lifecycle ignore_changes or modeled in your terraform code
+    xenstore = {
+      key1 = "val1"
+      key2 = "val2"
+    }
 }
 
 # vm resource that uses wait_for_ip
