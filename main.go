@@ -20,7 +20,7 @@ func main() {
 	flag.Parse()
 
 	if debugMode {
-		err := plugin.Debug(context.Background(), "registry.terraform.io/terra-farm/xenorchestra",
+		err := plugin.Debug(context.Background(), "registry.terraform.io/vatesfr/xenorchestra",
 			&plugin.ServeOpts{
 				ProviderFunc: xoa.Provider,
 			})
