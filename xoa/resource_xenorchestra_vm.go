@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/ddelnano/terraform-provider-xenorchestra/client"
@@ -408,6 +409,14 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 				},
 			},
 		},
+		"xenstore": &schema.Schema{
+			Type:        schema.TypeMap,
+			Optional:    true,
+			Description: "The key value pairs to be populated in xenstore.",
+			Elem: &schema.Schema{
+				Type: schema.TypeString,
+			},
+		},
 		"tags": resourceTags(),
 	}
 }
@@ -566,7 +575,8 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		Videoram: client.Videoram{
 			Value: d.Get("videoram").(int),
 		},
-		Vga: d.Get("vga").(string),
+		XenstoreData: d.Get("xenstore").(map[string]interface{}),
+		Vga:          d.Get("vga").(string),
 	}
 
 	affinityHost := d.Get("affinity_host").(string)
@@ -927,6 +937,23 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		vmReq.AffinityHost = &affinityHost
 	}
 
+	if d.HasChange("xenstore") {
+		xenstoreParams := map[string]interface{}{}
+		o, n := d.GetChange("xenstore")
+		oXs := o.(map[string]interface{})
+		nXs := n.(map[string]interface{})
+
+		for k, _ := range oXs {
+			xenstoreParams[k] = nil
+		}
+
+		for k, v := range nXs {
+			xenstoreParams[k] = v
+		}
+
+		vmReq.XenstoreData = xenstoreParams
+	}
+
 	haltPerformed := false
 
 	if haltForUpdates {
@@ -1185,8 +1212,28 @@ func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, cd
 			return err
 		}
 	}
+	if xenstore := d.Get("xenstore").(map[string]interface{}); len(xenstore) > 0 {
+		filtered := filterXenstoreDataToVmData(resource.XenstoreData)
+		if err := d.Set("xenstore", filtered); err != nil {
+			return err
+		}
+	}
 
 	return nil
+}
+
+func filterXenstoreDataToVmData(xenstore map[string]interface{}) map[string]interface{} {
+	filtered := map[string]interface{}{}
+	for key, value := range xenstore {
+		if strings.HasPrefix(key, "vm-data/") {
+			pieces := strings.SplitAfterN(key, "vm-data/", 2)
+			if len(pieces) != 2 {
+				continue
+			}
+			filtered[pieces[1]] = value
+		}
+	}
+	return filtered
 }
 
 func vmBlockedOperationsToList(v client.Vm) []string {

@@ -125,11 +125,12 @@ type Vm struct {
 	ResourceSet        *FlatResourceSet  `json:"resourceSet"`
 	// TODO: (#145) Uncomment this once issues with secure_boot have been figured out
 	// SecureBoot         bool              `json:"secureBoot,omitempty"`
-	Tags       []string `json:"tags"`
-	Videoram   Videoram `json:"videoram,omitempty"`
-	Vga        string   `json:"vga,omitempty"`
-	StartDelay int      `json:startDelay,omitempty"`
-	Host       string   `json:"$container"`
+	Tags         []string               `json:"tags"`
+	Videoram     Videoram               `json:"videoram,omitempty"`
+	Vga          string                 `json:"vga,omitempty"`
+	StartDelay   int                    `json:startDelay,omitempty"`
+	Host         string                 `json:"$container"`
+	XenstoreData map[string]interface{} `json:"xenStoreData,omitempty"`
 
 	// These fields are used for passing in disk inputs when
 	// creating Vms, however, this is not a real field as far
@@ -357,6 +358,17 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 		return nil, err
 	}
 
+	xsParams := map[string]interface{}{
+		"id":           vmId,
+		"xenStoreData": vmReq.XenstoreData,
+	}
+	var success bool
+	err = c.Call("vm.set", xsParams, &success)
+
+	if err != nil {
+		return nil, err
+	}
+
 	bootAfterCreate := params["bootAfterCreate"].(bool)
 	if !bootAfterCreate && vmReq.PowerState == RunningPowerState {
 		err = c.StartVm(vmId)
@@ -429,6 +441,10 @@ func (c *Client) UpdateVm(vmReq Vm) (*Vm, error) {
 
 	if vmReq.ResourceSet != nil {
 		params["resourceSet"] = vmReq.ResourceSet
+	}
+
+	if len(vmReq.XenstoreData) > 0 {
+		params["xenStoreData"] = vmReq.XenstoreData
 	}
 
 	vga := vmReq.Vga

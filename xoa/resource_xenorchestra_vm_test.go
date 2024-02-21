@@ -622,6 +622,46 @@ func TestAccXenorchestraVm_createWhenWaitingForIp(t *testing.T) {
 	})
 }
 
+func TestAccXenorchestraVm_createAndUpdateXenstoreData(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigWithSingleXenstoreData(vmName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "xenstore.%", "2"),
+					resource.TestCheckResourceAttr(resourceName, "xenstore.first", "value"),
+				),
+			},
+			{
+				Config: testAccVmConfigWithMultipleXenstoreData(vmName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "xenstore.first", "value"),
+					resource.TestCheckResourceAttr(resourceName, "xenstore.second", "value"),
+				),
+			},
+			{
+				Config: testAccVmConfigWithSingleXenstoreData(vmName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "xenstore.%", "2"),
+					resource.TestCheckResourceAttr(resourceName, "xenstore.first", "value"),
+					resource.TestCheckNoResourceAttr(resourceName, "xenstore.second"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccXenorchestraVm_ensureVmsInResourceSetsCanBeUpdatedByNonAdminUsers(t *testing.T) {
 	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	adminUser := os.Getenv("XOA_USER")
@@ -2256,6 +2296,83 @@ resource "xenorchestra_vm" "bar" {
       sr_id = "%s"
       name_label = "disk 1"
       size = 10001317888
+    }
+}
+`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+}
+
+func testAccVmConfigWithSingleXenstoreData(vmName string) string {
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
+data "xenorchestra_network" "network" {
+    name_label = "%s"
+    pool_id = "%s"
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 4295000000
+    wait_for_ip = true
+    cpus  = 1
+    cloud_config = xenorchestra_cloud_config.bar.template
+    name_label = "%s"
+    name_description = "description"
+    template = data.xenorchestra_template.template.id
+    network {
+	network_id = data.xenorchestra_network.network.id
+    }
+
+    disk {
+      sr_id = "%s"
+      name_label = "disk 1"
+      size = 10001317888
+    }
+
+    xenstore = {
+	first = "value"
+    }
+
+    lifecycle {
+	ignore_changes = [
+	    xenstore["mmio-hole-size"],
+	]
+    }
+}
+`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+}
+
+func testAccVmConfigWithMultipleXenstoreData(vmName string) string {
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
+data "xenorchestra_network" "network" {
+    name_label = "%s"
+    pool_id = "%s"
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 4295000000
+    wait_for_ip = true
+    cpus  = 1
+    cloud_config = xenorchestra_cloud_config.bar.template
+    name_label = "%s"
+    name_description = "description"
+    template = data.xenorchestra_template.template.id
+    network {
+	network_id = data.xenorchestra_network.network.id
+    }
+
+    disk {
+      sr_id = "%s"
+      name_label = "disk 1"
+      size = 10001317888
+    }
+
+    xenstore = {
+	first = "value"
+	second = "value"
+    }
+
+    lifecycle {
+	ignore_changes = [
+	    xenstore["mmio-hole-size"],
+	]
     }
 }
 `, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
