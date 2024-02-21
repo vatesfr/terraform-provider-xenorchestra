@@ -1212,10 +1212,11 @@ func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, cd
 			return err
 		}
 	}
-	filtered := filterXenstoreDataToVmData(resource.XenstoreData)
-	log.Printf("[DEBUG] Found the following xenstore data : %v after=%v\n", resource.XenstoreData, filtered)
-	if err := d.Set("xenstore", filtered); err != nil {
-		return err
+	if xenstore := d.Get("xenstore").(map[string]interface{}); len(xenstore) > 0 {
+		filtered := filterXenstoreDataToVmData(resource.XenstoreData)
+		if err := d.Set("xenstore", filtered); err != nil {
+			return err
+		}
 	}
 
 	return nil
