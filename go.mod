@@ -6,7 +6,6 @@ require (
 	github.com/ddelnano/terraform-provider-xenorchestra/client v0.0.0-00010101000000-000000000000
 	github.com/hashicorp/terraform-plugin-docs v0.18.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.33.0
-	terraform-provider-macaddress v0.1.0
 )
 
 require (
@@ -82,5 +81,3 @@ require (
 )
 
 replace github.com/ddelnano/terraform-provider-xenorchestra/client => ./client
-
-replace terraform-provider-macaddress v0.1.0 => github.com/ddelnano/terraform-provider-macaddress v0.1.0
