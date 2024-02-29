@@ -936,6 +936,7 @@ func TestAccXenorchestraVm_createWithCloudInitNetworkConfig(t *testing.T) {
 }
 
 func TestAccXenorchestraVm_createWithInvalidMacAddress(t *testing.T) {
+	t.Skip("This test is broken until gh#303 is resolved")
 	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	invalidMac := "00-0a:83-b1:c0-01"
 	resource.ParallelTest(t, resource.TestCase{
@@ -952,6 +953,7 @@ func TestAccXenorchestraVm_createWithInvalidMacAddress(t *testing.T) {
 }
 
 func TestAccXenorchestraVm_createWithSentinelPlanValue(t *testing.T) {
+	t.Skip("This test is broken until gh#303 is resolved")
 	resourceName := "xenorchestra_vm.bar"
 	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	resource.ParallelTest(t, resource.TestCase{

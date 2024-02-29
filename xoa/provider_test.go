@@ -2,7 +2,6 @@ package xoa
 
 import (
 	"os"
-	"terraform-provider-macaddress/macaddress"
 	"testing"
 
 	"github.com/ddelnano/terraform-provider-xenorchestra/xoa/internal"
@@ -21,7 +20,6 @@ func init() {
 	testAccProvider = Provider()
 	testAccProviders = map[string]*schema.Provider{
 		"xenorchestra": testAccProvider,
-		"macaddress":   macaddress.Provider(),
 	}
 
 	testAccFailToStartHaltVmProvider = Provider()
