@@ -135,15 +135,17 @@ type Vm struct {
 	// These fields are used for passing in disk inputs when
 	// creating Vms, however, this is not a real field as far
 	// as the XO api or XAPI is concerned
-	Disks                          []Disk              `json:"-"`
-	CloudNetworkConfig             string              `json:"-"`
-	VIFsMap                        []map[string]string `json:"-"`
-	WaitForIps                     bool                `json:"-"`
-	Installation                   Installation        `json:"-"`
-	ManagementAgentDetected        bool                `json:"managementAgentDetected"`
-	PVDriversDetected              bool                `json:"pvDriversDetected"`
-	DestroyCloudConfigVdiAfterBoot bool                `json:"-"`
-	CloneType                      string              `json:"-"`
+	Disks              []Disk              `json:"-"`
+	CloudNetworkConfig string              `json:"-"`
+	VIFsMap            []map[string]string `json:"-"`
+	// Map where the key is the network interface index and the
+	// value is a cidr range parsable by net.ParseCIDR
+	WaitForIps                     map[string]string `json:"-"`
+	Installation                   Installation      `json:"-"`
+	ManagementAgentDetected        bool              `json:"managementAgentDetected"`
+	PVDriversDetected              bool              `json:"pvDriversDetected"`
+	DestroyCloudConfigVdiAfterBoot bool              `json:"-"`
+	CloneType                      string            `json:"-"`
 }
 
 type Installation struct {
@@ -603,8 +605,8 @@ func (c *Client) waitForVmState(id string, stateConf StateChangeConf) error {
 	return err
 }
 
-func (c *Client) waitForModifyVm(id string, desiredPowerState string, waitForIp bool, timeout time.Duration) error {
-	if !waitForIp {
+func (c *Client) waitForModifyVm(id string, desiredPowerState string, waitForIps map[string]string, timeout time.Duration) error {
+	if len(waitForIps) == 0 {
 		var pending []string
 		target := desiredPowerState
 		switch desiredPowerState {
@@ -644,6 +646,7 @@ func (c *Client) waitForModifyVm(id string, desiredPowerState string, waitForIp 
 			if l == 0 || vm.PowerState != RunningPowerState {
 				return vm, "Waiting", nil
 			}
+			// TODO(ddelnano): Implement matching against multiple network interfaces here
 
 			return vm, "Ready", nil
 		}

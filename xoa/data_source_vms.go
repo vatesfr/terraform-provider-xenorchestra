@@ -84,7 +84,6 @@ func vmToMapList(vms []client.Vm) []map[string]interface{} {
 			"memory_max":           vm.Memory.Static[1],
 			"affinity_host":        vm.AffinityHost,
 			"template":             vm.Template,
-			"wait_for_ip":          vm.WaitForIps,
 			"high_availability":    vm.HA,
 			"ipv4_addresses":       ipv4,
 			"ipv6_addresses":       ipv6,

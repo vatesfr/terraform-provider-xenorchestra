@@ -98,13 +98,14 @@ resource "xenorchestra_vm" "bar" {
     }
 }
 
-# vm resource that uses wait_for_ip
+# vm resource that waits until its first network interface
+# is assigned an IP via DHCP
 resource "xenorchestra_vm" "vm" {
   ...
-  wait_for_ip = true
   # Specify VM with two network interfaces
   network {
     ...
+    expected_ip_cidr = "10.0.0.0/16"
   }
   network {
     ...
@@ -176,14 +177,13 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `vga` (String) The video adapter the VM should use. Possible values include std and cirrus.
 - `videoram` (Number) The videoram option the VM should use. Possible values include 1, 2, 4, 8, 16
-- `wait_for_ip` (Boolean) Whether terraform should wait until IP addresses are present on the VM's network interfaces before considering it created. This only works if guest-tools are installed in the VM. Defaults to false.
 - `xenstore` (Map of String) The key value pairs to be populated in xenstore.
 
 ### Read-Only
 
 - `id` (String) The ID of this resource.
-- `ipv4_addresses` (List of String) This is only accessible if guest-tools is installed in the VM and if `wait_for_ip` is set to true. This will contain a list of the ipv4 addresses across all network interfaces in order. See the example terraform code for more details.
-- `ipv6_addresses` (List of String) This is only accessible if guest-tools is installed in the VM and if `wait_for_ip` is set to true. This will contain a list of the ipv6 addresses across all network interfaces in order.
+- `ipv4_addresses` (List of String) This is only accessible if guest-tools is installed in the VM and if `expected_ip_cidr` is set on any network interfaces. This will contain a list of the ipv4 addresses across all network interfaces in order. See the example terraform code for more details.
+- `ipv6_addresses` (List of String) This is only accessible if guest-tools is installed in the VM and if `expected_ip_cidr` is set on any network interfaces. This will contain a list of the ipv6 addresses across all network interfaces in order.
 
 <a id="nestedblock--disk"></a>
 ### Nested Schema for `disk`
@@ -216,6 +216,7 @@ Required:
 Optional:
 
 - `attached` (Boolean) Whether the device should be attached to the VM.
+- `expected_ip_cidr` (String) Whether terraform should wait until IP addresses are present on the VM's network interfaces before considering it created. This only works if guest-tools are installed in the VM. Defaults to false.
 - `mac_address` (String) The mac address of the network interface. This must be parsable by go's [net.ParseMAC function](https://golang.org/pkg/net/#ParseMAC). All mac addresses are stored in Terraform's state with [HardwareAddr's string representation](https://golang.org/pkg/net/#HardwareAddr.String) i.e. 00:00:5e:00:53:01
 
 Read-Only:
