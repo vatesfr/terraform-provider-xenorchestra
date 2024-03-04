@@ -215,22 +215,21 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 `,
 		},
 		"memory_max": &schema.Schema{
-			Type:     schema.TypeInt,
-			Required: true,
-			Description: `The amount of memory in bytes the VM will have. Updates to this field will case a stop and start of the VM if the new value is greater than the dynamic memory max. This can be determined with the following command:
-` + "```" + `
-
-
-$ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd0b8"}' | jq '.[].memory.dynamic'
-[
-  2147483648, # memory dynamic min
-  4294967296  # memory dynamic max (4GB)
-]
-# Updating the VM to use 3GB of memory would happen without stopping/starting the VM
-# Updating the VM to use 5GB of memory would stop/start the VM
-` + "```" + `
-
-`,
+			Type:        schema.TypeInt,
+			Required:    true,
+			Description: `The amount of memory in bytes the VM will have. Updates to this field will case a stop and start of the VM.`,
+		},
+		"memory_dynamic_min": &schema.Schema{
+			Type:        schema.TypeInt,
+			Optional:    true,
+			Description: `Dynamic minimum (bytes)`,
+			Default:     2147483648,
+		},
+		"memory_dynamic_max": &schema.Schema{
+			Type:        schema.TypeInt,
+			Optional:    true,
+			Description: `Dynamic maximum (bytes)`,
+			Computed:    true,
 		},
 		"resource_set": &schema.Schema{
 			Type:     schema.TypeString,
@@ -539,6 +538,7 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 			Id: rsId.(string),
 		}
 	}
+
 	createVmParams := client.Vm{
 		BlockedOperations: blockedOperations,
 		Boot: client.Boot{
@@ -559,14 +559,10 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 			Number: d.Get("cpus").(int),
 		},
 		CloudNetworkConfig: d.Get("cloud_network_config").(string),
-		Memory: client.MemoryObject{
-			Static: []int{
-				0, d.Get("memory_max").(int),
-			},
-		},
-		Tags:         vmTags,
-		Disks:        ds,
-		Installation: installation,
+		Memory:             memory(d),
+		Tags:               vmTags,
+		Disks:              ds,
+		Installation:       installation,
 		// TODO: (#145) Uncomment this once issues with secure_boot have been figured out
 		// SecureBoot:   d.Get("secure_boot").(bool),
 		VIFsMap:    network_maps,
@@ -756,7 +752,6 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 			Id: d.Get("resource_set").(string),
 		}
 	}
-	memoryMax := d.Get("memory_max").(int)
 
 	vm, err := c.GetVm(client.Vm{Id: id})
 
@@ -882,7 +877,10 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		haltForUpdates = true
 	}
 
-	if _, nMemoryMax := d.GetChange("memory_max"); d.HasChange("memory_max") && nMemoryMax.(int) > vm.Memory.Static[1] {
+	if d.HasChange("memory_max") {
+		haltForUpdates = true
+	}
+	if d.Get("memory_max").(int) < d.Get("memory_dynamic_max").(int) {
 		haltForUpdates = true
 	}
 
@@ -909,11 +907,7 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		CPUs: client.CPUs{
 			Number: cpus,
 		},
-		Memory: client.MemoryObject{
-			Static: []int{
-				0, memoryMax,
-			},
-		},
+		Memory:            memory(d),
 		NameLabel:         nameLabel,
 		NameDescription:   nameDescription,
 		HA:                ha,
@@ -1030,6 +1024,22 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 	return resourceVmRead(d, m)
 }
 
+func memory(d *schema.ResourceData) client.MemoryObject {
+	memory := client.MemoryObject{
+		Dynamic: []int{},
+		Static: []int{
+			0, d.Get("memory_max").(int),
+		},
+	}
+	if d.Get("memory_dynamic_min") != nil && d.Get("memory_dynamic_max") != nil {
+		memory.Dynamic = []int{
+			d.Get("memory_dynamic_min").(int),
+			d.Get("memory_dynamic_max").(int),
+		}
+	}
+	return memory
+}
+
 func resourceVmDelete(d *schema.ResourceData, m interface{}) error {
 	c := m.(client.XOClient)
 
@@ -1126,6 +1136,9 @@ func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, cd
 	} else {
 		log.Printf("[WARN] Expected the VM's static memory limits to have two values, %v found instead\n", resource.Memory.Dynamic)
 	}
+	d.Set("memory_max", resource.Memory.Static[1])
+	d.Set("memory_dynamic_min", resource.Memory.Dynamic[0])
+	d.Set("memory_dynamic_max", resource.Memory.Dynamic[1])
 
 	d.Set("cpus", resource.CPUs.Number)
 	d.Set("name_label", resource.NameLabel)

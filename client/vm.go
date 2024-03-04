@@ -283,6 +283,13 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 		"auto_poweron":      vmReq.AutoPoweron,
 		"high_availability": vmReq.HA,
 	}
+	if len(vmReq.Memory.Dynamic) == 2 && vmReq.Memory.Dynamic[0] != 0 && vmReq.Memory.Dynamic[1] != 0 {
+		params["memoryMin"] = vmReq.Memory.Dynamic[0]
+		params["memoryMax"] = vmReq.Memory.Dynamic[1]
+		if len(vmReq.Memory.Static) == 2 {
+			params["memoryStaticMax"] = vmReq.Memory.Static[1]
+		}
+	}
 
 	if !params["clone"].(bool) && vmReq.CloneType == CloneTypeFastClone {
 		fmt.Printf("[WARN] A fast clone was requested but falling back to full due to lack of disk template support\n")
@@ -362,6 +369,9 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 		"id":           vmId,
 		"xenStoreData": vmReq.XenstoreData,
 	}
+	if params["memoryStaticMax"] != nil {
+		xsParams["memoryStaticMax"] = params["memoryStaticMax"]
+	}
 	var success bool
 	err = c.Call("vm.set", xsParams, &success)
 
@@ -423,6 +433,13 @@ func (c *Client) UpdateVm(vmReq Vm) (*Vm, error) {
 
 		// cpusMask, cpuWeight and cpuCap can be changed at runtime to an integer value or null
 		// coresPerSocket is null or a number of cores per socket. Putting an invalid value doesn't seem to cause an error :(
+	}
+	if len(vmReq.Memory.Dynamic) == 2 && vmReq.Memory.Dynamic[0] != 0 && vmReq.Memory.Dynamic[1] != 0 {
+		params["memoryMin"] = vmReq.Memory.Dynamic[0]
+		params["memoryMax"] = vmReq.Memory.Dynamic[1]
+		if len(vmReq.Memory.Static) == 2 {
+			params["memoryStaticMax"] = vmReq.Memory.Static[1]
+		}
 	}
 
 	affinityHost := vmReq.AffinityHost
