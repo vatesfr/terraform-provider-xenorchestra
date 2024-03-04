@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"strconv"
@@ -646,7 +647,41 @@ func (c *Client) waitForModifyVm(id string, desiredPowerState string, waitForIps
 			if l == 0 || vm.PowerState != RunningPowerState {
 				return vm, "Waiting", nil
 			}
-			// TODO(ddelnano): Implement matching against multiple network interfaces here
+
+			netIfaces := map[string][]string{}
+			for key, addr := range vm.Addresses {
+
+				// key has the following format "{iface_id}/(ipv4|ipv6)/{iface_ip_id}"
+				ifaceIdx := string(key[0])
+				if _, ok := netIfaces[ifaceIdx]; !ok {
+					netIfaces[ifaceIdx] = []string{}
+				}
+				netIfaces[ifaceIdx] = append(netIfaces[ifaceIdx], addr)
+			}
+
+			for ifaceIdx, cidrRange := range waitForIps {
+				// VM's Addresses member does not contain this network interface yet
+				if _, ok := netIfaces[ifaceIdx]; !ok {
+					return vm, "Waiting", nil
+				}
+
+				found := false
+				for _, ipAddr := range netIfaces[ifaceIdx] {
+					_, ipNet, err := net.ParseCIDR(cidrRange)
+
+					if err != nil {
+						return vm, "Waiting", err
+					}
+
+					if ipNet.Contains(net.ParseIP(ipAddr)) {
+						found = true
+					}
+				}
+
+				if !found {
+					return vm, "Waiting", nil
+				}
+			}
 
 			return vm, "Ready", nil
 		}
