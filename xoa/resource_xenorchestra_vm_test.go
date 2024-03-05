@@ -620,6 +620,30 @@ func TestAccXenorchestraVm_createWhenWaitingForIp(t *testing.T) {
 	})
 }
 
+func TestAccXenorchestraVm_waitForIpFailed(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
+	regex := regexp.MustCompile(`[1-9]*`)
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigWithWaitForIp(vmName, "8.8.8.8/32"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestMatchResourceAttr(resourceName, "ipv6_addresses.#", regex),
+					resource.TestCheckResourceAttrSet(resourceName, "ipv6_addresses.0"),
+					resource.TestMatchResourceAttr(resourceName, "network.0.ipv6_addresses.#", regex),
+					resource.TestCheckResourceAttrSet(resourceName, "network.0.ipv6_addresses.0"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccXenorchestraVm_createAndUpdateXenstoreData(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
@@ -1376,7 +1400,7 @@ func TestAccXenorchestraVm_addVifAndRemoveVif(t *testing.T) {
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccVmConfigWithWaitForIp(vmName, "true"),
+				Config: testAccVmConfigWithWaitForIp(vmName, "0.0.0.0/0"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -1810,7 +1834,7 @@ func TestAccXenorchestraVm_createWithV0StateMigration(t *testing.T) {
 						VersionConstraint: "0.25.1",
 					},
 				},
-				Config: testAccVmConfigWithWaitForIp(vmName, "true"),
+				Config: testAccVmConfigWithWaitForIp(vmName, "0.0.0.0/0"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),

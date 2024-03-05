@@ -606,92 +606,115 @@ func (c *Client) waitForVmState(id string, stateConf StateChangeConf) error {
 	return err
 }
 
+func waitForPowerStateReached(c *Client, vmId, desiredPowerState string, timeout time.Duration) (interface{}, error) {
+	var pending []string
+	target := desiredPowerState
+	switch desiredPowerState {
+	case RunningPowerState:
+		pending = []string{HaltedPowerState}
+	case HaltedPowerState:
+		pending = []string{RunningPowerState}
+	default:
+		return nil, errors.New(fmt.Sprintf("Invalid VM power state requested: %s\n", desiredPowerState))
+	}
+	refreshFn := func() (result interface{}, state string, err error) {
+		vm, err := c.GetVm(Vm{Id: vmId})
+
+		if err != nil {
+			return vm, "", err
+		}
+
+		return vm, vm.PowerState, nil
+	}
+	stateConf := &StateChangeConf{
+		Pending: pending,
+		Refresh: refreshFn,
+		Target:  []string{target},
+		Timeout: timeout,
+	}
+	return stateConf.WaitForState()
+}
+
+type ifaceMatchCheck struct {
+	cidrRange string
+	ifaceIdx  string
+	ifaceAddr string
+}
+
+func waitForIPAssignment(c *Client, vmId string, waitForIps map[string]string, timeout time.Duration) (interface{}, error) {
+	var lastResult ifaceMatchCheck
+	refreshFn := func() (result interface{}, state string, err error) {
+		vm, err := c.GetVm(Vm{Id: vmId})
+
+		if err != nil {
+			return vm, "", err
+		}
+
+		l := len(vm.Addresses)
+		if l == 0 || vm.PowerState != RunningPowerState {
+			return nil, "Waiting", nil
+		}
+
+		netIfaces := map[string][]string{}
+		for key, addr := range vm.Addresses {
+
+			// key has the following format "{iface_id}/(ipv4|ipv6)/{iface_ip_id}"
+			ifaceIdx := string(key[0])
+			if _, ok := netIfaces[ifaceIdx]; !ok {
+				netIfaces[ifaceIdx] = []string{}
+			}
+			netIfaces[ifaceIdx] = append(netIfaces[ifaceIdx], addr)
+		}
+
+		for ifaceIdx, cidrRange := range waitForIps {
+			// VM's Addresses member does not contain this network interface yet
+			if _, ok := netIfaces[ifaceIdx]; !ok {
+				return ifaceMatchCheck{
+					cidrRange: cidrRange,
+					ifaceIdx:  ifaceIdx,
+				}, "Waiting", nil
+			}
+
+			found := false
+			for _, ipAddr := range netIfaces[ifaceIdx] {
+				_, ipNet, err := net.ParseCIDR(cidrRange)
+
+				if err != nil {
+					return nil, "Waiting", err
+				}
+
+				if ipNet.Contains(net.ParseIP(ipAddr)) {
+					found = true
+				}
+			}
+
+			if !found {
+				lastResult = ifaceMatchCheck{
+					cidrRange: cidrRange,
+					ifaceIdx:  ifaceIdx,
+				}
+
+				return nil, "Waiting", nil
+			}
+		}
+
+		return nil, "Ready", nil
+	}
+	stateConf := &StateChangeConf{
+		Pending: []string{"Waiting"},
+		Refresh: refreshFn,
+		Target:  []string{"Ready"},
+		Timeout: timeout,
+	}
+	return stateConf.WaitForState()
+}
+
 func (c *Client) waitForModifyVm(id string, desiredPowerState string, waitForIps map[string]string, timeout time.Duration) error {
 	if len(waitForIps) == 0 {
-		var pending []string
-		target := desiredPowerState
-		switch desiredPowerState {
-		case RunningPowerState:
-			pending = []string{HaltedPowerState}
-		case HaltedPowerState:
-			pending = []string{RunningPowerState}
-		default:
-			return errors.New(fmt.Sprintf("Invalid VM power state requested: %s\n", desiredPowerState))
-		}
-		refreshFn := func() (result interface{}, state string, err error) {
-			vm, err := c.GetVm(Vm{Id: id})
-
-			if err != nil {
-				return vm, "", err
-			}
-
-			return vm, vm.PowerState, nil
-		}
-		stateConf := &StateChangeConf{
-			Pending: pending,
-			Refresh: refreshFn,
-			Target:  []string{target},
-			Timeout: timeout,
-		}
-		_, err := stateConf.WaitForState()
+		_, err := waitForPowerStateReached(c, id, desiredPowerState, timeout)
 		return err
 	} else {
-		refreshFn := func() (result interface{}, state string, err error) {
-			vm, err := c.GetVm(Vm{Id: id})
-
-			if err != nil {
-				return vm, "", err
-			}
-
-			l := len(vm.Addresses)
-			if l == 0 || vm.PowerState != RunningPowerState {
-				return vm, "Waiting", nil
-			}
-
-			netIfaces := map[string][]string{}
-			for key, addr := range vm.Addresses {
-
-				// key has the following format "{iface_id}/(ipv4|ipv6)/{iface_ip_id}"
-				ifaceIdx := string(key[0])
-				if _, ok := netIfaces[ifaceIdx]; !ok {
-					netIfaces[ifaceIdx] = []string{}
-				}
-				netIfaces[ifaceIdx] = append(netIfaces[ifaceIdx], addr)
-			}
-
-			for ifaceIdx, cidrRange := range waitForIps {
-				// VM's Addresses member does not contain this network interface yet
-				if _, ok := netIfaces[ifaceIdx]; !ok {
-					return vm, "Waiting", nil
-				}
-
-				found := false
-				for _, ipAddr := range netIfaces[ifaceIdx] {
-					_, ipNet, err := net.ParseCIDR(cidrRange)
-
-					if err != nil {
-						return vm, "Waiting", err
-					}
-
-					if ipNet.Contains(net.ParseIP(ipAddr)) {
-						found = true
-					}
-				}
-
-				if !found {
-					return vm, "Waiting", nil
-				}
-			}
-
-			return vm, "Ready", nil
-		}
-		stateConf := &StateChangeConf{
-			Pending: []string{"Waiting"},
-			Refresh: refreshFn,
-			Target:  []string{"Ready"},
-			Timeout: timeout,
-		}
-		_, err := stateConf.WaitForState()
+		_, err := waitForIPAssignment(c, id, waitForIps, timeout)
 		return err
 	}
 }
