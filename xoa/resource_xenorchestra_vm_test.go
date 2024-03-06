@@ -639,6 +639,7 @@ func TestAccXenorchestraVm_waitForIpFailed(t *testing.T) {
 					resource.TestMatchResourceAttr(resourceName, "network.0.ipv6_addresses.#", regex),
 					resource.TestCheckResourceAttrSet(resourceName, "network.0.ipv6_addresses.0"),
 				),
+				ExpectError: regexp.MustCompile(`network\[0\] never converged to the following cidr: 8.8.8.8\/32`),
 			},
 		},
 	})

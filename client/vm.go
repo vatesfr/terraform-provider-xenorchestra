@@ -606,7 +606,7 @@ func (c *Client) waitForVmState(id string, stateConf StateChangeConf) error {
 	return err
 }
 
-func waitForPowerStateReached(c *Client, vmId, desiredPowerState string, timeout time.Duration) (interface{}, error) {
+func waitForPowerStateReached(c *Client, vmId, desiredPowerState string, timeout time.Duration) error {
 	var pending []string
 	target := desiredPowerState
 	switch desiredPowerState {
@@ -615,7 +615,7 @@ func waitForPowerStateReached(c *Client, vmId, desiredPowerState string, timeout
 	case HaltedPowerState:
 		pending = []string{RunningPowerState}
 	default:
-		return nil, errors.New(fmt.Sprintf("Invalid VM power state requested: %s\n", desiredPowerState))
+		return errors.New(fmt.Sprintf("Invalid VM power state requested: %s\n", desiredPowerState))
 	}
 	refreshFn := func() (result interface{}, state string, err error) {
 		vm, err := c.GetVm(Vm{Id: vmId})
@@ -632,16 +632,17 @@ func waitForPowerStateReached(c *Client, vmId, desiredPowerState string, timeout
 		Target:  []string{target},
 		Timeout: timeout,
 	}
-	return stateConf.WaitForState()
+	_, err := stateConf.WaitForState()
+	return err
 }
 
 type ifaceMatchCheck struct {
-	cidrRange string
-	ifaceIdx  string
-	ifaceAddr string
+	cidrRange  string
+	ifaceIdx   string
+	ifaceAddrs []string
 }
 
-func waitForIPAssignment(c *Client, vmId string, waitForIps map[string]string, timeout time.Duration) (interface{}, error) {
+func waitForIPAssignment(c *Client, vmId string, waitForIps map[string]string, timeout time.Duration) error {
 	var lastResult ifaceMatchCheck
 	refreshFn := func() (result interface{}, state string, err error) {
 		vm, err := c.GetVm(Vm{Id: vmId})
@@ -650,16 +651,16 @@ func waitForIPAssignment(c *Client, vmId string, waitForIps map[string]string, t
 			return vm, "", err
 		}
 
-		l := len(vm.Addresses)
-		if l == 0 || vm.PowerState != RunningPowerState {
-			return nil, "Waiting", nil
+		addrs := vm.Addresses
+		if len(addrs) == 0 || vm.PowerState != RunningPowerState {
+			return addrs, "Waiting", nil
 		}
 
 		netIfaces := map[string][]string{}
 		for key, addr := range vm.Addresses {
 
 			// key has the following format "{iface_id}/(ipv4|ipv6)/{iface_ip_id}"
-			ifaceIdx := string(key[0])
+			ifaceIdx, _, _ := strings.Cut(key, "/")
 			if _, ok := netIfaces[ifaceIdx]; !ok {
 				netIfaces[ifaceIdx] = []string{}
 			}
@@ -669,10 +670,7 @@ func waitForIPAssignment(c *Client, vmId string, waitForIps map[string]string, t
 		for ifaceIdx, cidrRange := range waitForIps {
 			// VM's Addresses member does not contain this network interface yet
 			if _, ok := netIfaces[ifaceIdx]; !ok {
-				return ifaceMatchCheck{
-					cidrRange: cidrRange,
-					ifaceIdx:  ifaceIdx,
-				}, "Waiting", nil
+				return addrs, "Waiting", nil
 			}
 
 			found := false
@@ -680,7 +678,7 @@ func waitForIPAssignment(c *Client, vmId string, waitForIps map[string]string, t
 				_, ipNet, err := net.ParseCIDR(cidrRange)
 
 				if err != nil {
-					return nil, "Waiting", err
+					return addrs, "Waiting", err
 				}
 
 				if ipNet.Contains(net.ParseIP(ipAddr)) {
@@ -690,15 +688,16 @@ func waitForIPAssignment(c *Client, vmId string, waitForIps map[string]string, t
 
 			if !found {
 				lastResult = ifaceMatchCheck{
-					cidrRange: cidrRange,
-					ifaceIdx:  ifaceIdx,
+					cidrRange:  cidrRange,
+					ifaceIdx:   ifaceIdx,
+					ifaceAddrs: netIfaces[ifaceIdx],
 				}
 
-				return nil, "Waiting", nil
+				return addrs, "Waiting", nil
 			}
 		}
 
-		return nil, "Ready", nil
+		return addrs, "Ready", nil
 	}
 	stateConf := &StateChangeConf{
 		Pending: []string{"Waiting"},
@@ -706,16 +705,18 @@ func waitForIPAssignment(c *Client, vmId string, waitForIps map[string]string, t
 		Target:  []string{"Ready"},
 		Timeout: timeout,
 	}
-	return stateConf.WaitForState()
+	_, err := stateConf.WaitForState()
+	if _, ok := err.(*TimeoutError); ok {
+		return errors.New(fmt.Sprintf("network[%s] never converged to the following cidr: %s, addresses: %s failed to match", lastResult.ifaceIdx, lastResult.cidrRange, lastResult.ifaceAddrs))
+	}
+	return err
 }
 
 func (c *Client) waitForModifyVm(id string, desiredPowerState string, waitForIps map[string]string, timeout time.Duration) error {
 	if len(waitForIps) == 0 {
-		_, err := waitForPowerStateReached(c, id, desiredPowerState, timeout)
-		return err
+		return waitForPowerStateReached(c, id, desiredPowerState, timeout)
 	} else {
-		_, err := waitForIPAssignment(c, id, waitForIps, timeout)
-		return err
+		return waitForIPAssignment(c, id, waitForIps, timeout)
 	}
 }
 
