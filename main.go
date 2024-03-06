@@ -5,7 +5,7 @@ import (
 	"flag"
 	"log"
 
-	"github.com/ddelnano/terraform-provider-xenorchestra/xoa"
+	"github.com/vatesfr/terraform-provider-xenorchestra/xoa"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
 )
 

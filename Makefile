@@ -5,7 +5,7 @@ GOMAXPROCS ?= 5
 TF_VERSION ?= v0.14.11
 ROOT_PKG_PATH := github.com/ddelnano/terraform-provider-xenorchestra
 ifdef TEST
-    TEST := github.com/ddelnano/terraform-provider-xenorchestra/xoa -run '$(TEST)'
+    TEST := github.com/vatesfr/terraform-provider-xenorchestra/xoa -run '$(TEST)'
 else
     TEST := ./...
 endif
