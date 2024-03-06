@@ -38,6 +38,11 @@ func VmStateUpgradeV0(ctx context.Context, rawState map[string]interface{}, meta
 	rawState["destroy_cloud_config_vdi_after_boot"] = false
 	return rawState, nil
 }
+func VmStateUpgradeV1(ctx context.Context, rawState map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
+	rawState["memory_dynamic_max"] = rawState["memory_max"]
+	delete(rawState, "memory_max")
+	return rawState, nil
+}
 
 func ResourceVmResourceV0() *schema.Resource {
 	return &schema.Resource{
@@ -347,6 +352,39 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 					Type: schema.TypeString,
 				},
 				Description: "The tags (labels) applied to the given entity.",
+			},
+		},
+	}
+}
+
+func ResourceVmResourceV1() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"memory_max": &schema.Schema{
+				Type:     schema.TypeInt,
+				Required: true,
+				Description: `The amount of memory in bytes the VM will have. Updates to this field will case a stop and start of the VM if the new value is greater than the dynamic memory max. This can be determined with the following command:
+
+$ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd0b8"}' | jq '.[].memory.dynamic'
+[
+  2147483648, # memory dynamic min
+  4294967296  # memory dynamic max (4GB)
+]
+# Updating the VM to use 3GB of memory would happen without stopping/starting the VM
+# Updating the VM to use 5GB of memory would stop/start the VM
+			`,
+			},
+			"memory_dynamic_min": &schema.Schema{
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Description: `Dynamic minimum (bytes)`,
+				Computed:    true,
+			},
+			"memory_dynamic_max": &schema.Schema{
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Description: `Dynamic maximum (bytes)`,
+				Computed:    true,
 			},
 		},
 	}

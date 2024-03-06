@@ -215,15 +215,28 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 `,
 		},
 		"memory_max": &schema.Schema{
-			Type:        schema.TypeInt,
-			Required:    true,
-			Description: `The amount of memory in bytes the VM will have. Updates to this field will case a stop and start of the VM.`,
+			Type:     schema.TypeInt,
+			Required: true,
+			Description: `The amount of static memory in bytes the VM will have. Updates to this field will case a stop and start of the VM if the new value is greater than the dynamic memory max. This can be determined with the following command:
+` + "```" + `
+
+
+$ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd0b8"}' | jq '.[].memory.dynamic'
+[
+  2147483648, # memory dynamic min
+  4294967296  # memory dynamic max (4GB)
+]
+# Updating the VM to use 3GB of memory would happen without stopping/starting the VM
+# Updating the VM to use 5GB of memory would stop/start the VM
+` + "```" + `
+
+`,
 		},
 		"memory_dynamic_min": &schema.Schema{
 			Type:        schema.TypeInt,
 			Optional:    true,
 			Description: `Dynamic minimum (bytes)`,
-			Default:     2147483648,
+			Computed:    true,
 		},
 		"memory_dynamic_max": &schema.Schema{
 			Type:        schema.TypeInt,
@@ -441,12 +454,17 @@ This does not work in terraform since that is applied on Xen Orchestra's client 
 		Read:          resourceVmRead,
 		Update:        resourceVmUpdate,
 		Delete:        resourceVmDelete,
-		SchemaVersion: 1,
+		SchemaVersion: 2,
 		StateUpgraders: []schema.StateUpgrader{
 			{
 				Type:    state.ResourceVmResourceV0().CoreConfigSchema().ImpliedType(),
 				Upgrade: state.VmStateUpgradeV0,
 				Version: 0,
+			},
+			{
+				Type:    state.ResourceVmResourceV1().CoreConfigSchema().ImpliedType(),
+				Upgrade: state.VmStateUpgradeV1,
+				Version: 1,
 			},
 		},
 		Importer: &schema.ResourceImporter{
@@ -539,6 +557,10 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 
+	memoryObject, err := memory(d)
+	if err != nil {
+		return err
+	}
 	createVmParams := client.Vm{
 		BlockedOperations: blockedOperations,
 		Boot: client.Boot{
@@ -559,7 +581,7 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 			Number: d.Get("cpus").(int),
 		},
 		CloudNetworkConfig: d.Get("cloud_network_config").(string),
-		Memory:             memory(d),
+		Memory:             *memoryObject,
 		Tags:               vmTags,
 		Disks:              ds,
 		Installation:       installation,
@@ -880,9 +902,6 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 	if d.HasChange("memory_max") {
 		haltForUpdates = true
 	}
-	if d.Get("memory_max").(int) < d.Get("memory_dynamic_max").(int) {
-		haltForUpdates = true
-	}
 
 	blockOperations := map[string]string{}
 	if d.HasChange("blocked_operations") {
@@ -902,12 +921,16 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 
 	}
 
+	memoryObject, err := memory(d)
+	if err != nil {
+		return err
+	}
 	vmReq := client.Vm{
 		Id: id,
 		CPUs: client.CPUs{
 			Number: cpus,
 		},
-		Memory:            memory(d),
+		Memory:            *memoryObject,
 		NameLabel:         nameLabel,
 		NameDescription:   nameDescription,
 		HA:                ha,
@@ -925,6 +948,10 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		Videoram: client.Videoram{
 			Value: d.Get("videoram").(int),
 		},
+	}
+
+	if len(vmReq.Memory.Dynamic) == 2 && vmReq.Memory.Dynamic[1] > vm.Memory.Static[1] {
+		haltForUpdates = true
 	}
 
 	if d.HasChange("affinity_host") {
@@ -1024,20 +1051,35 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 	return resourceVmRead(d, m)
 }
 
-func memory(d *schema.ResourceData) client.MemoryObject {
-	memory := client.MemoryObject{
+func memory(d *schema.ResourceData) (*client.MemoryObject, error) {
+	memory := &client.MemoryObject{
 		Dynamic: []int{},
 		Static: []int{
 			0, d.Get("memory_max").(int),
 		},
 	}
-	if d.Get("memory_dynamic_min") != nil && d.Get("memory_dynamic_max") != nil {
-		memory.Dynamic = []int{
-			d.Get("memory_dynamic_min").(int),
-			d.Get("memory_dynamic_max").(int),
+	if !d.GetRawConfig().GetAttr("memory_dynamic_min").IsNull() {
+		if memoryDynamicMin, ok := d.GetOk("memory_dynamic_min"); ok {
+			if len(memory.Dynamic) == 0 {
+				memory.Dynamic = []int{memoryDynamicMin.(int), 0}
+			} else {
+				memory.Dynamic[0] = memoryDynamicMin.(int)
+			}
 		}
 	}
-	return memory
+	if !d.GetRawConfig().GetAttr("memory_dynamic_max").IsNull() {
+		if memoryDynamicMax, ok := d.GetOk("memory_dynamic_max"); ok {
+			if len(memory.Dynamic) == 0 {
+				memory.Dynamic = []int{0, memoryDynamicMax.(int)}
+			} else {
+				memory.Dynamic[1] = memoryDynamicMax.(int)
+			}
+		}
+		if memory.Dynamic[1] > memory.Static[1] {
+			return nil, errors.New(fmt.Sprintf("memory_dynamic_max cannot be more than memory_max"))
+		}
+	}
+	return memory, nil
 }
 
 func resourceVmDelete(d *schema.ResourceData, m interface{}) error {
@@ -1129,13 +1171,6 @@ func RecordImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData
 func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, cdroms []client.Disk, d *schema.ResourceData) error {
 	d.SetId(resource.Id)
 	// d.Set("cloud_config", resource.CloudConfig)
-	if len(resource.Memory.Dynamic) == 2 {
-		if err := d.Set("memory_max", resource.Memory.Dynamic[1]); err != nil {
-			return err
-		}
-	} else {
-		log.Printf("[WARN] Expected the VM's static memory limits to have two values, %v found instead\n", resource.Memory.Dynamic)
-	}
 	d.Set("memory_max", resource.Memory.Static[1])
 	d.Set("memory_dynamic_min", resource.Memory.Dynamic[0])
 	d.Set("memory_dynamic_max", resource.Memory.Dynamic[1])

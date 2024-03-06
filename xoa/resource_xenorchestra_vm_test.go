@@ -1589,6 +1589,54 @@ func TestAccXenorchestraVm_updatesWithoutRebootForOtherAttrs(t *testing.T) {
 	})
 }
 
+func TestAccXenorchestraVm_updatesDynamicMemory(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccFailToStartAndHaltProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigUpdateAttrsVariableCPUAndMemoryDynamicMax(4, 4295000000, 3221225472, vmName, "", "", false),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "cpus", "4"),
+					resource.TestCheckResourceAttr(resourceName, "memory_max", "4295000000"),
+					resource.TestCheckResourceAttr(resourceName, "memory_dynamic_max", "3221225472"),
+				),
+			},
+			{
+				Config: testAccVmConfigUpdateAttrsVariableCPUAndMemoryDynamic(4, 4295000000, 2147500000, 3221225472, vmName, "", "", false),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "cpus", "4"),
+					resource.TestCheckResourceAttr(resourceName, "memory_max", "4295000000"),
+					resource.TestCheckResourceAttr(resourceName, "memory_dynamic_min", "2147500000"),
+					resource.TestCheckResourceAttr(resourceName, "memory_dynamic_max", "3221225472"),
+				),
+			},
+			{
+				Config: testAccVmConfigUpdateAttrsVariableCPUAndMemoryDynamicMin(4, 4295000000, 3221225472, vmName, "", "", false),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "cpus", "4"),
+					resource.TestCheckResourceAttr(resourceName, "memory_max", "4295000000"),
+					resource.TestCheckResourceAttr(resourceName, "memory_dynamic_min", "3221225472"),
+					resource.TestCheckResourceAttr(resourceName, "memory_dynamic_max", "3221225472"),
+				),
+			},
+			{
+				Config:      testAccVmConfigUpdateAttrsVariableCPUAndMemoryDynamicMax(4, 3221225472, 4295000000, vmName, "", "", false),
+				ExpectError: regexp.MustCompile("memory_dynamic_max cannot be more than memory_max"),
+			},
+		},
+	})
+}
+
 func TestAccXenorchestraVm_updatesThatRequireReboot(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
@@ -1598,20 +1646,50 @@ func TestAccXenorchestraVm_updatesThatRequireReboot(t *testing.T) {
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
 			{
+				Config: testAccVmConfigUpdateAttrsVariableCPUAndMemory(4, 6295000000, vmName, "", "", false),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "cpus", "4"),
+					resource.TestCheckResourceAttr(resourceName, "memory_max", "6295000000"),
+				),
+			},
+			{
+				Config: testAccVmConfigUpdateAttrsVariableCPUAndMemory(4, 4295000000, vmName, "", "", false),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "cpus", "4"),
+					resource.TestCheckResourceAttr(resourceName, "memory_max", "4295000000"),
+				),
+			},
+			{
+				Config: testAccVmConfigUpdateAttrsVariableCPUAndMemoryDynamic(4, 6295000000, 1073741824, 6295000000, vmName, "", "", false),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "cpus", "4"),
+					resource.TestCheckResourceAttr(resourceName, "memory_max", "6295000000"),
+					resource.TestCheckResourceAttr(resourceName, "memory_dynamic_max", "6295000000"),
+					resource.TestCheckResourceAttr(resourceName, "memory_dynamic_min", "1073741824"),
+				),
+			},
+			{
 				Config: testAccVmConfigUpdateAttrsVariableCPUAndMemory(2, 4295000000, vmName, "", "", false),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttr(resourceName, "cpus", "2"),
 					resource.TestCheckResourceAttr(resourceName, "memory_max", "4295000000"),
+					resource.TestCheckResourceAttr(resourceName, "memory_dynamic_max", "4295000000"),
 				),
 			},
 			{
-				Config: testAccVmConfigUpdateAttrsVariableCPUAndMemory(5, 6295000000, vmName, "", "", false),
+				Config: testAccVmConfigUpdateAttrsVariableCPUAndMemory(4, 6295000000, vmName, "", "", false),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
-					resource.TestCheckResourceAttr(resourceName, "cpus", "5"),
+					resource.TestCheckResourceAttr(resourceName, "cpus", "4"),
 					resource.TestCheckResourceAttr(resourceName, "memory_max", "6295000000"),
 				),
 			},
@@ -1619,7 +1697,7 @@ func TestAccXenorchestraVm_updatesThatRequireReboot(t *testing.T) {
 	})
 }
 
-func TestAccXenorchestraVm_updatingCpusInsideMaxCpuAndMemInsideStaticMaxDoesNotRequireReboot(t *testing.T) {
+func TestAccXenorchestraVm_updatingCpusInsideMaxCpuAndMemInsideDynamicMaxDoesNotRequireReboot(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	resource.ParallelTest(t, resource.TestCase{
@@ -1631,21 +1709,21 @@ func TestAccXenorchestraVm_updatingCpusInsideMaxCpuAndMemInsideStaticMaxDoesNotR
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccVmConfigUpdateAttrsVariableCPUAndMemory(5, 4295000000, vmName, "", "", false),
+				Config: testAccVmConfigUpdateAttrsVariableCPUAndMemoryDynamic(4, 4295000000, 1073741824, 4295000000, vmName, "", "", false),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
-					resource.TestCheckResourceAttr(resourceName, "cpus", "5"),
-					resource.TestCheckResourceAttr(resourceName, "memory_max", "4295000000"),
+					resource.TestCheckResourceAttr(resourceName, "cpus", "4"),
+					resource.TestCheckResourceAttr(resourceName, "memory_dynamic_max", "4295000000"),
 				),
 			},
 			{
-				Config: testAccVmConfigUpdateAttrsVariableCPUAndMemory(2, 3221225472, vmName, "", "", false),
+				Config: testAccVmConfigUpdateAttrsVariableCPUAndMemoryDynamic(2, 4295000000, 1073741824, 3221225472, vmName, "", "", false),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttr(resourceName, "cpus", "2"),
-					resource.TestCheckResourceAttr(resourceName, "memory_max", "3221225472"),
+					resource.TestCheckResourceAttr(resourceName, "memory_dynamic_max", "3221225472"),
 				),
 			},
 		},
@@ -1786,6 +1864,45 @@ func TestAccXenorchestraVm_createWithV0StateMigration(t *testing.T) {
 				),
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+}
+
+func TestAccXenorchestraVm_createWithV1StateMigration(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"xenorchestra": {
+						Source:            "vatesfr/xenorchestra",
+						VersionConstraint: "0.28.0",
+					},
+				},
+				Config: testAccVmConfig(vmName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckNoResourceAttr(resourceName, "memory_dynamic_max"),
+				),
+			},
+			{
+				ProviderFactories: map[string]func() (*schema.Provider, error){
+					"xenorchestra": func() (*schema.Provider, error) {
+						return Provider(), nil
+					},
+				},
+				Config: testAccVmConfig(vmName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "memory_dynamic_max", "4295000000"),
+					resource.TestCheckResourceAttr(resourceName, "memory_max", "4295000000"),
+				),
 			},
 		},
 	})
@@ -2850,6 +2967,109 @@ resource "xenorchestra_vm" "bar" {
     }
 }
 `, accTestPool.NameLabel, accDefaultNetwork.NameLabel, memory, cpus, nameLabel, nameDescription, ha, powerOn, accDefaultSr.Id)
+}
+func testAccVmConfigUpdateAttrsVariableCPUAndMemoryDynamic(cpus, memory int, memoryMin int, memoryMax int, nameLabel, nameDescription, ha string, powerOn bool) string {
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", nameLabel), "template") + testAccTemplateConfig() + fmt.Sprintf(`
+data "xenorchestra_pool" "pool" {
+    name_label = "%s"
+}
+
+data "xenorchestra_network" "network" {
+    name_label = "%s"
+    pool_id = data.xenorchestra_pool.pool.id
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = %d
+    memory_dynamic_min = %d
+    memory_dynamic_max = %d
+    cpus  = %d
+    cloud_config = xenorchestra_cloud_config.bar.template
+    name_label = "%s"
+    name_description = "%s"
+    affinity_host = data.xenorchestra_pool.pool.master
+    template = data.xenorchestra_template.template.id
+    high_availability = "%s"
+    auto_poweron = "%t"
+    network {
+	network_id = data.xenorchestra_network.network.id
+    }
+
+    disk {
+      sr_id = "%s"
+      name_label = "disk 1"
+      size = 10001317888
+    }
+}
+`, accTestPool.NameLabel, accDefaultNetwork.NameLabel, memory, memoryMin, memoryMax, cpus, nameLabel, nameDescription, ha, powerOn, accDefaultSr.Id)
+}
+func testAccVmConfigUpdateAttrsVariableCPUAndMemoryDynamicMin(cpus, memory int, memoryMin int, nameLabel, nameDescription, ha string, powerOn bool) string {
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", nameLabel), "template") + testAccTemplateConfig() + fmt.Sprintf(`
+data "xenorchestra_pool" "pool" {
+    name_label = "%s"
+}
+
+data "xenorchestra_network" "network" {
+    name_label = "%s"
+    pool_id = data.xenorchestra_pool.pool.id
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = %d
+    memory_dynamic_min = %d
+    cpus  = %d
+    cloud_config = xenorchestra_cloud_config.bar.template
+    name_label = "%s"
+    name_description = "%s"
+    affinity_host = data.xenorchestra_pool.pool.master
+    template = data.xenorchestra_template.template.id
+    high_availability = "%s"
+    auto_poweron = "%t"
+    network {
+	network_id = data.xenorchestra_network.network.id
+    }
+
+    disk {
+      sr_id = "%s"
+      name_label = "disk 1"
+      size = 10001317888
+    }
+}
+`, accTestPool.NameLabel, accDefaultNetwork.NameLabel, memory, memoryMin, cpus, nameLabel, nameDescription, ha, powerOn, accDefaultSr.Id)
+}
+func testAccVmConfigUpdateAttrsVariableCPUAndMemoryDynamicMax(cpus, memory int, memoryDynamicMax int, nameLabel, nameDescription, ha string, powerOn bool) string {
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", nameLabel), "template") + testAccTemplateConfig() + fmt.Sprintf(`
+data "xenorchestra_pool" "pool" {
+    name_label = "%s"
+}
+
+data "xenorchestra_network" "network" {
+    name_label = "%s"
+    pool_id = data.xenorchestra_pool.pool.id
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = %d
+    memory_dynamic_max = %d
+    cpus  = %d
+    cloud_config = xenorchestra_cloud_config.bar.template
+    name_label = "%s"
+    name_description = "%s"
+    affinity_host = data.xenorchestra_pool.pool.master
+    template = data.xenorchestra_template.template.id
+    high_availability = "%s"
+    auto_poweron = "%t"
+    network {
+	network_id = data.xenorchestra_network.network.id
+    }
+
+    disk {
+      sr_id = "%s"
+      name_label = "disk 1"
+      size = 10001317888
+    }
+}
+`, accTestPool.NameLabel, accDefaultNetwork.NameLabel, memory, memoryDynamicMax, cpus, nameLabel, nameDescription, ha, powerOn, accDefaultSr.Id)
 }
 
 func providerCredentials(username, password string) string {

@@ -272,7 +272,6 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 		"cpuCap":           nil,
 		"cpuWeight":        nil,
 		"CPUs":             vmReq.CPUs.Number,
-		"memoryMax":        vmReq.Memory.Static[1],
 		"existingDisks":    existingDisks,
 		// TODO: (#145) Uncomment this once issues with secure_boot have been figured out
 		// "secureBoot":       vmReq.SecureBoot,
@@ -283,12 +282,14 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 		"auto_poweron":      vmReq.AutoPoweron,
 		"high_availability": vmReq.HA,
 	}
-	if len(vmReq.Memory.Dynamic) == 2 && vmReq.Memory.Dynamic[0] != 0 && vmReq.Memory.Dynamic[1] != 0 {
+	if len(vmReq.Memory.Dynamic) == 2 && vmReq.Memory.Dynamic[0] != 0 {
 		params["memoryMin"] = vmReq.Memory.Dynamic[0]
+	}
+	if len(vmReq.Memory.Dynamic) == 2 && vmReq.Memory.Dynamic[1] != 0 {
 		params["memoryMax"] = vmReq.Memory.Dynamic[1]
-		if len(vmReq.Memory.Static) == 2 {
-			params["memoryStaticMax"] = vmReq.Memory.Static[1]
-		}
+	}
+	if len(vmReq.Memory.Static) == 2 && vmReq.Memory.Static[1] != 0 {
+		params["memoryStaticMax"] = vmReq.Memory.Static[1]
 	}
 
 	if !params["clone"].(bool) && vmReq.CloneType == CloneTypeFastClone {
@@ -372,6 +373,12 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 	if params["memoryStaticMax"] != nil {
 		xsParams["memoryStaticMax"] = params["memoryStaticMax"]
 	}
+	if params["memoryMin"] != nil {
+		xsParams["memoryMin"] = params["memoryMin"]
+	}
+	if params["memoryMax"] != nil {
+		xsParams["memoryMax"] = params["memoryMax"]
+	}
 	var success bool
 	err = c.Call("vm.set", xsParams, &success)
 
@@ -419,7 +426,6 @@ func (c *Client) UpdateVm(vmReq Vm) (*Vm, error) {
 		"auto_poweron":      vmReq.AutoPoweron,
 		"high_availability": vmReq.HA, // valid options are best-effort, restart, ''
 		"CPUs":              vmReq.CPUs.Number,
-		"memoryMax":         vmReq.Memory.Static[1],
 		"expNestedHvm":      vmReq.ExpNestedHvm,
 		"startDelay":        vmReq.StartDelay,
 		// TODO: These need more investigation before they are implemented
@@ -434,12 +440,14 @@ func (c *Client) UpdateVm(vmReq Vm) (*Vm, error) {
 		// cpusMask, cpuWeight and cpuCap can be changed at runtime to an integer value or null
 		// coresPerSocket is null or a number of cores per socket. Putting an invalid value doesn't seem to cause an error :(
 	}
-	if len(vmReq.Memory.Dynamic) == 2 && vmReq.Memory.Dynamic[0] != 0 && vmReq.Memory.Dynamic[1] != 0 {
+	if len(vmReq.Memory.Dynamic) == 2 && vmReq.Memory.Dynamic[0] != 0 {
 		params["memoryMin"] = vmReq.Memory.Dynamic[0]
+	}
+	if len(vmReq.Memory.Dynamic) == 2 && vmReq.Memory.Dynamic[1] != 0 {
 		params["memoryMax"] = vmReq.Memory.Dynamic[1]
-		if len(vmReq.Memory.Static) == 2 {
-			params["memoryStaticMax"] = vmReq.Memory.Static[1]
-		}
+	}
+	if len(vmReq.Memory.Static) == 2 && vmReq.Memory.Static[1] != 0 {
+		params["memoryStaticMax"] = vmReq.Memory.Static[1]
 	}
 
 	affinityHost := vmReq.AffinityHost
