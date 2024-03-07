@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/vatesfr/terraform-provider-xenorchestra/client"
 	"github.com/vatesfr/terraform-provider-xenorchestra/xoa/internal"
+	"github.com/vatesfr/terraform-provider-xenorchestra/xoa/internal/state"
 )
 
 func init() {
@@ -1760,7 +1761,7 @@ func TestAccXenorchestraVm_createWithV0StateMigration(t *testing.T) {
 						VersionConstraint: "0.24.2",
 					},
 				},
-				Config: testAccVmConfigWithWaitForIp(vmName, "false"),
+				Config: state.V1TestAccVmConfigWithWaitForIp(accTestPrefix, vmName, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, accDefaultSr.Id),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -1774,7 +1775,7 @@ func TestAccXenorchestraVm_createWithV0StateMigration(t *testing.T) {
 						VersionConstraint: "0.24.2",
 					},
 				},
-				Config: testAccVmConfigWithDeletionBlocked(vmName, "false"),
+				Config: state.TestAccV1VmConfigWithDeletionBlocked(accTestPrefix, vmName, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, accDefaultSr.Id, "false"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -1788,7 +1789,7 @@ func TestAccXenorchestraVm_createWithV0StateMigration(t *testing.T) {
 						VersionConstraint: "0.25.0",
 					},
 				},
-				Config: testAccVmConfigWithDeletionBlocked(vmName, "true"),
+				Config: state.TestAccV1VmConfigWithDeletionBlocked(accTestPrefix, vmName, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, accDefaultSr.Id, "true"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -1805,7 +1806,7 @@ func TestAccXenorchestraVm_createWithV0StateMigration(t *testing.T) {
 						VersionConstraint: "0.25.1",
 					},
 				},
-				Config: testAccVmConfigWithDeletionBlocked(vmName, "true"),
+				Config: state.TestAccV1VmConfigWithDeletionBlocked(accTestPrefix, vmName, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, accDefaultSr.Id, "true"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -1819,7 +1820,7 @@ func TestAccXenorchestraVm_createWithV0StateMigration(t *testing.T) {
 						VersionConstraint: "0.25.1",
 					},
 				},
-				Config: testAccVmConfigWithDeletionBlocked(vmName, "true"),
+				Config: state.TestAccV1VmConfigWithDeletionBlocked(accTestPrefix, vmName, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, accDefaultSr.Id, "true"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -1835,7 +1836,7 @@ func TestAccXenorchestraVm_createWithV0StateMigration(t *testing.T) {
 						VersionConstraint: "0.25.1",
 					},
 				},
-				Config: testAccVmConfigWithWaitForIp(vmName, "0.0.0.0/0"),
+				Config: state.V1TestAccVmConfigWithWaitForIp(accTestPrefix, vmName, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, accDefaultSr.Id),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -2067,65 +2068,6 @@ resource "xenorchestra_vm" "bar" {
 
 func testAccVmConfig(vmName string) string {
 	return testAccVmConfigWithWaitForIp(vmName, "false")
-}
-
-// terraform configuration that can be used to block changes that should not destroy a VM.
-// While this doesn't integrate nicely with the sdk's test helpers (failure is vague), there
-// are some cases were options are limited (testing pinned provider versions).
-func testAccVmConfigWithDeletionBlocked(vmName, waitForIp string) string {
-	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
-data "xenorchestra_network" "network" {
-    name_label = "%s"
-    pool_id = "%s"
-}
-
-resource "xenorchestra_vm" "bar" {
-    memory_max = 4295000000
-    cpus  = 1
-    cloud_config = xenorchestra_cloud_config.bar.template
-    name_label = "%s"
-    name_description = "description"
-    template = data.xenorchestra_template.template.id
-    network {
-	network_id = data.xenorchestra_network.network.id
-    }
-
-    disk {
-      sr_id = "%s"
-      name_label = "disk 1"
-      size = 10001317888
-    }
-    wait_for_ip  = %s
-    blocked_operations = ["destroy"]
-}
-`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id, waitForIp)
-}
-
-func testAccVmConfigWithWaitForIp(vmName, waitForIp string) string {
-	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
-data "xenorchestra_network" "network" {
-    name_label = "%s"
-    pool_id = "%s"
-}
-
-resource "xenorchestra_vm" "bar" {
-    memory_max = 4295000000
-    cpus  = 1
-    cloud_config = xenorchestra_cloud_config.bar.template
-    name_label = "%s"
-    name_description = "description"
-    template = data.xenorchestra_template.template.id
-    network {
-	network_id = data.xenorchestra_network.network.id
-    }
-
-    disk {
-      sr_id = "%s"
-      name_label = "disk 1"
-      size = 10001317888
-    }
-}
-`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithWaitForIp(vmName, expectedIpCidr string) string {
