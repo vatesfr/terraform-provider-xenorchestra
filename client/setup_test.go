@@ -36,7 +36,7 @@ func CreateNetwork(network *Network) {
 	*network = *net
 }
 
-var integrationTestPrefix string = "xenorchestra-client-"
+var integrationTestPrefix string = "xo-go-client-"
 var accTestPool Pool
 var accTestHost Host
 var accDefaultSr StorageRepository

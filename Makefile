@@ -3,6 +3,7 @@
 TIMEOUT ?= 40m
 GOMAXPROCS ?= 5
 TF_VERSION ?= v0.14.11
+ROOT_PKG_PATH := github.com/ddelnano/terraform-provider-xenorchestra
 ifdef TEST
     TEST := github.com/ddelnano/terraform-provider-xenorchestra/xoa -run '$(TEST)'
 else
@@ -35,10 +36,10 @@ sweep:
 test: testclient testacc
 
 testclient:
-	cd client; go test $(TEST) -v -count 1
+	cd client; go test $(TEST) -v -count 1 -ldflags "-X $(ROOT_PKG_PATH)/client.integrationTestPrefix=adhoc-xo-go-client"
 
 testacc: xoa/testdata/alpine-virt-3.17.0-x86_64.iso
-	TF_ACC=1 $(TF_LOG) go test $(TEST) -parallel $(GOMAXPROCS) -v -count 1 -timeout $(TIMEOUT) -sweep=true
+	TF_ACC=1 $(TF_LOG) go test $(TEST) -parallel $(GOMAXPROCS) -v -count 1 -timeout $(TIMEOUT) -sweep=true -ldflags "-X $(ROOT_PKG_PATH)/xoa.accTestPrefix=adhoc-terraform-acc"
 
 # This file was previously stored in the git repo with git lfs. GitHub
 # has a very low quota for number of allowed clones and so this needed
