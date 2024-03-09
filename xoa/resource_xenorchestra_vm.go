@@ -525,6 +525,7 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 	if installMethod := d.Get("installation_method").(string); installMethod != "" {
 		installation = client.Installation{
 			Method: "network",
+			Repository: "pxe",
 		}
 	}
 
