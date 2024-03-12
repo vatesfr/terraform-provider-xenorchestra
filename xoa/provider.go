@@ -28,16 +28,27 @@ func Provider() *schema.Provider {
 				Description: "Hostname of the xoa router. Can be set via the XOA_URL environment variable.",
 			},
 			"username": &schema.Schema{
-				Type:        schema.TypeString,
-				Required:    true,
-				DefaultFunc: schema.EnvDefaultFunc("XOA_USER", nil),
-				Description: "User account for xoa api. Can be set via the XOA_USER environment variable.",
+				Type:          schema.TypeString,
+				Optional:      true,
+				DefaultFunc:   schema.EnvDefaultFunc("XOA_USER", nil),
+				Description:   "User account for xoa api. Can be set via the XOA_USER environment variable.",
+				RequiredWith:  []string{"password"},
+				ConflictsWith: []string{"token"},
 			},
 			"password": &schema.Schema{
-				Type:        schema.TypeString,
-				Required:    true,
-				DefaultFunc: schema.EnvDefaultFunc("XOA_PASSWORD", nil),
-				Description: "Password for xoa api. Can be set via the XOA_PASSWORD environment variable.",
+				Type:          schema.TypeString,
+				Optional:      true,
+				DefaultFunc:   schema.EnvDefaultFunc("XOA_PASSWORD", nil),
+				Description:   "Password for xoa api. Can be set via the XOA_PASSWORD environment variable.",
+				RequiredWith:  []string{"username"},
+				ConflictsWith: []string{"token"},
+			},
+			"token": &schema.Schema{
+				Type:          schema.TypeString,
+				Optional:      true,
+				DefaultFunc:   schema.EnvDefaultFunc("XOA_TOKEN", nil),
+				Description:   "Password for xoa api. Can be set via the XOA_TOKEN environment variable.",
+				ConflictsWith: []string{"username", "password"},
 			},
 			"insecure": &schema.Schema{
 				Type:        schema.TypeBool,
@@ -92,6 +103,7 @@ func xoaConfigure(d *schema.ResourceData) (interface{}, error) {
 	url := d.Get("url").(string)
 	username := d.Get("username").(string)
 	password := d.Get("password").(string)
+	token := d.Get("token").(string)
 	insecure := d.Get("insecure").(bool)
 	retryMode := d.Get("retry_mode").(string)
 	retryMaxTime := d.Get("retry_max_time").(string)
@@ -110,6 +122,7 @@ func xoaConfigure(d *schema.ResourceData) (interface{}, error) {
 		Url:                url,
 		Username:           username,
 		Password:           password,
+		Token:              token,
 		InsecureSkipVerify: insecure,
 		RetryMode:          retry,
 		RetryMaxTime:       duration,

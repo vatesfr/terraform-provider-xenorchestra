@@ -38,12 +38,15 @@ func testAccPreCheck(t *testing.T) {
 	if v := os.Getenv("XOA_URL"); v == "" {
 		t.Fatal("The XOA_URL environment variable must be set")
 	}
-	if v := os.Getenv("XOA_USER"); v == "" {
-		t.Fatal("The XOA_USER environment variable must be set")
+
+	user := os.Getenv("XOA_USER")
+	password := os.Getenv("XOA_PASSWORD")
+	token := os.Getenv("XOA_TOKEN")
+
+	if token == "" && (user == "" || password == "") {
+		t.Fatal("One of the following environment variable(s) must be set: XOA_USER and XOA_PASSWORD or XOA_TOKEN")
 	}
-	if v := os.Getenv("XOA_PASSWORD"); v == "" {
-		t.Fatal("The XOA_PASSWORD environment variable must be set")
-	}
+
 	if v := os.Getenv("XOA_POOL"); v == "" {
 		t.Fatal("The XOA_POOL environment variable must be set")
 	}
