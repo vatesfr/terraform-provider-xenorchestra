@@ -17,7 +17,3 @@ If using terraform 0.12 or lower download a suitable binary from the [releases](
 ## Support
 
 You can discuss any issues you have or feature requests in [Discord](https://discord.gg/ZpNq8ez).
-
-## Donations
-
-If you get value out this project and want to show your support you can find me on [patreon](https://www.patreon.com/ddelnano).
