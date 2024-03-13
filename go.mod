@@ -1,9 +1,9 @@
-module github.com/ddelnano/terraform-provider-xenorchestra
+module github.com/vatesfr/terraform-provider-xenorchestra
 
 go 1.21
 
 require (
-	github.com/ddelnano/terraform-provider-xenorchestra/client v0.0.0-00010101000000-000000000000
+	github.com/vatesfr/terraform-provider-xenorchestra/client v0.0.0-00010101000000-000000000000
 	github.com/hashicorp/terraform-plugin-docs v0.18.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.33.0
 )
@@ -80,4 +80,4 @@ require (
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 )
 
-replace github.com/ddelnano/terraform-provider-xenorchestra/client => ./client
+replace github.com/vatesfr/terraform-provider-xenorchestra/client => ./client
