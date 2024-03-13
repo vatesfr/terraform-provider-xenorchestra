@@ -31,6 +31,8 @@ type XOClient interface {
 	GetObjectsWithTags(tags []string) ([]Object, error)
 	GetAllObjectsOfType(obj XoObject, response interface{}) error
 
+	Call(method string, params, result interface{}) error
+
 	CreateVm(vmReq Vm, d time.Duration) (*Vm, error)
 	GetVm(vmReq Vm) (*Vm, error)
 	GetVms(vm Vm) ([]Vm, error)
