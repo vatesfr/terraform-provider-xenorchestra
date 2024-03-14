@@ -4,6 +4,9 @@ terraform {
     xenorchestra = {
       source = "vatesfr/xenorchestra"
     }
+    xenorchestra_token_auth = {
+      source = "vatesfr/xenorchestra"
+    }
   }
 }
 
@@ -20,4 +23,9 @@ provider "xenorchestra" {
   # a self signed certificate but should be
   # used sparingly!
   insecure = <false|true>              # Or set XOA_INSECURE environment variable to any value
+}
+
+provider "xenorchestra_token_auth" {
+  # XOA_USER and XOA_PASSWORD cannot be set, nor can their arguments
+  token = "<token from XO>" # or set XOA_TOKEN environment variable
 }

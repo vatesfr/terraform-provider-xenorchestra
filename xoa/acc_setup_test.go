@@ -12,6 +12,7 @@ import (
 
 var testObjectIndex int = 1
 var accTestPrefix string = "terraform-acc"
+var accTestXoToken string = os.Getenv("BYPASS_XOA_TOKEN")
 var accTestPool client.Pool
 var accTestHost client.Host
 var accDefaultSr client.StorageRepository
