@@ -3,9 +3,9 @@ module github.com/vatesfr/terraform-provider-xenorchestra
 go 1.21
 
 require (
-	github.com/vatesfr/terraform-provider-xenorchestra/client v0.0.0-00010101000000-000000000000
 	github.com/hashicorp/terraform-plugin-docs v0.18.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.33.0
+	github.com/vatesfr/terraform-provider-xenorchestra/client v0.0.0-00010101000000-000000000000
 )
 
 require (
@@ -76,7 +76,7 @@ require (
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231106174013-bbf56f31fb17 // indirect
 	google.golang.org/grpc v1.61.1 // indirect
-	google.golang.org/protobuf v1.32.0 // indirect
+	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 )
 
