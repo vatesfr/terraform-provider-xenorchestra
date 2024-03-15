@@ -143,6 +143,7 @@ type Config struct {
 	Url                string
 	Username           string
 	Password           string
+	Token              string
 	InsecureSkipVerify bool
 	RetryMode          RetryMode
 	RetryMaxTime       time.Duration
@@ -164,6 +165,7 @@ func GetConfigFromEnv() Config {
 	var wsURL string
 	var username string
 	var password string
+	var token string
 	insecure := false
 	retryMode := None
 	retryMaxTime := 5 * time.Minute
@@ -175,6 +177,9 @@ func GetConfigFromEnv() Config {
 	}
 	if v := os.Getenv("XOA_PASSWORD"); v != "" {
 		password = v
+	}
+	if v := os.Getenv("XOA_TOKEN"); v != "" {
+		token = v
 	}
 	if v := os.Getenv("XOA_INSECURE"); v != "" {
 		insecure = true
@@ -199,6 +204,7 @@ func GetConfigFromEnv() Config {
 		Url:                wsURL,
 		Username:           username,
 		Password:           password,
+		Token:              token,
 		InsecureSkipVerify: insecure,
 		RetryMode:          retryMode,
 		RetryMaxTime:       retryMaxTime,
@@ -209,6 +215,16 @@ func NewClient(config Config) (XOClient, error) {
 	wsURL := config.Url
 	username := config.Username
 	password := config.Password
+	token := config.Token
+
+	if token == "" && (username == "" || password == "") {
+		return nil, fmt.Errorf("One of the following environment variable(s) must be set: XOA_USER and XOA_PASSWORD or XOA_TOKEN")
+	}
+
+	useTokenAuth := false
+	if token != "" {
+		useTokenAuth = true
+	}
 
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: config.InsecureSkipVerify,
@@ -226,20 +242,25 @@ func NewClient(config Config) (XOClient, error) {
 	h = &handler{}
 	c := jsonrpc2.NewConn(context.Background(), objStream, h)
 
-	reqParams := map[string]interface{}{
-		"email":    username,
-		"password": password,
+	reqParams := map[string]interface{}{}
+	if useTokenAuth {
+		reqParams["token"] = token
+	} else {
+
+		reqParams["email"] = username
+		reqParams["password"] = password
 	}
 	var reply signInResponse
-	err = c.Call(context.Background(), "session.signInWithPassword", reqParams, &reply)
+	err = c.Call(context.Background(), "session.signIn", reqParams, &reply)
 	if err != nil {
 		return nil, err
 	}
 
-	var token string
-	err = c.Call(context.Background(), "token.create", map[string]interface{}{}, &token)
-	if err != nil {
-		return nil, err
+	if !useTokenAuth {
+		err = c.Call(context.Background(), "token.create", map[string]interface{}{}, &token)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	jar, err := cookiejar.New(&cookiejar.Options{})

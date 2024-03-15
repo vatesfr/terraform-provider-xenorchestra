@@ -29,6 +29,9 @@ pipeline {
       }
       stages {
         stage('Test') {
+          environment {
+            BYPASS_XOA_TOKEN = sh(script: "xo-cli --createToken $XOA_URL $XOA_USER $XOA_PASSWORD | tail -n1", returnStdout: true).trim()
+          }
           steps {
             lock('xoa-test-runner') {
               sh 'cp /opt/terraform-provider-xenorchestra/testdata/images/alpine-virt-3.17.0-x86_64.iso xoa/testdata/alpine-virt-3.17.0-x86_64.iso'
