@@ -733,6 +733,19 @@ func FindOrCreateVmForTests(vm *Vm, poolId, srId, templateName, tag string) {
 	*vm = *vmRes
 }
 
+func checkBlockDestroyOperation(vm *Vm) bool {
+	fmt.Printf("Found VM with blocked_operations=%v", vm.BlockedOperations)
+
+	for k, _ := range vm.BlockedOperations {
+
+		if k == "destroy" {
+			return true
+		}
+
+	}
+	return false
+}
+
 func RemoveVmsWithNamePrefix(prefix string) func(string) error {
 	return func(_ string) error {
 		fmt.Println("[DEBUG] Running vm sweeper")
@@ -748,6 +761,22 @@ func RemoveVmsWithNamePrefix(prefix string) func(string) error {
 		}
 		for _, vm := range vmsMap {
 			if strings.HasPrefix(vm.NameLabel, prefix) {
+				if checkBlockDestroyOperation(&vm) {
+					var success bool
+					blockedOperations := map[string]interface{}{
+						"destroy": nil,
+					}
+					params := map[string]interface{}{
+						"id":                vm.Id,
+						"blockedOperations": blockedOperations,
+					}
+					client, _ := c.(*Client)
+					err := client.Call("vm.set", params, &success)
+
+					if err != nil {
+						log.Printf("error removing destroy block on vm `%s` during sweep: %s", vm.NameLabel, err)
+					}
+				}
 				fmt.Printf("[DEBUG] Deleting vm `%s`\n", vm.NameLabel)
 				err := c.DeleteVm(vm.Id)
 				if err != nil {

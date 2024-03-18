@@ -13,7 +13,6 @@ import (
 	"github.com/vatesfr/terraform-provider-xenorchestra/client"
 	"github.com/vatesfr/terraform-provider-xenorchestra/xoa/internal"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -1729,6 +1728,7 @@ func TestAccXenorchestraVm_createWithV0StateMigration(t *testing.T) {
 		PreCheck:     func() { testAccPreCheck(t) },
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
+			// TODO(ddelnano): Remove this once blocked_operations can work on create
 			{
 				ExternalProviders: map[string]resource.ExternalProvider{
 					"xenorchestra": {
@@ -1736,7 +1736,21 @@ func TestAccXenorchestraVm_createWithV0StateMigration(t *testing.T) {
 						VersionConstraint: "0.24.2",
 					},
 				},
-				Config: testAccVmConfig(vmName),
+				Config: testAccVmConfigWithWaitForIp(vmName, "false"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckNoResourceAttr(resourceName, "destroy_cloud_config_vdi_after_boot"),
+				),
+			},
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"xenorchestra": {
+						Source:            "terra-farm/xenorchestra",
+						VersionConstraint: "0.24.2",
+					},
+				},
+				Config: testAccVmConfigWithDeletionBlocked(vmName, "false"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -1750,7 +1764,7 @@ func TestAccXenorchestraVm_createWithV0StateMigration(t *testing.T) {
 						VersionConstraint: "0.25.0",
 					},
 				},
-				Config: testAccVmConfigWithWaitForIp(vmName, "true"),
+				Config: testAccVmConfigWithDeletionBlocked(vmName, "true"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -1759,13 +1773,15 @@ func TestAccXenorchestraVm_createWithV0StateMigration(t *testing.T) {
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: true,
 			},
+			// This step should fail if the state upgrade does not happen
 			{
-				ProviderFactories: map[string]func() (*schema.Provider, error){
-					"xenorchestra": func() (*schema.Provider, error) {
-						return testAccFailToDeleteVmProvider, nil
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"xenorchestra": {
+						Source:            "terra-farm/xenorchestra",
+						VersionConstraint: "0.25.1",
 					},
 				},
-				Config: testAccVmConfigWithWaitForIp(vmName, "true"),
+				Config: testAccVmConfigWithDeletionBlocked(vmName, "true"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -1773,9 +1789,26 @@ func TestAccXenorchestraVm_createWithV0StateMigration(t *testing.T) {
 				),
 			},
 			{
-				ProviderFactories: map[string]func() (*schema.Provider, error){
-					"xenorchestra": func() (*schema.Provider, error) {
-						return Provider(), nil
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"xenorchestra": {
+						Source:            "terra-farm/xenorchestra",
+						VersionConstraint: "0.25.1",
+					},
+				},
+				Config: testAccVmConfigWithDeletionBlocked(vmName, "true"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "destroy_cloud_config_vdi_after_boot", "false"),
+				),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"xenorchestra": {
+						Source:            "terra-farm/xenorchestra",
+						VersionConstraint: "0.25.1",
 					},
 				},
 				Config: testAccVmConfigWithWaitForIp(vmName, "true"),
@@ -1784,8 +1817,6 @@ func TestAccXenorchestraVm_createWithV0StateMigration(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttr(resourceName, "destroy_cloud_config_vdi_after_boot", "false"),
 				),
-				PlanOnly:           true,
-				ExpectNonEmptyPlan: false,
 			},
 		},
 	})
@@ -2012,6 +2043,38 @@ resource "xenorchestra_vm" "bar" {
 
 func testAccVmConfig(vmName string) string {
 	return testAccVmConfigWithWaitForIp(vmName, "false")
+}
+
+// terraform configuration that can be used to block changes that should not destroy a VM.
+// While this doesn't integrate nicely with the sdk's test helpers (failure is vague), there
+// are some cases were options are limited (testing pinned provider versions).
+func testAccVmConfigWithDeletionBlocked(vmName, waitForIp string) string {
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
+data "xenorchestra_network" "network" {
+    name_label = "%s"
+    pool_id = "%s"
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 4295000000
+    cpus  = 1
+    cloud_config = xenorchestra_cloud_config.bar.template
+    name_label = "%s"
+    name_description = "description"
+    template = data.xenorchestra_template.template.id
+    network {
+	network_id = data.xenorchestra_network.network.id
+    }
+
+    disk {
+      sr_id = "%s"
+      name_label = "disk 1"
+      size = 10001317888
+    }
+    wait_for_ip  = %s
+    blocked_operations = ["destroy"]
+}
+`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id, waitForIp)
 }
 
 func testAccVmConfigWithWaitForIp(vmName, waitForIp string) string {
