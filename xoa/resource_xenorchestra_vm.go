@@ -12,11 +12,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/vatesfr/terraform-provider-xenorchestra/client"
 	"github.com/vatesfr/terraform-provider-xenorchestra/xoa/internal"
 	"github.com/vatesfr/terraform-provider-xenorchestra/xoa/internal/state"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 var validVga = []string{
@@ -530,7 +530,7 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 
 	if installMethod := d.Get("installation_method").(string); installMethod != "" {
 		installation = client.Installation{
-			Method: "network",
+			Method:     "network",
 			Repository: "pxe",
 		}
 	}

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/vatesfr/terraform-provider-xenorchestra/client"
 	"github.com/vatesfr/terraform-provider-xenorchestra/xoa/internal"
@@ -1847,6 +1848,46 @@ func TestAccXenorchestraVm_createWithV0StateMigration(t *testing.T) {
 	})
 }
 
+func TestAccXenorchestraVm_createWithV1StateMigration(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"xenorchestra": {
+						Source:            "vatesfr/xenorchestra",
+						VersionConstraint: "0.28.1",
+					},
+				},
+				Config: state.V1TestAccVmConfigWithWaitForIp(accTestPrefix, vmName, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, accDefaultSr.Id),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckNoResourceAttr(resourceName, "network.0.expected_ip_cidr"),
+					resource.TestCheckResourceAttr(resourceName, "wait_for_ip", "true"),
+				),
+			},
+			{
+				ProviderFactories: map[string]func() (*schema.Provider, error){
+					"xenorchestra": func() (*schema.Provider, error) {
+						return Provider(), nil
+					},
+				},
+				Config: testAccVmConfigWithWaitForIp(vmName, "0.0.0.0/0"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "network.0.expected_ip_cidr", "0.0.0.0/0"),
+					resource.TestCheckNoResourceAttr(resourceName, "wait_for_ip"),
+				),
+			},
+		},
+	})
+}
+
 func testAccVmExists(resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]
@@ -2067,7 +2108,7 @@ resource "xenorchestra_vm" "bar" {
 }
 
 func testAccVmConfig(vmName string) string {
-	return testAccVmConfigWithWaitForIp(vmName, "false")
+	return testAccVmConfigWithWaitForIp(vmName, "0.0.0.0/0")
 }
 
 func testAccVmConfigWithWaitForIp(vmName, expectedIpCidr string) string {
