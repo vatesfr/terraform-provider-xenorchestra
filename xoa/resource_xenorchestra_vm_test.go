@@ -1736,7 +1736,7 @@ func TestAccXenorchestraVm_createWithV0StateMigration(t *testing.T) {
 						VersionConstraint: "0.24.2",
 					},
 				},
-				Config: testAccVmConfigWithDeletionBlockedCommented(vmName, "false"),
+				Config: testAccVmConfigWithWaitForIp(vmName, "false"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -1811,7 +1811,7 @@ func TestAccXenorchestraVm_createWithV0StateMigration(t *testing.T) {
 						VersionConstraint: "0.25.1",
 					},
 				},
-				Config: testAccVmConfigWithDeletionBlockedCommented(vmName, "true"),
+				Config: testAccVmConfigWithWaitForIp(vmName, "true"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -2045,6 +2045,9 @@ func testAccVmConfig(vmName string) string {
 	return testAccVmConfigWithWaitForIp(vmName, "false")
 }
 
+// terraform configuration that can be used to block changes that should not destroy a VM.
+// While this doesn't integrate nicely with the sdk's test helpers (failure is vague), there
+// are some cases were options are limited (testing pinned provider versions).
 func testAccVmConfigWithDeletionBlocked(vmName, waitForIp string) string {
 	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
 data "xenorchestra_network" "network" {
@@ -2070,35 +2073,6 @@ resource "xenorchestra_vm" "bar" {
     }
     wait_for_ip  = %s
     blocked_operations = ["destroy"]
-}
-`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id, waitForIp)
-}
-
-func testAccVmConfigWithDeletionBlockedCommented(vmName, waitForIp string) string {
-	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
-data "xenorchestra_network" "network" {
-    name_label = "%s"
-    pool_id = "%s"
-}
-
-resource "xenorchestra_vm" "bar" {
-    memory_max = 4295000000
-    cpus  = 1
-    cloud_config = xenorchestra_cloud_config.bar.template
-    name_label = "%s"
-    name_description = "description"
-    template = data.xenorchestra_template.template.id
-    network {
-	network_id = data.xenorchestra_network.network.id
-    }
-
-    disk {
-      sr_id = "%s"
-      name_label = "disk 1"
-      size = 10001317888
-    }
-    wait_for_ip  = %s
-    # blocked_operations = ["destroy"]
 }
 `, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id, waitForIp)
 }
