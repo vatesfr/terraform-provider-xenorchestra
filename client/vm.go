@@ -770,7 +770,8 @@ func RemoveVmsWithNamePrefix(prefix string) func(string) error {
 						"id":                vm.Id,
 						"blockedOperations": blockedOperations,
 					}
-					err := c.Call("vm.set", params, &success)
+					client, _ := c.(*Client)
+					err := client.Call("vm.set", params, &success)
 
 					if err != nil {
 						log.Printf("error removing destroy block on vm `%s` during sweep: %s", vm.NameLabel, err)

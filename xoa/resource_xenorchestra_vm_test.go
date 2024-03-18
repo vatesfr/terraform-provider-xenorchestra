@@ -1724,7 +1724,7 @@ func TestAccXenorchestraVm_diskAndNetworkAttachmentIgnoredWhenHalted(t *testing.
 func TestAccXenorchestraVm_createWithV0StateMigration(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
