@@ -216,7 +216,7 @@ Required:
 Optional:
 
 - `attached` (Boolean) Whether the device should be attached to the VM.
-- `expected_ip_cidr` (String) Whether terraform should wait until IP addresses are present on the VM's network interfaces before considering it created. This only works if guest-tools are installed in the VM. Defaults to false.
+- `expected_ip_cidr` (String) Determines the IP cidr range terraform should watch for on this network interface. Resource creation is not complete until the IP address converges to the specified range. This only works if guest-tools are installed in the VM. Defaults to "", which skips IP address matching.
 - `mac_address` (String) The mac address of the network interface. This must be parsable by go's [net.ParseMAC function](https://golang.org/pkg/net/#ParseMAC). All mac addresses are stored in Terraform's state with [HardwareAddr's string representation](https://golang.org/pkg/net/#HardwareAddr.String) i.e. 00:00:5e:00:53:01
 
 Read-Only:

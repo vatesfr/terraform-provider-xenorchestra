@@ -2108,7 +2108,7 @@ resource "xenorchestra_vm" "bar" {
 }
 
 func testAccVmConfig(vmName string) string {
-	return testAccVmConfigWithWaitForIp(vmName, "0.0.0.0/0")
+	return testAccVmConfigWithWaitForIp(vmName, "")
 }
 
 func testAccVmConfigWithWaitForIp(vmName, expectedIpCidr string) string {

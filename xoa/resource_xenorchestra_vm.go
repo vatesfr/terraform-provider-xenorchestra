@@ -354,7 +354,7 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 					"expected_ip_cidr": &schema.Schema{
 						Type:        schema.TypeString,
 						Default:     "",
-						Description: "Whether terraform should wait until IP addresses are present on the VM's network interfaces before considering it created. This only works if guest-tools are installed in the VM. Defaults to false.",
+						Description: "Determines the IP cidr range terraform should watch for on this network interface. Resource creation is not complete until the IP address converges to the specified range. This only works if guest-tools are installed in the VM. Defaults to \"\", which skips IP address matching.",
 						Optional:    true,
 					},
 				},
