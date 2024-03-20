@@ -12,11 +12,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/vatesfr/terraform-provider-xenorchestra/client"
 	"github.com/vatesfr/terraform-provider-xenorchestra/xoa/internal"
 	"github.com/vatesfr/terraform-provider-xenorchestra/xoa/internal/state"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 var validVga = []string{
@@ -239,14 +239,14 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 		"ipv4_addresses": &schema.Schema{
 			Type:        schema.TypeList,
 			Computed:    true,
-			Description: "This is only accessible if guest-tools is installed in the VM and if `wait_for_ip` is set to true. This will contain a list of the ipv4 addresses across all network interfaces in order. See the example terraform code for more details.",
+			Description: "This is only accessible if guest-tools is installed in the VM and if `expected_ip_cidr` is set on any network interfaces. This will contain a list of the ipv4 addresses across all network interfaces in order. See the example terraform code for more details.",
 			Elem: &schema.Schema{
 				Type: schema.TypeString,
 			},
 		},
 		"ipv6_addresses": &schema.Schema{
 			Type:        schema.TypeList,
-			Description: "This is only accessible if guest-tools is installed in the VM and if `wait_for_ip` is set to true. This will contain a list of the ipv6 addresses across all network interfaces in order.",
+			Description: "This is only accessible if guest-tools is installed in the VM and if `expected_ip_cidr` is set on any network interfaces. This will contain a list of the ipv6 addresses across all network interfaces in order.",
 			Computed:    true,
 			Elem: &schema.Schema{
 				Type: schema.TypeString,
@@ -280,12 +280,6 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 		"host": &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
-		},
-		"wait_for_ip": &schema.Schema{
-			Type:        schema.TypeBool,
-			Default:     false,
-			Description: "Whether terraform should wait until IP addresses are present on the VM's network interfaces before considering it created. This only works if guest-tools are installed in the VM. Defaults to false.",
-			Optional:    true,
 		},
 		"cdrom": &schema.Schema{
 			Type:          schema.TypeList,
@@ -356,6 +350,12 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 						Elem: &schema.Schema{
 							Type: schema.TypeString,
 						},
+					},
+					"expected_ip_cidr": &schema.Schema{
+						Type:        schema.TypeString,
+						Default:     "",
+						Description: "Determines the IP cidr range terraform should watch for on this network interface. Resource creation is not complete until the IP address converges to the specified range. This only works if guest-tools are installed in the VM. Defaults to \"\", which skips IP address matching.",
+						Optional:    true,
 					},
 				},
 			},
@@ -465,10 +465,11 @@ This does not work in terraform since that is applied on Xen Orchestra's client 
 func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 	c := m.(client.XOClient)
 
-	network_maps := []map[string]string{}
+	vifsMap := []map[string]string{}
+	waitForIpsMap := map[string]string{}
 	networks := d.Get("network").([]interface{})
 
-	for _, network := range networks {
+	for index, network := range networks {
 		netMap, _ := network.(map[string]interface{})
 
 		netID := netMap["network_id"].(string)
@@ -477,12 +478,17 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		netMapToAdd := map[string]string{
 			"network": netID,
 		}
-		// We only add the mac address if it contains a value.
+		// Only add the mac address if it contains a value.
 		if macAddr != "" {
 			netMapToAdd["mac"] = getFormattedMac(macAddr)
 		}
 
-		network_maps = append(network_maps, netMapToAdd)
+		expectedCidr := netMap["expected_ip_cidr"].(string)
+		if expectedCidr != "" {
+			waitForIpsMap[strconv.Itoa(index)] = expectedCidr
+		}
+
+		vifsMap = append(vifsMap, netMapToAdd)
 	}
 
 	ds := []client.Disk{}
@@ -524,7 +530,7 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 
 	if installMethod := d.Get("installation_method").(string); installMethod != "" {
 		installation = client.Installation{
-			Method: "network",
+			Method:     "network",
 			Repository: "pxe",
 		}
 	}
@@ -570,9 +576,9 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		Installation: installation,
 		// TODO: (#145) Uncomment this once issues with secure_boot have been figured out
 		// SecureBoot:   d.Get("secure_boot").(bool),
-		VIFsMap:    network_maps,
+		VIFsMap:    vifsMap,
 		StartDelay: d.Get("start_delay").(int),
-		WaitForIps: d.Get("wait_for_ip").(bool),
+		WaitForIps: waitForIpsMap,
 		Videoram: client.Videoram{
 			Value: d.Get("videoram").(int),
 		},
@@ -682,9 +688,21 @@ func cdromsToMapList(disks []client.Disk) []map[string]interface{} {
 	return result
 }
 
-func vifsToMapList(vifs []client.VIF, guestNets []guestNetwork) []map[string]interface{} {
+func vifsToMapList(vifs []client.VIF, guestNets []guestNetwork, d *schema.ResourceData) []map[string]interface{} {
 	result := make([]map[string]interface{}, 0, len(vifs))
-	for _, vif := range vifs {
+
+	expectedCidrs := map[string]string{}
+
+	networks := d.Get("network").([]interface{})
+	for index, network := range networks {
+		netMap := network.(map[string]interface{})
+		expectedCidr := netMap["expected_ip_cidr"].(string)
+		if expectedCidr == "" {
+			continue
+		}
+		expectedCidrs[strconv.Itoa(index)] = expectedCidr
+	}
+	for index, vif := range vifs {
 		ipv6Addrs := []string{}
 		ipv4Addrs := []string{}
 		device, _ := strconv.Atoi(vif.Device)
@@ -700,6 +718,10 @@ func vifsToMapList(vifs []client.VIF, guestNets []guestNetwork) []map[string]int
 			"network_id":     vif.Network,
 			"ipv4_addresses": ipv4Addrs,
 			"ipv6_addresses": ipv6Addrs,
+		}
+
+		if cidr, ok := expectedCidrs[strconv.Itoa(index)]; ok {
+			vifMap["expected_ip_cidr"] = cidr
 		}
 		result = append(result, vifMap)
 	}
@@ -1174,11 +1196,15 @@ func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, cd
 	}
 
 	log.Printf("[DEBUG] Found the following ip addresses: %v\n", resource.Addresses)
-	networkIps := extractIpsFromNetworks(resource.Addresses)
-	nets := vifsToMapList(vifs, networkIps)
-	err := d.Set("network", nets)
+	networkIps, err := extractIpsFromNetworks(resource.Addresses)
 
 	if err != nil {
+		return err
+	}
+
+	nets := vifsToMapList(vifs, networkIps, d)
+	fmt.Printf("[INFO] Setting the vifsToMapList: %v\n", nets)
+	if err := d.Set("network", nets); err != nil {
 		return err
 	}
 
@@ -1418,10 +1444,10 @@ type guestNetwork map[string][]string
 //	    "ipv6": []string{"ip1", "ip2"}
 //	  },
 //	}
-func extractIpsFromNetworks(networks map[string]string) []guestNetwork {
+func extractIpsFromNetworks(networks map[string]string) ([]guestNetwork, error) {
 
 	if len(networks) < 1 {
-		return []guestNetwork{}
+		return []guestNetwork{}, nil
 	}
 
 	IP_REGEX := `^(\d+)\/(ip(?:v4|v6)?)(?:\/(\d+))?$`
@@ -1437,7 +1463,7 @@ func extractIpsFromNetworks(networks map[string]string) []guestNetwork {
 
 	matches := reg.FindStringSubmatch(last)
 	if matches == nil || len(matches) != 4 {
-		panic("this should never happen")
+		return nil, fmt.Errorf("received a malformed IP address field from XO api: line=%s regex matches=%v", last, matches)
 	}
 	cap, _ := strconv.Atoi(matches[1])
 	devices := make([]guestNetwork, 0, cap)
@@ -1463,7 +1489,7 @@ func extractIpsFromNetworks(networks map[string]string) []guestNetwork {
 		devices[deviceNum][proto] = append(devices[deviceNum][proto], networks[key])
 	}
 	log.Printf("[DEBUG] Extracted the following network interface ips: %v\n", devices)
-	return devices
+	return devices, nil
 }
 
 func suppressEquivalentMAC(k, old, new string, d *schema.ResourceData) (suppress bool) {

@@ -84,7 +84,6 @@ Read-Only:
 - `template` (String)
 - `vga` (String)
 - `videoram` (Number)
-- `wait_for_ip` (Boolean)
 - `xenstore` (Map of String)
 
 <a id="nestedobjatt--vms--disk"></a>
@@ -109,6 +108,7 @@ Read-Only:
 
 - `attached` (Boolean)
 - `device` (String)
+- `expected_ip_cidr` (String)
 - `ipv4_addresses` (List of String)
 - `ipv6_addresses` (List of String)
 - `mac_address` (String)

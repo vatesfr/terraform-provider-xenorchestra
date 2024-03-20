@@ -6,9 +6,9 @@ import (
 	"log"
 	"net"
 
-	"github.com/vatesfr/terraform-provider-xenorchestra/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/vatesfr/terraform-provider-xenorchestra/client"
 )
 
 var validVga = []string{
@@ -361,4 +361,82 @@ func suppressAttachedDiffWhenHalted(k, old, new string, d *schema.ResourceData) 
 	}
 	log.Printf("[DEBUG] VM '%s' attribute has transitioned from '%s' to '%s' when PowerState '%s'. Suppress diff: %t", k, old, new, powerState, suppress)
 	return
+}
+
+// Used for tests that require the schema of the provider <= v0.28.1
+func V1TestAccVmConfigWithWaitForIp(testPrefix, vmName, templateName, netName, poolId, srId string) string {
+	return fmt.Sprintf(`
+resource "xenorchestra_cloud_config" "bar" {
+    name = "%s-vm-template-%s"
+    template = "template" # should this be templated?
+}
+
+data "xenorchestra_template" "template" {
+    name_label = "%s"
+    pool_id = "%s"
+}
+
+data "xenorchestra_network" "network" {
+    name_label = "%s"
+    pool_id = "%s"
+}
+resource "xenorchestra_vm" "bar" {
+    memory_max = 4295000000
+    cpus  = 1
+    cloud_config = xenorchestra_cloud_config.bar.template
+    name_label = "%s"
+    name_description = "description"
+    template = data.xenorchestra_template.template.id
+    network {
+	network_id = data.xenorchestra_network.network.id
+    }
+    disk {
+      sr_id = "%s"
+      name_label = "disk 1"
+      size = 10001317888
+    }
+    wait_for_ip = true
+}
+`, testPrefix, vmName, templateName, poolId, netName, poolId, vmName, srId)
+}
+
+// terraform configuration that can be used to block changes that should not destroy a VM.
+// While this doesn't integrate nicely with the sdk's test helpers (failure is vague), there
+// are some cases were options are limited (testing pinned provider versions).
+func TestAccV1VmConfigWithDeletionBlocked(testPrefix, vmName, templateName, netName, poolId, srId, waitForIp string) string {
+	return fmt.Sprintf(`
+resource "xenorchestra_cloud_config" "bar" {
+    name = "%s-vm-template-%s"
+    template = "template" # should this be templated?
+}
+
+data "xenorchestra_template" "template" {
+    name_label = "%s"
+    pool_id = "%s"
+}
+data "xenorchestra_network" "network" {
+    name_label = "%s"
+    pool_id = "%s"
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 4295000000
+    cpus  = 1
+    cloud_config = xenorchestra_cloud_config.bar.template
+    name_label = "%s"
+    name_description = "description"
+    template = data.xenorchestra_template.template.id
+    network {
+	network_id = data.xenorchestra_network.network.id
+    }
+
+    disk {
+      sr_id = "%s"
+      name_label = "disk 1"
+      size = 10001317888
+    }
+    wait_for_ip  = %s
+    blocked_operations = ["destroy"]
+}
+	`, testPrefix, vmName, templateName, poolId, netName, poolId, vmName, srId, waitForIp)
 }

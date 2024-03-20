@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"strconv"
@@ -135,15 +136,17 @@ type Vm struct {
 	// These fields are used for passing in disk inputs when
 	// creating Vms, however, this is not a real field as far
 	// as the XO api or XAPI is concerned
-	Disks                          []Disk              `json:"-"`
-	CloudNetworkConfig             string              `json:"-"`
-	VIFsMap                        []map[string]string `json:"-"`
-	WaitForIps                     bool                `json:"-"`
-	Installation                   Installation        `json:"-"`
-	ManagementAgentDetected        bool                `json:"managementAgentDetected"`
-	PVDriversDetected              bool                `json:"pvDriversDetected"`
-	DestroyCloudConfigVdiAfterBoot bool                `json:"-"`
-	CloneType                      string              `json:"-"`
+	Disks              []Disk              `json:"-"`
+	CloudNetworkConfig string              `json:"-"`
+	VIFsMap            []map[string]string `json:"-"`
+	// Map where the key is the network interface index and the
+	// value is a cidr range parsable by net.ParseCIDR
+	WaitForIps                     map[string]string `json:"-"`
+	Installation                   Installation      `json:"-"`
+	ManagementAgentDetected        bool              `json:"managementAgentDetected"`
+	PVDriversDetected              bool              `json:"pvDriversDetected"`
+	DestroyCloudConfigVdiAfterBoot bool              `json:"-"`
+	CloneType                      string            `json:"-"`
 }
 
 type Installation struct {
@@ -603,58 +606,117 @@ func (c *Client) waitForVmState(id string, stateConf StateChangeConf) error {
 	return err
 }
 
-func (c *Client) waitForModifyVm(id string, desiredPowerState string, waitForIp bool, timeout time.Duration) error {
-	if !waitForIp {
-		var pending []string
-		target := desiredPowerState
-		switch desiredPowerState {
-		case RunningPowerState:
-			pending = []string{HaltedPowerState}
-		case HaltedPowerState:
-			pending = []string{RunningPowerState}
-		default:
-			return errors.New(fmt.Sprintf("Invalid VM power state requested: %s\n", desiredPowerState))
-		}
-		refreshFn := func() (result interface{}, state string, err error) {
-			vm, err := c.GetVm(Vm{Id: id})
+func waitForPowerStateReached(c *Client, vmId, desiredPowerState string, timeout time.Duration) error {
+	var pending []string
+	target := desiredPowerState
+	switch desiredPowerState {
+	case RunningPowerState:
+		pending = []string{HaltedPowerState}
+	case HaltedPowerState:
+		pending = []string{RunningPowerState}
+	default:
+		return errors.New(fmt.Sprintf("Invalid VM power state requested: %s\n", desiredPowerState))
+	}
+	refreshFn := func() (result interface{}, state string, err error) {
+		vm, err := c.GetVm(Vm{Id: vmId})
 
-			if err != nil {
-				return vm, "", err
+		if err != nil {
+			return vm, "", err
+		}
+
+		return vm, vm.PowerState, nil
+	}
+	stateConf := &StateChangeConf{
+		Pending: pending,
+		Refresh: refreshFn,
+		Target:  []string{target},
+		Timeout: timeout,
+	}
+	_, err := stateConf.WaitForState()
+	return err
+}
+
+type ifaceMatchCheck struct {
+	cidrRange  string
+	ifaceIdx   string
+	ifaceAddrs []string
+}
+
+func waitForIPAssignment(c *Client, vmId string, waitForIps map[string]string, timeout time.Duration) error {
+	var lastResult ifaceMatchCheck
+	refreshFn := func() (result interface{}, state string, err error) {
+		vm, err := c.GetVm(Vm{Id: vmId})
+
+		if err != nil {
+			return vm, "", err
+		}
+
+		addrs := vm.Addresses
+		if len(addrs) == 0 || vm.PowerState != RunningPowerState {
+			return addrs, "Waiting", nil
+		}
+
+		netIfaces := map[string][]string{}
+		for key, addr := range vm.Addresses {
+
+			// key has the following format "{iface_id}/(ipv4|ipv6)/{iface_ip_id}"
+			ifaceIdx, _, _ := strings.Cut(key, "/")
+			if _, ok := netIfaces[ifaceIdx]; !ok {
+				netIfaces[ifaceIdx] = []string{}
+			}
+			netIfaces[ifaceIdx] = append(netIfaces[ifaceIdx], addr)
+		}
+
+		for ifaceIdx, cidrRange := range waitForIps {
+			// VM's Addresses member does not contain this network interface yet
+			if _, ok := netIfaces[ifaceIdx]; !ok {
+				return addrs, "Waiting", nil
 			}
 
-			return vm, vm.PowerState, nil
+			found := false
+			for _, ipAddr := range netIfaces[ifaceIdx] {
+				_, ipNet, err := net.ParseCIDR(cidrRange)
+
+				if err != nil {
+					return addrs, "Waiting", err
+				}
+
+				if ipNet.Contains(net.ParseIP(ipAddr)) {
+					found = true
+				}
+			}
+
+			if !found {
+				lastResult = ifaceMatchCheck{
+					cidrRange:  cidrRange,
+					ifaceIdx:   ifaceIdx,
+					ifaceAddrs: netIfaces[ifaceIdx],
+				}
+
+				return addrs, "Waiting", nil
+			}
 		}
-		stateConf := &StateChangeConf{
-			Pending: pending,
-			Refresh: refreshFn,
-			Target:  []string{target},
-			Timeout: timeout,
-		}
-		_, err := stateConf.WaitForState()
-		return err
+
+		return addrs, "Ready", nil
+	}
+	stateConf := &StateChangeConf{
+		Pending: []string{"Waiting"},
+		Refresh: refreshFn,
+		Target:  []string{"Ready"},
+		Timeout: timeout,
+	}
+	_, err := stateConf.WaitForState()
+	if _, ok := err.(*TimeoutError); ok {
+		return errors.New(fmt.Sprintf("network[%s] never converged to the following cidr: %s, addresses: %s failed to match", lastResult.ifaceIdx, lastResult.cidrRange, lastResult.ifaceAddrs))
+	}
+	return err
+}
+
+func (c *Client) waitForModifyVm(id string, desiredPowerState string, waitForIps map[string]string, timeout time.Duration) error {
+	if len(waitForIps) == 0 {
+		return waitForPowerStateReached(c, id, desiredPowerState, timeout)
 	} else {
-		refreshFn := func() (result interface{}, state string, err error) {
-			vm, err := c.GetVm(Vm{Id: id})
-
-			if err != nil {
-				return vm, "", err
-			}
-
-			l := len(vm.Addresses)
-			if l == 0 || vm.PowerState != RunningPowerState {
-				return vm, "Waiting", nil
-			}
-
-			return vm, "Ready", nil
-		}
-		stateConf := &StateChangeConf{
-			Pending: []string{"Waiting"},
-			Refresh: refreshFn,
-			Target:  []string{"Ready"},
-			Timeout: timeout,
-		}
-		_, err := stateConf.WaitForState()
-		return err
+		return waitForIPAssignment(c, id, waitForIps, timeout)
 	}
 }
 

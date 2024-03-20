@@ -67,13 +67,14 @@ resource "xenorchestra_vm" "bar" {
     }
 }
 
-# vm resource that uses wait_for_ip
+# vm resource that waits until its first network interface
+# is assigned an IP via DHCP
 resource "xenorchestra_vm" "vm" {
   ...
-  wait_for_ip = true
   # Specify VM with two network interfaces
   network {
     ...
+    expected_ip_cidr = "10.0.0.0/16"
   }
   network {
     ...

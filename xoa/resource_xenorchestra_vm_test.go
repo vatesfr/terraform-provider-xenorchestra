@@ -10,10 +10,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/vatesfr/terraform-provider-xenorchestra/client"
 	"github.com/vatesfr/terraform-provider-xenorchestra/xoa/internal"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/vatesfr/terraform-provider-xenorchestra/xoa/internal/state"
 )
 
 func init() {
@@ -68,7 +70,7 @@ func Test_extractIpsFromNetworks(t *testing.T) {
 	for _, test := range tests {
 		expected := test.expected
 		nets := test.networks
-		actual := extractIpsFromNetworks(nets)
+		actual, _ := extractIpsFromNetworks(nets)
 
 		if len(expected) != len(actual) {
 			t.Errorf("expected '%+v' to have the same length as: %+v", expected, actual)
@@ -610,12 +612,36 @@ func TestAccXenorchestraVm_createWhenWaitingForIp(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
-					resource.TestCheckResourceAttr(resourceName, "wait_for_ip", "true"),
 					resource.TestMatchResourceAttr(resourceName, "ipv6_addresses.#", regex),
 					resource.TestCheckResourceAttrSet(resourceName, "ipv6_addresses.0"),
 					resource.TestMatchResourceAttr(resourceName, "network.0.ipv6_addresses.#", regex),
 					resource.TestCheckResourceAttrSet(resourceName, "network.0.ipv6_addresses.0"),
 				),
+			},
+		},
+	})
+}
+
+func TestAccXenorchestraVm_waitForIpFailed(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
+	regex := regexp.MustCompile(`[1-9]*`)
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigWithWaitForIp(vmName, "8.8.8.8/32"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestMatchResourceAttr(resourceName, "ipv6_addresses.#", regex),
+					resource.TestCheckResourceAttrSet(resourceName, "ipv6_addresses.0"),
+					resource.TestMatchResourceAttr(resourceName, "network.0.ipv6_addresses.#", regex),
+					resource.TestCheckResourceAttrSet(resourceName, "network.0.ipv6_addresses.0"),
+				),
+				ExpectError: regexp.MustCompile(`network\[0\] never converged to the following cidr: 8.8.8.8\/32`),
 			},
 		},
 	})
@@ -1377,7 +1403,7 @@ func TestAccXenorchestraVm_addVifAndRemoveVif(t *testing.T) {
 		CheckDestroy: testAccCheckXenorchestraVmDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccVmConfigWithWaitForIp(vmName, "true"),
+				Config: testAccVmConfigWithWaitForIp(vmName, "0.0.0.0/0"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -1736,7 +1762,7 @@ func TestAccXenorchestraVm_createWithV0StateMigration(t *testing.T) {
 						VersionConstraint: "0.24.2",
 					},
 				},
-				Config: testAccVmConfigWithWaitForIp(vmName, "false"),
+				Config: state.V1TestAccVmConfigWithWaitForIp(accTestPrefix, vmName, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, accDefaultSr.Id),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -1750,7 +1776,7 @@ func TestAccXenorchestraVm_createWithV0StateMigration(t *testing.T) {
 						VersionConstraint: "0.24.2",
 					},
 				},
-				Config: testAccVmConfigWithDeletionBlocked(vmName, "false"),
+				Config: state.TestAccV1VmConfigWithDeletionBlocked(accTestPrefix, vmName, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, accDefaultSr.Id, "false"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -1764,7 +1790,7 @@ func TestAccXenorchestraVm_createWithV0StateMigration(t *testing.T) {
 						VersionConstraint: "0.25.0",
 					},
 				},
-				Config: testAccVmConfigWithDeletionBlocked(vmName, "true"),
+				Config: state.TestAccV1VmConfigWithDeletionBlocked(accTestPrefix, vmName, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, accDefaultSr.Id, "true"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -1781,7 +1807,7 @@ func TestAccXenorchestraVm_createWithV0StateMigration(t *testing.T) {
 						VersionConstraint: "0.25.1",
 					},
 				},
-				Config: testAccVmConfigWithDeletionBlocked(vmName, "true"),
+				Config: state.TestAccV1VmConfigWithDeletionBlocked(accTestPrefix, vmName, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, accDefaultSr.Id, "true"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -1795,7 +1821,7 @@ func TestAccXenorchestraVm_createWithV0StateMigration(t *testing.T) {
 						VersionConstraint: "0.25.1",
 					},
 				},
-				Config: testAccVmConfigWithDeletionBlocked(vmName, "true"),
+				Config: state.TestAccV1VmConfigWithDeletionBlocked(accTestPrefix, vmName, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, accDefaultSr.Id, "true"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -1811,11 +1837,51 @@ func TestAccXenorchestraVm_createWithV0StateMigration(t *testing.T) {
 						VersionConstraint: "0.25.1",
 					},
 				},
-				Config: testAccVmConfigWithWaitForIp(vmName, "true"),
+				Config: state.V1TestAccVmConfigWithWaitForIp(accTestPrefix, vmName, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, accDefaultSr.Id),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccVmExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttr(resourceName, "destroy_cloud_config_vdi_after_boot", "false"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccXenorchestraVm_createWithV1StateMigration(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"xenorchestra": {
+						Source:            "vatesfr/xenorchestra",
+						VersionConstraint: "0.28.1",
+					},
+				},
+				Config: state.V1TestAccVmConfigWithWaitForIp(accTestPrefix, vmName, testTemplate.NameLabel, accDefaultNetwork.NameLabel, accTestPool.Id, accDefaultSr.Id),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckNoResourceAttr(resourceName, "network.0.expected_ip_cidr"),
+					resource.TestCheckResourceAttr(resourceName, "wait_for_ip", "true"),
+				),
+			},
+			{
+				ProviderFactories: map[string]func() (*schema.Provider, error){
+					"xenorchestra": func() (*schema.Provider, error) {
+						return Provider(), nil
+					},
+				},
+				Config: testAccVmConfigWithWaitForIp(vmName, "0.0.0.0/0"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "network.0.expected_ip_cidr", "0.0.0.0/0"),
+					resource.TestCheckNoResourceAttr(resourceName, "wait_for_ip"),
 				),
 			},
 		},
@@ -2042,13 +2108,10 @@ resource "xenorchestra_vm" "bar" {
 }
 
 func testAccVmConfig(vmName string) string {
-	return testAccVmConfigWithWaitForIp(vmName, "false")
+	return testAccVmConfigWithWaitForIp(vmName, "")
 }
 
-// terraform configuration that can be used to block changes that should not destroy a VM.
-// While this doesn't integrate nicely with the sdk's test helpers (failure is vague), there
-// are some cases were options are limited (testing pinned provider versions).
-func testAccVmConfigWithDeletionBlocked(vmName, waitForIp string) string {
+func testAccVmConfigWithWaitForIp(vmName, expectedIpCidr string) string {
 	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
 data "xenorchestra_network" "network" {
     name_label = "%s"
@@ -2064,6 +2127,7 @@ resource "xenorchestra_vm" "bar" {
     template = data.xenorchestra_template.template.id
     network {
 	network_id = data.xenorchestra_network.network.id
+	expected_ip_cidr = "%s"
     }
 
     disk {
@@ -2071,38 +2135,8 @@ resource "xenorchestra_vm" "bar" {
       name_label = "disk 1"
       size = 10001317888
     }
-    wait_for_ip  = %s
-    blocked_operations = ["destroy"]
 }
-`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id, waitForIp)
-}
-
-func testAccVmConfigWithWaitForIp(vmName, waitForIp string) string {
-	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
-data "xenorchestra_network" "network" {
-    name_label = "%s"
-    pool_id = "%s"
-}
-
-resource "xenorchestra_vm" "bar" {
-    memory_max = 4295000000
-    cpus  = 1
-    cloud_config = xenorchestra_cloud_config.bar.template
-    name_label = "%s"
-    name_description = "description"
-    template = data.xenorchestra_template.template.id
-    network {
-	network_id = data.xenorchestra_network.network.id
-    }
-
-    disk {
-      sr_id = "%s"
-      name_label = "disk 1"
-      size = 10001317888
-    }
-    wait_for_ip = %s
-}
-`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id, waitForIp)
+`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, expectedIpCidr, accDefaultSr.Id)
 }
 
 func testAccVmConfigFullClone(vmName string) string {
@@ -2163,7 +2197,7 @@ resource "xenorchestra_vm" "bar" {
 `, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id, powerState)
 }
 
-// This sets destroy_cloud_config_vdi_after_boot and wait_for_ip. The former is required for
+// This sets destroy_cloud_config_vdi_after_boot and expected_ip_cidr. The former is required for
 // the test expectations while the latter is to ensure the test holds its assertions until the
 // disk was actually deleted. The XO api uses the guest metrics to determine when it can remove
 // the disk, so an IP address allocation happens at the same time.
@@ -2184,9 +2218,9 @@ resource "xenorchestra_vm" "bar" {
     destroy_cloud_config_vdi_after_boot = true
     network {
 	network_id = data.xenorchestra_network.network.id
+	expected_ip_cidr = "0.0.0.0/0"
     }
     power_state = "%s"
-    wait_for_ip = true
 
     disk {
       sr_id = "%s"
@@ -2347,7 +2381,6 @@ data "xenorchestra_network" "network" {
 
 resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
-    wait_for_ip = true
     cpus  = 1
     cloud_config = xenorchestra_cloud_config.bar.template
     name_label = "%s"
@@ -2355,6 +2388,7 @@ resource "xenorchestra_vm" "bar" {
     template = data.xenorchestra_template.template.id
     network {
 	network_id = data.xenorchestra_network.network.id
+	expected_ip_cidr = "0.0.0.0/0"
     }
 
     disk {
@@ -2375,7 +2409,6 @@ data "xenorchestra_network" "network" {
 
 resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
-    wait_for_ip = true
     cpus  = 1
     cloud_config = xenorchestra_cloud_config.bar.template
     name_label = "%s"
@@ -2383,6 +2416,7 @@ resource "xenorchestra_vm" "bar" {
     template = data.xenorchestra_template.template.id
     network {
 	network_id = data.xenorchestra_network.network.id
+	expected_ip_cidr = "0.0.0.0/0"
     }
 
     disk {
@@ -2413,7 +2447,6 @@ data "xenorchestra_network" "network" {
 
 resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
-    wait_for_ip = true
     cpus  = 1
     cloud_config = xenorchestra_cloud_config.bar.template
     name_label = "%s"
@@ -2421,6 +2454,7 @@ resource "xenorchestra_vm" "bar" {
     template = data.xenorchestra_template.template.id
     network {
 	network_id = data.xenorchestra_network.network.id
+	expected_ip_cidr = "0.0.0.0/0"
     }
 
     disk {
