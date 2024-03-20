@@ -1470,6 +1470,31 @@ func TestAccXenorchestraVm_replaceExistingVifs(t *testing.T) {
 	})
 }
 
+func TestAccXenorchestraVm_createAllowsBlockedOperations(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigUpdateAttr(
+					vmName,
+					`
+                              blocked_operations = ["copy"]
+                            `),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "blocked_operations.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "blocked_operations.0", "copy"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccXenorchestraVm_updatesWithoutReboot(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 

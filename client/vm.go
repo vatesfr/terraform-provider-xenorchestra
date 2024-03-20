@@ -322,14 +322,6 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 		params["startDelay"] = startDelay
 	}
 
-	if len(vmReq.BlockedOperations) > 0 {
-		blockedOperations := map[string]string{}
-		for _, v := range vmReq.BlockedOperations {
-			blockedOperations[v] = "true"
-		}
-		params["blockedOperations"] = blockedOperations
-	}
-
 	if installation.Method != "" {
 		params["installation"] = map[string]string{
 			"method":     installation.Method,
@@ -361,12 +353,20 @@ func (c *Client) CreateVm(vmReq Vm, createTime time.Duration) (*Vm, error) {
 		return nil, err
 	}
 
-	xsParams := map[string]interface{}{
+	postCreateParams := map[string]interface{}{
 		"id":           vmId,
 		"xenStoreData": vmReq.XenstoreData,
 	}
+	if len(vmReq.BlockedOperations) > 0 {
+		blockedOperations := map[string]string{}
+		for _, v := range vmReq.BlockedOperations {
+			blockedOperations[v] = "true"
+		}
+		postCreateParams["blockedOperations"] = blockedOperations
+	}
+
 	var success bool
-	err = c.Call("vm.set", xsParams, &success)
+	err = c.Call("vm.set", postCreateParams, &success)
 
 	if err != nil {
 		return nil, err
