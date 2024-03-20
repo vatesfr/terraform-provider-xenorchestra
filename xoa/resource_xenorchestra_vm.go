@@ -1203,7 +1203,7 @@ func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, cd
 	}
 
 	nets := vifsToMapList(vifs, networkIps, d)
-	fmt.Printf("[INFO] Setting the vifsToMapList: %v\n", nets)
+	fmt.Printf("[DEBUG] Setting the vifsToMapList: %v\n", nets)
 	if err := d.Set("network", nets); err != nil {
 		return err
 	}
