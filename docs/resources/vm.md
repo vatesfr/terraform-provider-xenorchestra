@@ -135,7 +135,7 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 # Updating the VM to use 5 CPUs would stop/start the VM
 ```
 - `disk` (Block List, Min: 1) The disk the VM will have access to. (see [below for nested schema](#nestedblock--disk))
-- `memory_max` (Number) The amount of memory in bytes the VM will have. Updates to this field will case a stop and start of the VM if the new value is greater than the dynamic memory max. This can be determined with the following command:
+- `memory_max` (Number) The amount of static memory in bytes the VM will have. Updates to this field will case a stop and start of the VM if the new value is greater than the dynamic memory max. This can be determined with the following command:
 ```
 
 
@@ -178,6 +178,8 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 - `vga` (String) The video adapter the VM should use. Possible values include std and cirrus.
 - `videoram` (Number) The videoram option the VM should use. Possible values include 1, 2, 4, 8, 16
 - `xenstore` (Map of String) The key value pairs to be populated in xenstore.
+- `memory_dynamic_min` (Number) Dynamic minimum (bytes)
+- `memory_dynamic_max` (Number) Dynamic maximum (bytes)
 
 ### Read-Only
 
