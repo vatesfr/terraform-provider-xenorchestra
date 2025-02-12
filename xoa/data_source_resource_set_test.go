@@ -5,9 +5,9 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/vatesfr/terraform-provider-xenorchestra/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/vatesfr/xenorchestra-go-sdk/client"
 )
 
 var testResourceSetName string = "terraform-acc-data-source-test"

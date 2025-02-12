@@ -6,8 +6,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/vatesfr/terraform-provider-xenorchestra/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/vatesfr/xenorchestra-go-sdk/client"
 )
 
 var testObjectIndex int = 1

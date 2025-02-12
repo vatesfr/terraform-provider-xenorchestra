@@ -1,8 +1,8 @@
 package xoa
 
 import (
-	"github.com/vatesfr/terraform-provider-xenorchestra/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/vatesfr/xenorchestra-go-sdk/client"
 )
 
 // Until a user resource exists this just ensures that the user test sweeper

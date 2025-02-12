@@ -3,8 +3,8 @@ package internal
 import (
 	"errors"
 
-	"github.com/vatesfr/terraform-provider-xenorchestra/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/vatesfr/xenorchestra-go-sdk/client"
 )
 
 // failToStartAndHaltVmXOClient is a mock client used to ensure that HaltVm

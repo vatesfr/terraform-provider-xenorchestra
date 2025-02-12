@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/vatesfr/terraform-provider-xenorchestra/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/vatesfr/xenorchestra-go-sdk/client"
 )
 
 var netDefaultDesc string = "Created with Xen Orchestra"

@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/hashicorp/terraform-plugin-docs v0.18.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.34.0
-	github.com/vatesfr/terraform-provider-xenorchestra/client v0.0.0-00010101000000-000000000000
+	github.com/vatesfr/xenorchestra-go-sdk v1.0.0
 )
 
 require (
@@ -80,5 +80,3 @@ require (
 	google.golang.org/protobuf v1.34.0 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 )
-
-replace github.com/vatesfr/terraform-provider-xenorchestra/client => ./client

@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/vatesfr/terraform-provider-xenorchestra/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/vatesfr/xenorchestra-go-sdk/client"
 )
 
 func dataSourceXoaTemplate() *schema.Resource {
