@@ -8,7 +8,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
-	"github.com/vatesfr/terraform-provider-xenorchestra/client"
+	"github.com/vatesfr/xenorchestra-go-sdk/client"
 )
 
 var validVga = []string{

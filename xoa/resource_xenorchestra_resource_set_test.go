@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/vatesfr/terraform-provider-xenorchestra/client"
-	"github.com/vatesfr/terraform-provider-xenorchestra/xoa/internal"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/vatesfr/terraform-provider-xenorchestra/xoa/internal"
+	"github.com/vatesfr/xenorchestra-go-sdk/client"
 )
 
 var rsName string = fmt.Sprintf("%s-resource-set-resource", accTestPrefix)

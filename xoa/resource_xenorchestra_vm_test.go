@@ -13,9 +13,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/vatesfr/terraform-provider-xenorchestra/client"
 	"github.com/vatesfr/terraform-provider-xenorchestra/xoa/internal"
 	"github.com/vatesfr/terraform-provider-xenorchestra/xoa/internal/state"
+	"github.com/vatesfr/xenorchestra-go-sdk/client"
 )
 
 func init() {
