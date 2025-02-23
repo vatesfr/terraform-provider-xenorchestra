@@ -90,8 +90,8 @@ func resourceVmSchema() map[string]*schema.Schema {
 			Optional:    true,
 		},
 		"blocked_operations": &schema.Schema{
-			Type:        schema.TypeSet,
-			Description: "List of operations on a VM that are not permitted. Examples include: clean_reboot, clean_shutdown, hard_reboot, hard_shutdown, pause, shutdown, suspend, destroy. This can be used to prevent a VM from being destroyed. The entire list can be found here",
+			Type:        schema.TypeMap,
+			Description: "List of operations that should be blocked. Valid values include: start, start_on, clean_shutdown, clean_reboot, hard_shutdown, hard_reboot, suspend, pause, snapshot, destroy",
 			Optional:    true,
 			Elem: &schema.Schema{
 				Type: schema.TypeString,
@@ -288,7 +288,7 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 			ConflictsWith: []string{"installation_method"},
 			Elem: &schema.Resource{
 				Schema: map[string]*schema.Schema{
-					"id": &schema.Schema{
+					"id": {
 						Description: "The ID of the ISO (VDI) to attach to the VM. This can be easily provided by using the `vdi` data source.",
 						Type:        schema.TypeString,
 						Required:    true,
@@ -535,11 +535,6 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 
-	blockedOperations := map[string]string{}
-	for _, b := range d.Get("blocked_operations").(*schema.Set).List() {
-		blockedOperations[b.(string)] = "true"
-	}
-
 	var rs *client.FlatResourceSet
 	if rsId, ok := d.GetOk("resource_set"); ok {
 		rs = &client.FlatResourceSet{
@@ -547,7 +542,6 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 	createVmParams := client.Vm{
-		BlockedOperations: blockedOperations,
 		Boot: client.Boot{
 			Firmware: d.Get("hvm_boot_firmware").(string),
 		},
@@ -590,20 +584,55 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 	if affinityHost != "" {
 		createVmParams.AffinityHost = &affinityHost
 	}
-	vm, err := c.CreateVm(createVmParams, d.Timeout(schema.TimeoutCreate))
 
+	vm, err := c.CreateVm(createVmParams, d.Timeout(schema.TimeoutCreate))
 	if err != nil {
 		return err
 	}
+	d.SetId(vm.Id)
+
+	blockedOps := d.Get("blocked_operations").(map[string]any)
+	if len(blockedOps) > 0 {
+		newBlockedOps := make(map[string]string)
+		for op, val := range blockedOps {
+			switch v := val.(type) {
+			case bool:
+				newBlockedOps[op] = strconv.FormatBool(v)
+			case string:
+				newBlockedOps[op] = v
+			default:
+				return fmt.Errorf("unexpected type for blocked operation %s: %T", op, val)
+			}
+		}
+		params := map[string]any{
+			"id":                vm.Id,
+			"blockedOperations": newBlockedOps,
+			"xenStoreData": map[string]string{
+				"vm-data":                "blocked-operations-update",
+				"vm-data/mmio-hole-size": "268435456",
+			},
+		}
+
+		var success bool
+		err := c.(*client.Client).Call("vm.set", params, &success)
+		if err != nil {
+			return fmt.Errorf("failed to update vm blocked operations: %w", err)
+		}
+
+		// Refresh VM data
+		updatedVm, err := c.GetVm(client.Vm{Id: vm.Id})
+		if err != nil {
+			return fmt.Errorf("failed to refresh vm data: %w", err)
+		}
+		vm = updatedVm
+	}
 
 	vifs, err := c.GetVIFs(vm)
-
 	if err != nil {
 		return err
 	}
 
 	vmDisks, err := c.GetDisks(vm)
-
 	if err != nil {
 		return err
 	}
@@ -1263,13 +1292,11 @@ func filterXenstoreDataToVmData(xenstore map[string]interface{}) map[string]inte
 	return filtered
 }
 
-func vmBlockedOperationsToList(v client.Vm) []string {
-	blockedOperations := []string{}
-	for k, _ := range v.BlockedOperations {
-		blockedOperations = append(blockedOperations, k)
+func vmBlockedOperationsToList(vm client.Vm) map[string]string {
+	if len(vm.BlockedOperations) == 0 {
+		return nil
 	}
-
-	return blockedOperations
+	return vm.BlockedOperations
 }
 
 func diskHash(value interface{}) int {
