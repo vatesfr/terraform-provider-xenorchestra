@@ -607,6 +607,7 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		params := map[string]any{
 			"id":                vm.Id,
 			"blockedOperations": newBlockedOps,
+			// if xenStoreData isn't provided, the update will fail.
 			"xenStoreData": map[string]string{
 				"vm-data":                "blocked-operations-update",
 				"vm-data/mmio-hole-size": "268435456",
@@ -619,7 +620,6 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 			return fmt.Errorf("failed to update vm blocked operations: %w", err)
 		}
 
-		// Refresh VM data
 		updatedVm, err := c.GetVm(client.Vm{Id: vm.Id})
 		if err != nil {
 			return fmt.Errorf("failed to refresh vm data: %w", err)
