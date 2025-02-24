@@ -90,8 +90,8 @@ func resourceVmSchema() map[string]*schema.Schema {
 			Optional:    true,
 		},
 		"blocked_operations": &schema.Schema{
-			Type:        schema.TypeMap,
-			Description: "List of operations that should be blocked. Valid values include: start, start_on, clean_shutdown, clean_reboot, hard_shutdown, hard_reboot, suspend, pause, snapshot, destroy",
+			Type:        schema.TypeSet,
+			Description: "List of operations on a VM that are not permitted. Examples include: clean_reboot, clean_shutdown, hard_reboot, hard_shutdown, pause, shutdown, suspend, destroy. See: https://xapi-project.github.io/xen-api/classes/vm.html#enum_vm_operations",
 			Optional:    true,
 			Elem: &schema.Schema{
 				Type: schema.TypeString,
@@ -288,7 +288,7 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 			ConflictsWith: []string{"installation_method"},
 			Elem: &schema.Resource{
 				Schema: map[string]*schema.Schema{
-					"id": {
+					"id": &schema.Schema{
 						Description: "The ID of the ISO (VDI) to attach to the VM. This can be easily provided by using the `vdi` data source.",
 						Type:        schema.TypeString,
 						Required:    true,
@@ -591,19 +591,14 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 	}
 	d.SetId(vm.Id)
 
-	blockedOps := d.Get("blocked_operations").(map[string]any)
+	blockedOps := d.Get("blocked_operations").(*schema.Set).List()
 	if len(blockedOps) > 0 {
 		newBlockedOps := make(map[string]string)
-		for op, val := range blockedOps {
-			switch v := val.(type) {
-			case bool:
-				newBlockedOps[op] = strconv.FormatBool(v)
-			case string:
-				newBlockedOps[op] = v
-			default:
-				return fmt.Errorf("unexpected type for blocked operation %s: %T", op, val)
-			}
+		for _, op := range blockedOps {
+			operation := op.(string)
+			newBlockedOps[operation] = "true"
 		}
+
 		params := map[string]any{
 			"id":                vm.Id,
 			"blockedOperations": newBlockedOps,
@@ -1292,11 +1287,12 @@ func filterXenstoreDataToVmData(xenstore map[string]interface{}) map[string]inte
 	return filtered
 }
 
-func vmBlockedOperationsToList(vm client.Vm) map[string]string {
-	if len(vm.BlockedOperations) == 0 {
-		return nil
+func vmBlockedOperationsToList(vm client.Vm) []string {
+	blockedOperations := make([]string, 0, len(vm.BlockedOperations))
+	for op := range vm.BlockedOperations {
+		blockedOperations = append(blockedOperations, op)
 	}
-	return vm.BlockedOperations
+	return blockedOperations
 }
 
 func diskHash(value interface{}) int {
