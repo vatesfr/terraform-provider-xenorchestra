@@ -164,7 +164,7 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 
 - `affinity_host` (String) The preferred host you would like the VM to run on. If changed on an existing VM it will require a reboot for the VM to be rescheduled.
 - `auto_poweron` (Boolean) If the VM will automatically turn on. Defaults to `false`.
-- `blocked_operations` (Set of String) List of operations on a VM that are not permitted. Examples include: clean_reboot, clean_shutdown, hard_reboot, hard_shutdown, pause, shutdown, suspend, destroy. This can be used to prevent a VM from being destroyed. The entire list can be found here
+- `blocked_operations` (Set of String) List of operations on a VM that are not permitted. Examples include: clean_reboot, clean_shutdown, hard_reboot, hard_shutdown, pause, shutdown, suspend, destroy. See: https://xapi-project.github.io/xen-api/classes/vm.html#enum_vm_operations
 - `cdrom` (Block List, Max: 1) The ISO that should be attached to VM. This allows you to create a VM from a diskless template (any templates available from `xe template-list`) and install the OS from the following ISO. (see [below for nested schema](#nestedblock--cdrom))
 - `clone_type` (String) The type of clone to perform for the VM. Possible values include `fast` or `full` and defaults to `fast`. In order to perform a `full` clone, the VM template must not be a disk template.
 - `cloud_config` (String) The content of the cloud-init config to use. See the cloud init docs for more [information](https://cloudinit.readthedocs.io/en/latest/topics/examples.html).
