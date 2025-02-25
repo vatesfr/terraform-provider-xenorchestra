@@ -91,7 +91,7 @@ func resourceVmSchema() map[string]*schema.Schema {
 		},
 		"blocked_operations": &schema.Schema{
 			Type:        schema.TypeSet,
-			Description: "List of operations on a VM that are not permitted. Examples include: clean_reboot, clean_shutdown, hard_reboot, hard_shutdown, pause, shutdown, suspend, destroy. This can be used to prevent a VM from being destroyed. The entire list can be found here",
+			Description: "List of operations on a VM that are not permitted. Examples include: clean_reboot, clean_shutdown, hard_reboot, hard_shutdown, pause, shutdown, suspend, destroy. See: https://xapi-project.github.io/xen-api/classes/vm.html#enum_vm_operations",
 			Optional:    true,
 			Elem: &schema.Schema{
 				Type: schema.TypeString,
@@ -535,11 +535,6 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 
-	blockedOperations := map[string]string{}
-	for _, b := range d.Get("blocked_operations").(*schema.Set).List() {
-		blockedOperations[b.(string)] = "true"
-	}
-
 	var rs *client.FlatResourceSet
 	if rsId, ok := d.GetOk("resource_set"); ok {
 		rs = &client.FlatResourceSet{
@@ -547,7 +542,6 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 	createVmParams := client.Vm{
-		BlockedOperations: blockedOperations,
 		Boot: client.Boot{
 			Firmware: d.Get("hvm_boot_firmware").(string),
 		},
@@ -590,20 +584,41 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 	if affinityHost != "" {
 		createVmParams.AffinityHost = &affinityHost
 	}
-	vm, err := c.CreateVm(createVmParams, d.Timeout(schema.TimeoutCreate))
 
+	vm, err := c.CreateVm(createVmParams, d.Timeout(schema.TimeoutCreate))
 	if err != nil {
 		return err
 	}
+	d.SetId(vm.Id)
+
+	blockedOps := d.Get("blocked_operations").(*schema.Set).List()
+	if len(blockedOps) > 0 {
+		newBlockedOps := make(map[string]string)
+		for _, op := range blockedOps {
+			operation := op.(string)
+			newBlockedOps[operation] = "true"
+		}
+
+		params := map[string]any{
+			"id":                vm.Id,
+			"blockedOperations": newBlockedOps,
+		}
+
+		var success bool
+		err := c.(*client.Client).Call("vm.set", params, &success)
+		if err != nil {
+			return fmt.Errorf("failed to update vm blocked operations: %w", err)
+		}
+
+		vm.BlockedOperations = newBlockedOps
+	}
 
 	vifs, err := c.GetVIFs(vm)
-
 	if err != nil {
 		return err
 	}
 
 	vmDisks, err := c.GetDisks(vm)
-
 	if err != nil {
 		return err
 	}
@@ -1263,12 +1278,11 @@ func filterXenstoreDataToVmData(xenstore map[string]interface{}) map[string]inte
 	return filtered
 }
 
-func vmBlockedOperationsToList(v client.Vm) []string {
-	blockedOperations := []string{}
-	for k, _ := range v.BlockedOperations {
-		blockedOperations = append(blockedOperations, k)
+func vmBlockedOperationsToList(vm client.Vm) []string {
+	blockedOperations := make([]string, 0, len(vm.BlockedOperations))
+	for op := range vm.BlockedOperations {
+		blockedOperations = append(blockedOperations, op)
 	}
-
 	return blockedOperations
 }
 
