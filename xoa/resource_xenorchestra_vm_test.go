@@ -358,6 +358,51 @@ func TestAccXenorchestraVm_destroyCloudConfigRequiresRunningVm(t *testing.T) {
 	})
 }
 
+func TestAccXenorchestraVm_destroyCloudConfigRequiresRunningVmExceptIgnoring(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
+	stopVm := func() {
+		c, err := client.NewClient(client.GetConfigFromEnv())
+		if err != nil {
+			t.Fatalf("failed to create client with error: %v", err)
+		}
+
+		vm, err := c.GetVm(client.Vm{
+			NameLabel: vmName,
+		})
+
+		if err != nil {
+			t.Fatalf("failed to find VM with error: %v", err)
+		}
+
+		err = c.HaltVm(vm.Id)
+		if err != nil {
+			t.Fatalf("failed to delete VM with error: %v", err)
+		}
+	}
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigWithDestroyCloudConfigAfterBootIgnoringChanges(vmName, client.RunningPowerState),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "power_state", client.RunningPowerState),
+					resource.TestCheckResourceAttr(resourceName, "destroy_cloud_config_vdi_after_boot", "true")),
+			},
+			{
+				PreConfig:          stopVm,
+				Config:             testAccVmConfigWithDestroyCloudConfigAfterBootIgnoringChanges(vmName, client.RunningPowerState),
+				ExpectNonEmptyPlan: false,
+				PlanOnly:           true,
+			},
+		},
+	})
+}
+
 func TestAccXenorchestraVm_createWithPowerStateChanges(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
@@ -2226,6 +2271,42 @@ resource "xenorchestra_vm" "bar" {
       sr_id = "%s"
       name_label = "disk 1"
       size = 10001317888
+    }
+}
+`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, powerState, accDefaultSr.Id)
+}
+
+func testAccVmConfigWithDestroyCloudConfigAfterBootIgnoringChanges(vmName string, powerState string) string {
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
+data "xenorchestra_network" "network" {
+    name_label = "%s"
+    pool_id = "%s"
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 4295000000
+    cpus  = 1
+    cloud_config = xenorchestra_cloud_config.bar.template
+    name_label = "%s"
+    name_description = "description"
+    template = data.xenorchestra_template.template.id
+    destroy_cloud_config_vdi_after_boot = true
+    network {
+	network_id = data.xenorchestra_network.network.id
+	expected_ip_cidr = "0.0.0.0/0"
+    }
+    power_state = "%s"
+
+    disk {
+      sr_id = "%s"
+      name_label = "disk 1"
+      size = 10001317888
+    }
+
+    lifecycle {
+      ignore_changes = [
+        power_state
+      ]
     }
 }
 `, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, powerState, accDefaultSr.Id)
