@@ -74,9 +74,10 @@ func resourceVm() *schema.Resource {
 func vmDestroyCloudConfigCustomizeDiff(ctx context.Context, diff *schema.ResourceDiff, v interface{}) error {
 	destroyCloudConfig := diff.Get("destroy_cloud_config_vdi_after_boot").(bool)
 	powerState := diff.Get("power_state").(string)
+	powerStateChanged := diff.HasChange("power_state")
 
-	if destroyCloudConfig && powerState != client.RunningPowerState {
-		return errors.New(fmt.Sprintf("power_state must be `%s` when destroy_cloud_config_vdi_after_boot set to `true`", client.RunningPowerState))
+	if powerStateChanged && destroyCloudConfig && powerState != client.RunningPowerState {
+		return fmt.Errorf("power_state must be `%s` when destroy_cloud_config_vdi_after_boot set to `true`", client.RunningPowerState)
 	}
 	return nil
 }
