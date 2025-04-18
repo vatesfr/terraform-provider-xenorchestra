@@ -1,14 +1,13 @@
 package xoa
 
 import (
-	"errors"
-	"fmt"
 	"regexp"
-	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/vatesfr/xenorchestra-go-sdk/client"
+	"github.com/vatesfr/xenorchestra-go-sdk/pkg/config"
+	v2 "github.com/vatesfr/xenorchestra-go-sdk/v2"
 )
 
 var (
@@ -74,6 +73,7 @@ func Provider() *schema.Provider {
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"xenorchestra_acl":            resourceAcl(),
+			"xenorchestra_backup":         resourceBackup(),
 			"xenorchestra_bonded_network": resourceXoaBondedNetwork(),
 			"xenorchestra_cloud_config":   resourceCloudConfigRecord(),
 			"xenorchestra_network":        resourceXoaNetwork(),
@@ -82,6 +82,7 @@ func Provider() *schema.Provider {
 			"xenorchestra_vdi":            resourceVDIRecord(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
+			"xenorchestra_backup":       dataSourceXenorchestraBackup(),
 			"xenorchestra_cloud_config": dataSourceXoaCloudConfig(),
 			"xenorchestra_network":      dataSourceXoaNetwork(),
 			"xenorchestra_pif":          dataSourceXoaPIF(),
@@ -99,33 +100,11 @@ func Provider() *schema.Provider {
 	}
 }
 
-func xoaConfigure(d *schema.ResourceData) (interface{}, error) {
-	url := d.Get("url").(string)
-	username := d.Get("username").(string)
-	password := d.Get("password").(string)
-	token := d.Get("token").(string)
-	insecure := d.Get("insecure").(bool)
-	retryMode := d.Get("retry_mode").(string)
-	retryMaxTime := d.Get("retry_max_time").(string)
-
-	duration, err := time.ParseDuration(retryMaxTime)
+func xoaConfigure(d *schema.ResourceData) (any, error) {
+	v2Config, err := config.New()
 	if err != nil {
-		return client.Config{}, err
+		return nil, err
 	}
 
-	retry, ok := retryModeMap[retryMode]
-	if !ok {
-		return client.Config{}, errors.New(fmt.Sprintf("retry mode provided invalid: %s", retryMode))
-	}
-
-	config := client.Config{
-		Url:                url,
-		Username:           username,
-		Password:           password,
-		Token:              token,
-		InsecureSkipVerify: insecure,
-		RetryMode:          retry,
-		RetryMaxTime:       duration,
-	}
-	return client.NewClient(config)
+	return v2.New(v2Config)
 }
