@@ -7,6 +7,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/vatesfr/xenorchestra-go-sdk/client"
+	v2 "github.com/vatesfr/xenorchestra-go-sdk/v2"
 )
 
 var netDefaultDesc string = "Created with Xen Orchestra"
@@ -85,7 +86,7 @@ func resourceXoaNetwork() *schema.Resource {
 }
 
 func resourceNetworkCreate(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.XOClient)
+	c := m.(*v2.XOClient)
 
 	var pifId string
 	if sourcePIFDevice := d.Get("source_pif_device").(string); sourcePIFDevice != "" {
@@ -97,7 +98,7 @@ func resourceNetworkCreate(d *schema.ResourceData, m interface{}) error {
 		pifId = pif.Id
 	}
 
-	network, err := c.CreateNetwork(client.CreateNetworkRequest{
+	network, err := c.V1Client().CreateNetwork(client.CreateNetworkRequest{
 		Automatic:       d.Get("automatic").(bool),
 		DefaultIsLocked: d.Get("default_is_locked").(bool),
 		Name:            d.Get("name_label").(string),
@@ -121,8 +122,8 @@ func resourceNetworkCreate(d *schema.ResourceData, m interface{}) error {
 // This function returns the PIF specified the given device name on the pool's primary host. In order to create
 // networks with a VLAN, a PIF for the given device must be provided. Xen Orchestra uses the primary host's PIF
 // for this and so we emulate that behavior.
-func getNetworkCreationSourcePIF(c client.XOClient, pifDevice, poolId string) (*client.PIF, error) {
-	pools, err := c.GetPools(client.Pool{Id: poolId})
+func getNetworkCreationSourcePIF(c *v2.XOClient, pifDevice, poolId string) (*client.PIF, error) {
+	pools, err := c.V1Client().GetPools(client.Pool{Id: poolId})
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +133,7 @@ func getNetworkCreationSourcePIF(c client.XOClient, pifDevice, poolId string) (*
 	}
 
 	pool := pools[0]
-	pifs, err := c.GetPIF(client.PIF{
+	pifs, err := c.V1Client().GetPIF(client.PIF{
 		Host:   pool.Master,
 		Vlan:   -1,
 		Device: pifDevice,
@@ -150,9 +151,9 @@ func getNetworkCreationSourcePIF(c client.XOClient, pifDevice, poolId string) (*
 }
 
 // Returns the VLAN and device name for the given network.
-func getVlanForNetwork(c client.XOClient, net *client.Network) (int, string, error) {
+func getVlanForNetwork(c *v2.XOClient, net *client.Network) (int, string, error) {
 	if len(net.PIFs) > 0 {
-		pifs, err := c.GetPIF(client.PIF{Id: net.PIFs[0]})
+		pifs, err := c.V1Client().GetPIF(client.PIF{Id: net.PIFs[0]})
 		if err != nil {
 			return -1, "", err
 		}
@@ -166,8 +167,8 @@ func getVlanForNetwork(c client.XOClient, net *client.Network) (int, string, err
 }
 
 func resourceNetworkRead(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.XOClient)
-	net, err := c.GetNetwork(
+	c := m.(*v2.XOClient)
+	net, err := c.V1Client().GetNetwork(
 		client.Network{Id: d.Id()})
 
 	if _, ok := err.(client.NotFound); ok {
@@ -187,7 +188,7 @@ func resourceNetworkRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceNetworkUpdate(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.XOClient)
+	c := m.(*v2.XOClient)
 
 	netUpdateReq := client.UpdateNetworkRequest{
 		Id:              d.Id(),
@@ -203,7 +204,7 @@ func resourceNetworkUpdate(d *schema.ResourceData, m interface{}) error {
 		nameDescription := d.Get("name_description").(string)
 		netUpdateReq.NameDescription = &nameDescription
 	}
-	_, err := c.UpdateNetwork(netUpdateReq)
+	_, err := c.V1Client().UpdateNetwork(netUpdateReq)
 	if err != nil {
 		return err
 	}
@@ -211,9 +212,9 @@ func resourceNetworkUpdate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceNetworkDelete(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.XOClient)
+	c := m.(*v2.XOClient)
 
-	err := c.DeleteNetwork(d.Id())
+	err := c.V1Client().DeleteNetwork(d.Id())
 
 	if err != nil {
 		return err

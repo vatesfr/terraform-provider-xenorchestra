@@ -4,6 +4,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/vatesfr/xenorchestra-go-sdk/client"
+	v2 "github.com/vatesfr/xenorchestra-go-sdk/v2"
 )
 
 var validTypes = []string{
@@ -48,9 +49,9 @@ func resourceVDIRecord() *schema.Resource {
 }
 
 func resourceVDICreate(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.XOClient)
+	c := m.(*v2.XOClient)
 
-	vdi, err := c.CreateVDI(client.CreateVDIReq{
+	vdi, err := c.V1Client().CreateVDI(client.CreateVDIReq{
 		NameLabel: d.Get("name_label").(string),
 		SRId:      d.Get("sr_id").(string),
 		Filepath:  d.Get("filepath").(string),
@@ -64,9 +65,9 @@ func resourceVDICreate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceVDIRead(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.XOClient)
+	c := m.(*v2.XOClient)
 
-	vdi, err := c.GetVDI(client.VDI{VDIId: d.Id()})
+	vdi, err := c.V1Client().GetVDI(client.VDI{VDIId: d.Id()})
 
 	if _, ok := err.(client.NotFound); ok {
 		d.SetId("")
@@ -81,9 +82,9 @@ func resourceVDIRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceVDIUpdate(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.XOClient)
+	c := m.(*v2.XOClient)
 
-	err := c.UpdateVDI(client.Disk{
+	err := c.V1Client().UpdateVDI(client.Disk{
 		VDI: client.VDI{
 			VDIId:     d.Id(),
 			NameLabel: d.Get("name_label").(string),
@@ -93,7 +94,7 @@ func resourceVDIUpdate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	vdi, err := c.GetVDI(client.VDI{VDIId: d.Id()})
+	vdi, err := c.V1Client().GetVDI(client.VDI{VDIId: d.Id()})
 	if err != nil {
 		return err
 	}
@@ -102,9 +103,9 @@ func resourceVDIUpdate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceVDIDelete(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.XOClient)
+	c := m.(*v2.XOClient)
 
-	err := c.DeleteVDI(d.Id())
+	err := c.V1Client().DeleteVDI(d.Id())
 
 	if err != nil {
 		return err

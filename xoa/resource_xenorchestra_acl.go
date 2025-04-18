@@ -4,6 +4,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/vatesfr/xenorchestra-go-sdk/client"
+	v2 "github.com/vatesfr/xenorchestra-go-sdk/v2"
 )
 
 var validActionOptions = []string{
@@ -46,9 +47,9 @@ func resourceAcl() *schema.Resource {
 }
 
 func resourceAclCreate(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.XOClient)
+	c := m.(*v2.XOClient)
 
-	acl, err := c.CreateAcl(client.Acl{
+	acl, err := c.V1Client().CreateAcl(client.Acl{
 		Subject: d.Get("subject").(string),
 		Object:  d.Get("object").(string),
 		Action:  d.Get("action").(string),
@@ -60,9 +61,9 @@ func resourceAclCreate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceAclRead(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.XOClient)
+	c := m.(*v2.XOClient)
 
-	acl, err := c.GetAcl(client.Acl{
+	acl, err := c.V1Client().GetAcl(client.Acl{
 		Id: d.Id(),
 	})
 
@@ -79,9 +80,9 @@ func resourceAclRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceAclDelete(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.XOClient)
+	c := m.(*v2.XOClient)
 
-	err := c.DeleteAcl(client.Acl{
+	err := c.V1Client().DeleteAcl(client.Acl{
 		Id: d.Id(),
 	})
 

@@ -6,7 +6,7 @@ import (
 	"log"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/vatesfr/xenorchestra-go-sdk/client"
+	v2 "github.com/vatesfr/xenorchestra-go-sdk/v2"
 )
 
 func dataSourceXoaCloudConfig() *schema.Resource {
@@ -31,11 +31,11 @@ func dataSourceXoaCloudConfig() *schema.Resource {
 }
 
 func dataSourceCloudConfigRead(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.XOClient)
+	c := m.(*v2.XOClient)
 
 	name := d.Get("name").(string)
 
-	cloudConfigs, err := c.GetCloudConfigByName(name)
+	cloudConfigs, err := c.V1Client().GetCloudConfigByName(name)
 
 	if err != nil {
 		return err

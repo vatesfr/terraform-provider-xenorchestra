@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/vatesfr/terraform-provider-xenorchestra/xoa/internal"
 	"github.com/vatesfr/xenorchestra-go-sdk/client"
+	v2 "github.com/vatesfr/xenorchestra-go-sdk/v2"
 )
 
 func dataSourceXoaVms() *schema.Resource {
@@ -40,14 +41,14 @@ func dataSourceXoaVms() *schema.Resource {
 }
 
 func dataSourceVmsRead(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.XOClient)
+	c := m.(*v2.XOClient)
 	searchVm := client.Vm{
 		PowerState: d.Get("power_state").(string),
 		Host:       d.Get("host").(string),
 		PoolId:     d.Get("pool_id").(string),
 	}
 
-	vms, err := c.GetVms(searchVm)
+	vms, err := c.V1Client().GetVms(searchVm)
 	if err != nil {
 		return err
 	}

@@ -2,7 +2,7 @@ package xoa
 
 import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/vatesfr/xenorchestra-go-sdk/client"
+	v2 "github.com/vatesfr/xenorchestra-go-sdk/v2"
 )
 
 func resourceCloudConfigRecord() *schema.Resource {
@@ -33,9 +33,9 @@ func resourceCloudConfigRecord() *schema.Resource {
 }
 
 func resourceCloudConfigCreate(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.XOClient)
+	c := m.(*v2.XOClient)
 
-	cloud_config, err := c.CreateCloudConfig(d.Get("name").(string), d.Get("template").(string))
+	cloud_config, err := c.V1Client().CreateCloudConfig(d.Get("name").(string), d.Get("template").(string))
 	if err != nil {
 		return err
 	}
@@ -44,9 +44,9 @@ func resourceCloudConfigCreate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceCloudConfigRead(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.XOClient)
+	c := m.(*v2.XOClient)
 
-	cloud_config, err := c.GetCloudConfig(d.Id())
+	cloud_config, err := c.V1Client().GetCloudConfig(d.Id())
 	if err != nil {
 		return err
 	}
@@ -62,9 +62,9 @@ func resourceCloudConfigRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceCloudConfigDelete(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.XOClient)
+	c := m.(*v2.XOClient)
 
-	err := c.DeleteCloudConfig(d.Id())
+	err := c.V1Client().DeleteCloudConfig(d.Id())
 
 	if err != nil {
 		return err
@@ -75,9 +75,9 @@ func resourceCloudConfigDelete(d *schema.ResourceData, m interface{}) error {
 
 func CloudConfigImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
 
-	c := m.(client.XOClient)
+	c := m.(*v2.XOClient)
 
-	cloud_config, err := c.GetCloudConfig(d.Id())
+	cloud_config, err := c.V1Client().GetCloudConfig(d.Id())
 
 	if err != nil {
 		return nil, err

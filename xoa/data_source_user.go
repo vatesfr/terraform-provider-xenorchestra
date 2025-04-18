@@ -5,6 +5,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/vatesfr/xenorchestra-go-sdk/client"
+	v2 "github.com/vatesfr/xenorchestra-go-sdk/v2"
 )
 
 func dataSourceXoaUser() *schema.Resource {
@@ -28,7 +29,7 @@ func dataSourceXoaUser() *schema.Resource {
 }
 
 func dataSourceUserRead(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.XOClient)
+	c := m.(*v2.XOClient)
 
 	username := d.Get("username").(string)
 	searchInSession := d.Get("search_in_session").(bool)
@@ -36,9 +37,9 @@ func dataSourceUserRead(d *schema.ResourceData, m interface{}) error {
 	var user *client.User
 	var err error
 	if searchInSession {
-		user, err = c.GetCurrentUser()
+		user, err = c.V1Client().GetCurrentUser()
 	} else {
-		user, err = c.GetUser(client.User{
+		user, err = c.V1Client().GetUser(client.User{
 			Email: username,
 		})
 	}

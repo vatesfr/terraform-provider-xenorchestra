@@ -6,6 +6,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/vatesfr/xenorchestra-go-sdk/client"
+	v2 "github.com/vatesfr/xenorchestra-go-sdk/v2"
 )
 
 func dataSourceXoaStorageRepository() *schema.Resource {
@@ -62,7 +63,7 @@ Ensure that your name_label, pool_id and tags identify a unique storage reposito
 }
 
 func dataSourceStorageRepositoryRead(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.XOClient)
+	c := m.(*v2.XOClient)
 
 	nameLabel := d.Get("name_label").(string)
 	poolId := d.Get("pool_id").(string)
@@ -74,7 +75,7 @@ func dataSourceStorageRepositoryRead(d *schema.ResourceData, m interface{}) erro
 		Tags:      tagsFromInterfaceSlice(tags),
 	}
 
-	srs, err := c.GetStorageRepository(sr)
+	srs, err := c.V1Client().GetStorageRepository(sr)
 
 	if err != nil {
 		return err

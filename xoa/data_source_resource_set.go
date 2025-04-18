@@ -6,6 +6,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/vatesfr/xenorchestra-go-sdk/client"
+	v2 "github.com/vatesfr/xenorchestra-go-sdk/v2"
 )
 
 func dataSourceXoaResourceSet() *schema.Resource {
@@ -27,11 +28,11 @@ using the data source.`,
 }
 
 func dataSourceResourceSetRead(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.XOClient)
+	c := m.(*v2.XOClient)
 
 	name := d.Get("name").(string)
 
-	resourceSets, err := c.GetResourceSet(client.ResourceSet{Name: name})
+	resourceSets, err := c.V1Client().GetResourceSet(client.ResourceSet{Name: name})
 
 	if err != nil {
 		return err

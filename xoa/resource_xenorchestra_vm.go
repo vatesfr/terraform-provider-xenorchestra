@@ -17,6 +17,8 @@ import (
 	"github.com/vatesfr/terraform-provider-xenorchestra/xoa/internal"
 	"github.com/vatesfr/terraform-provider-xenorchestra/xoa/internal/state"
 	"github.com/vatesfr/xenorchestra-go-sdk/client"
+	v1 "github.com/vatesfr/xenorchestra-go-sdk/client"
+	v2 "github.com/vatesfr/xenorchestra-go-sdk/v2"
 )
 
 var validVga = []string{
@@ -464,7 +466,7 @@ This does not work in terraform since that is applied on Xen Orchestra's client 
 }
 
 func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.XOClient)
+	c := m.(*v2.XOClient)
 
 	vifsMap := []map[string]string{}
 	waitForIpsMap := map[string]string{}
@@ -586,7 +588,7 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		createVmParams.AffinityHost = &affinityHost
 	}
 
-	vm, err := c.CreateVm(createVmParams, d.Timeout(schema.TimeoutCreate))
+	vm, err := c.V1Client().CreateVm(createVmParams, d.Timeout(schema.TimeoutCreate))
 	if err != nil {
 		return err
 	}
@@ -606,7 +608,9 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		}
 
 		var success bool
-		err := c.(*client.Client).Call("vm.set", params, &success)
+		// This casting is necessary to have access to the Call method
+		legacyClient := c.V1Client().(*v1.Client)
+		err := legacyClient.Call("vm.set", params, &success)
 		if err != nil {
 			return fmt.Errorf("failed to update vm blocked operations: %w", err)
 		}
@@ -614,17 +618,17 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		vm.BlockedOperations = newBlockedOps
 	}
 
-	vifs, err := c.GetVIFs(vm)
+	vifs, err := c.V1Client().GetVIFs(vm)
 	if err != nil {
 		return err
 	}
 
-	vmDisks, err := c.GetDisks(vm)
+	vmDisks, err := c.V1Client().GetDisks(vm)
 	if err != nil {
 		return err
 	}
 
-	cdroms, err := c.GetCdroms(vm)
+	cdroms, err := c.V1Client().GetCdroms(vm)
 	if err != nil {
 		return err
 	}
@@ -746,9 +750,9 @@ func vifsToMapList(vifs []client.VIF, guestNets []guestNetwork, d *schema.Resour
 }
 
 func resourceVmRead(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.XOClient)
+	c := m.(*v2.XOClient)
 
-	vm, err := c.GetVm(client.Vm{Id: d.Id()})
+	vm, err := c.V1Client().GetVm(client.Vm{Id: d.Id()})
 
 	if _, ok := err.(client.NotFound); ok {
 		d.SetId("")
@@ -759,19 +763,19 @@ func resourceVmRead(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	vifs, err := c.GetVIFs(vm)
+	vifs, err := c.V1Client().GetVIFs(vm)
 
 	if err != nil {
 		return err
 	}
 
-	disks, err := c.GetDisks(vm)
+	disks, err := c.V1Client().GetDisks(vm)
 
 	if err != nil {
 		return err
 	}
 
-	cdroms, err := c.GetCdroms(vm)
+	cdroms, err := c.V1Client().GetCdroms(vm)
 	if err != nil {
 		return err
 	}
@@ -780,7 +784,7 @@ func resourceVmRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.XOClient)
+	c := m.(*v2.XOClient)
 
 	id := d.Id()
 	nameLabel := d.Get("name_label").(string)
@@ -797,7 +801,7 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 	}
 	memoryMax := d.Get("memory_max").(int)
 
-	vm, err := c.GetVm(client.Vm{Id: id})
+	vm, err := c.V1Client().GetVm(client.Vm{Id: id})
 
 	if err != nil {
 		return err
@@ -818,7 +822,7 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 				continue
 			} else {
 
-				vifErr := c.DeleteVIF(removal)
+				vifErr := c.V1Client().DeleteVIF(removal)
 
 				if vifErr != nil {
 					return vifErr
@@ -834,15 +838,15 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 			if updateVif {
 				switch shouldAttach {
 				case true:
-					vifErr = c.ConnectVIF(addition)
+					vifErr = c.V1Client().ConnectVIF(addition)
 				case false:
-					vifErr = c.DisconnectVIF(addition)
+					vifErr = c.V1Client().DisconnectVIF(addition)
 				}
 				if vifErr != nil {
 					return vifErr
 				}
 			} else {
-				_, vifErr := c.CreateVIF(vm, addition)
+				_, vifErr := c.V1Client().CreateVIF(vm, addition)
 
 				if vifErr != nil {
 					return vifErr
@@ -855,7 +859,7 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		oCds, nCds := d.GetChange("cdrom")
 
 		for range oCds.([]interface{}) {
-			err := c.EjectCd(id)
+			err := c.V1Client().EjectCd(id)
 
 			if err != nil {
 				return err
@@ -865,7 +869,7 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		for _, cd := range nCds.([]interface{}) {
 			cdMap := cd.(map[string]interface{})
 			cdId := cdMap["id"].(string)
-			err := c.InsertCd(id, cdId)
+			err := c.V1Client().InsertCd(id, cdId)
 
 			if err != nil {
 				return err
@@ -888,7 +892,7 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 				continue
 			}
 
-			if err := c.DeleteDisk(*vm, removal); err != nil {
+			if err := c.V1Client().DeleteDisk(*vm, removal); err != nil {
 				return err
 			}
 		}
@@ -901,7 +905,7 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 			log.Printf("[DEBUG] Found '%v' disk update actions\n", actions)
 
 			if len(actions) == 0 {
-				if _, err := c.CreateDisk(*vm, disk); err != nil {
+				if _, err := c.V1Client().CreateDisk(*vm, disk); err != nil {
 					return err
 				}
 				continue
@@ -909,7 +913,7 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 
 			for _, action := range actions {
 				log.Printf("[DEBUG] Updating disk with action '%d'\n", action)
-				if err := performDiskUpdateAction(c, action, disk); err != nil {
+				if err := performDiskUpdateAction(c.V1Client(), action, disk); err != nil {
 					return err
 				}
 			}
@@ -996,14 +1000,14 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 	haltPerformed := false
 
 	if haltForUpdates {
-		err := c.HaltVm(id)
+		err := c.V1Client().HaltVm(id)
 
 		if err != nil {
 			return err
 		}
 		haltPerformed = true
 	}
-	vm, err = c.UpdateVm(vmReq)
+	vm, err = c.V1Client().UpdateVm(vmReq)
 
 	if err != nil {
 		return err
@@ -1017,19 +1021,19 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 	if haltForUpdates || powerStateChanged {
 		switch newPowerState {
 		case client.PausedPowerState:
-			err := c.PauseVm(vmReq.Id)
+			err := c.V1Client().PauseVm(vmReq.Id)
 
 			if err != nil {
 				return err
 			}
 		case client.SuspendedPowerState:
-			err := c.SuspendVm(vmReq.Id)
+			err := c.V1Client().SuspendVm(vmReq.Id)
 
 			if err != nil {
 				return err
 			}
 		case client.RunningPowerState:
-			err := c.StartVm(vmReq.Id)
+			err := c.V1Client().StartVm(vmReq.Id)
 
 			if err != nil {
 				return err
@@ -1037,7 +1041,7 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		case client.HaltedPowerState:
 			// If the VM wasn't halted as part of the update, perform the halt now
 			if !haltPerformed {
-				err := c.HaltVm(id)
+				err := c.V1Client().HaltVm(id)
 
 				if err != nil {
 					return err
@@ -1053,14 +1057,14 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 
 		removals := oTags.Difference(nTags)
 		for _, removal := range removals.List() {
-			if err := c.RemoveTag(id, removal.(string)); err != nil {
+			if err := c.V1Client().RemoveTag(id, removal.(string)); err != nil {
 				return err
 			}
 		}
 
 		additions := nTags.Difference(oTags)
 		for _, addition := range additions.List() {
-			if err := c.AddTag(id, addition.(string)); err != nil {
+			if err := c.V1Client().AddTag(id, addition.(string)); err != nil {
 				return err
 			}
 		}
@@ -1070,9 +1074,9 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceVmDelete(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.XOClient)
+	c := m.(*v2.XOClient)
 
-	err := c.DeleteVm(d.Id())
+	err := c.V1Client().DeleteVm(d.Id())
 
 	if err != nil {
 		return err
@@ -1125,27 +1129,27 @@ func expandNetworks(networks []interface{}) []*client.VIF {
 }
 
 func RecordImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
-	c := m.(client.XOClient)
+	c := m.(*v2.XOClient)
 
-	vm, err := c.GetVm(client.Vm{Id: d.Id()})
+	vm, err := c.V1Client().GetVm(client.Vm{Id: d.Id()})
 	if err != nil {
 		return nil, err
 	}
 
 	rd := []*schema.ResourceData{d}
-	vifs, err := c.GetVIFs(vm)
+	vifs, err := c.V1Client().GetVIFs(vm)
 
 	if err != nil {
 		return rd, err
 	}
 
-	disks, err := c.GetDisks(vm)
+	disks, err := c.V1Client().GetDisks(vm)
 
 	if err != nil {
 		return rd, err
 	}
 
-	cdroms, err := c.GetCdroms(vm)
+	cdroms, err := c.V1Client().GetCdroms(vm)
 	if err != nil {
 		return rd, err
 	}
