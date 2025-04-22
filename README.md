@@ -6,7 +6,7 @@ This is a terraform provider for [Xen Orchestra](https://github.com/vatesfr/xen-
 
 The terraform provider is documented on the terraform registry [page](https://registry.terraform.io/providers/vatesfr/xenorchestra/latest)
 
-General documentaion about providers in terraform can be found at [the terraform documentation](https://www.terraform.io/docs/configuration/providers.html).
+General documentation about providers in terraform can be found at [the terraform documentation](https://www.terraform.io/docs/configuration/providers.html).
 
 ## Install
 
