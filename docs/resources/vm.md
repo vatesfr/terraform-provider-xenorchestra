@@ -191,8 +191,8 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 ### Read-Only
 
 - `id` (String) The ID of this resource.
-- `ipv4_addresses` (List of String) This is only accessible if guest-tools is installed in the VM and if `expected_ip_cidr` is set on any network interfaces. This will contain a list of the ipv4 addresses across all network interfaces in order. See the example terraform code for more details.
-- `ipv6_addresses` (List of String) This is only accessible if guest-tools is installed in the VM and if `expected_ip_cidr` is set on any network interfaces. This will contain a list of the ipv6 addresses across all network interfaces in order.
+- `ipv4_addresses` (List of String) This is only accessible if guest-tools is installed in the VM. While the output contains a list of ipv4 addresses, the presence of an IP address is only guaranteed if `expected_ip_cidr` is set for that interface. The list contains the ipv4 addresses across all network interfaces in order. See the example terraform code for more details.
+- `ipv6_addresses` (List of String) This is only accessible if guest-tools is installed in the VM. While the output contains a list of ipv6 addresses, the presence of an IP address is only guaranteed if `expected_ip_cidr` is set for that interface. The list contains the ipv6 addresses across all network interfaces in order.
 
 <a id="nestedblock--disk"></a>
 ### Nested Schema for `disk`
@@ -225,7 +225,7 @@ Required:
 Optional:
 
 - `attached` (Boolean) Whether the device should be attached to the VM.
-- `expected_ip_cidr` (String) Determines the IP cidr range terraform should watch for on this network interface. Resource creation is not complete until the IP address converges to the specified range. This only works if guest-tools are installed in the VM. Defaults to "", which skips IP address matching.
+- `expected_ip_cidr` (String) Determines the IP CIDR range the provider will wait for on this network interface. Resource creation is not complete until an IP address within the specified range becomes available. This parameter replaces the former `wait_for_ip` functionality. This only works if guest-tools are installed in the VM. Defaults to "", which skips IP address matching.
 - `mac_address` (String) The mac address of the network interface. This must be parsable by go's [net.ParseMAC function](https://golang.org/pkg/net/#ParseMAC). All mac addresses are stored in Terraform's state with [HardwareAddr's string representation](https://golang.org/pkg/net/#HardwareAddr.String) i.e. 00:00:5e:00:53:01
 
 Read-Only:
