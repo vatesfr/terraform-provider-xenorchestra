@@ -240,14 +240,14 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 		"ipv4_addresses": &schema.Schema{
 			Type:        schema.TypeList,
 			Computed:    true,
-			Description: "This is only accessible if guest-tools is installed in the VM and if `expected_ip_cidr` is set on any network interfaces. This will contain a list of the ipv4 addresses across all network interfaces in order. See the example terraform code for more details.",
+			Description: "This is only accessible if guest-tools is installed in the VM. While the output contains a list of ipv4 addresses, the presence of an IP address is only guaranteed if `expected_ip_cidr` is set for that interface. The list contains the ipv4 addresses across all network interfaces in order. See the example terraform code for more details.",
 			Elem: &schema.Schema{
 				Type: schema.TypeString,
 			},
 		},
 		"ipv6_addresses": &schema.Schema{
 			Type:        schema.TypeList,
-			Description: "This is only accessible if guest-tools is installed in the VM and if `expected_ip_cidr` is set on any network interfaces. This will contain a list of the ipv6 addresses across all network interfaces in order.",
+			Description: "This is only accessible if guest-tools is installed in the VM. While the output contains a list of ipv6 addresses, the presence of an IP address is only guaranteed if `expected_ip_cidr` is set for that interface. The list contains the ipv6 addresses across all network interfaces in order.",
 			Computed:    true,
 			Elem: &schema.Schema{
 				Type: schema.TypeString,
@@ -355,7 +355,7 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 					"expected_ip_cidr": &schema.Schema{
 						Type:        schema.TypeString,
 						Default:     "",
-						Description: "Determines the IP cidr range terraform should watch for on this network interface. Resource creation is not complete until the IP address converges to the specified range. This only works if guest-tools are installed in the VM. Defaults to \"\", which skips IP address matching.",
+						Description: "Determines the IP CIDR range the provider will wait for on this network interface. Resource creation is not complete until an IP address within the specified range becomes available. This parameter replaces the former `wait_for_ip` functionality. This only works if guest-tools are installed in the VM. Defaults to \"\", which skips IP address matching.",
 						Optional:    true,
 					},
 				},
