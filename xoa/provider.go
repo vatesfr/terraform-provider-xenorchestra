@@ -1,7 +1,9 @@
 package xoa
 
 import (
+	"fmt"
 	"regexp"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -101,7 +103,23 @@ func Provider() *schema.Provider {
 }
 
 func xoaConfigure(d *schema.ResourceData) (any, error) {
-	v2Config, err := config.New()
+	retryMaxTimeStr := d.Get("retry_max_time").(string)
+	retryMaxDuration, err := time.ParseDuration(retryMaxTimeStr)
+	if err != nil {
+		// This error should ideally not happen due to the ValidateFunc in the schema,
+		// but it's good practice to handle it.
+		return nil, fmt.Errorf("failed to parse retry_max_time '%s': %w", retryMaxTimeStr, err)
+	}
+
+	v2Config, err := config.NewWithValues(&config.Config{
+		Url:                d.Get("url").(string),
+		Username:           d.Get("username").(string),
+		Password:           d.Get("password").(string),
+		Token:              d.Get("token").(string),
+		InsecureSkipVerify: d.Get("insecure").(bool),
+		RetryMode:          config.ToRetryMode(d.Get("retry_mode").(string)),
+		RetryMaxTime:       retryMaxDuration, // Use the parsed duration
+	})
 	if err != nil {
 		return nil, err
 	}
