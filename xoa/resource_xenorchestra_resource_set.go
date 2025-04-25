@@ -6,6 +6,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/vatesfr/xenorchestra-go-sdk/client"
+	v2 "github.com/vatesfr/xenorchestra-go-sdk/v2"
 )
 
 var validLimitType []string = []string{"cpus", "disk", "memory"}
@@ -67,7 +68,7 @@ func resourceResourceSet() *schema.Resource {
 }
 
 func resourceSetCreate(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.XOClient)
+	c := m.(*v2.XOClient)
 
 	name := d.Get("name").(string)
 	limits := d.Get("limit").(*schema.Set)
@@ -96,7 +97,7 @@ func resourceSetCreate(d *schema.ResourceData, m interface{}) error {
 		setLimitByType(&rsReq, t, quantity)
 	}
 
-	rs, err := c.CreateResourceSet(rsReq)
+	rs, err := c.V1Client().CreateResourceSet(rsReq)
 
 	if err != nil {
 		return err
@@ -106,10 +107,10 @@ func resourceSetCreate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceSetRead(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.XOClient)
+	c := m.(*v2.XOClient)
 
 	id := d.Id()
-	rs, err := c.GetResourceSetById(id)
+	rs, err := c.V1Client().GetResourceSetById(id)
 	log.Printf("[DEBUG] Found resource set: %+v with error: %v\n", rs, err)
 
 	if _, ok := err.(client.NotFound); ok {
@@ -125,10 +126,10 @@ func resourceSetRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceSetUpdate(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.XOClient)
+	c := m.(*v2.XOClient)
 
 	id := d.Id()
-	rs, err := c.GetResourceSetById(id)
+	rs, err := c.V1Client().GetResourceSetById(id)
 	if d.HasChange("limit") {
 		old, new := d.GetChange("limit")
 
@@ -140,7 +141,7 @@ func resourceSetUpdate(d *schema.ResourceData, m interface{}) error {
 			limit := addition.(map[string]interface{})
 			t := limit["type"].(string)
 			quantity := limit["quantity"].(int)
-			err := c.AddResourceSetLimit(*rs, t, quantity)
+			err := c.V1Client().AddResourceSetLimit(*rs, t, quantity)
 
 			if err != nil {
 				return err
@@ -152,7 +153,7 @@ func resourceSetUpdate(d *schema.ResourceData, m interface{}) error {
 
 			limit := removal.(map[string]interface{})
 			t := limit["type"].(string)
-			err := c.RemoveResourceSetLimit(*rs, t)
+			err := c.V1Client().RemoveResourceSetLimit(*rs, t)
 
 			if err != nil {
 				return err
@@ -169,7 +170,7 @@ func resourceSetUpdate(d *schema.ResourceData, m interface{}) error {
 		additions := ns.Difference(os).List()
 		for _, addition := range additions {
 			subject := addition.(string)
-			err := c.AddResourceSetSubject(*rs, subject)
+			err := c.V1Client().AddResourceSetSubject(*rs, subject)
 
 			if err != nil {
 				return err
@@ -179,7 +180,7 @@ func resourceSetUpdate(d *schema.ResourceData, m interface{}) error {
 		removals := os.Difference(ns).List()
 		for _, removal := range removals {
 			subject := removal.(string)
-			err := c.RemoveResourceSetSubject(*rs, subject)
+			err := c.V1Client().RemoveResourceSetSubject(*rs, subject)
 
 			if err != nil {
 				return err
@@ -196,7 +197,7 @@ func resourceSetUpdate(d *schema.ResourceData, m interface{}) error {
 		additions := ns.Difference(os).List()
 		for _, addition := range additions {
 			subject := addition.(string)
-			err := c.AddResourceSetObject(*rs, subject)
+			err := c.V1Client().AddResourceSetObject(*rs, subject)
 
 			if err != nil {
 				return err
@@ -206,14 +207,14 @@ func resourceSetUpdate(d *schema.ResourceData, m interface{}) error {
 		removals := os.Difference(ns).List()
 		for _, removal := range removals {
 			object := removal.(string)
-			err := c.RemoveResourceSetObject(*rs, object)
+			err := c.V1Client().RemoveResourceSetObject(*rs, object)
 
 			if err != nil {
 				return err
 			}
 		}
 	}
-	rs, err = c.GetResourceSetById(id)
+	rs, err = c.V1Client().GetResourceSetById(id)
 
 	if err != nil {
 		return err
@@ -223,9 +224,9 @@ func resourceSetUpdate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceSetDelete(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.XOClient)
+	c := m.(*v2.XOClient)
 
-	err := c.DeleteResourceSet(client.ResourceSet{Id: d.Id()})
+	err := c.V1Client().DeleteResourceSet(client.ResourceSet{Id: d.Id()})
 
 	if err != nil {
 		return err

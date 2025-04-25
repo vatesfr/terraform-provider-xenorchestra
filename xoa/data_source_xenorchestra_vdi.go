@@ -6,6 +6,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/vatesfr/xenorchestra-go-sdk/client"
+	v2 "github.com/vatesfr/xenorchestra-go-sdk/v2"
 )
 
 func dataSourceXoaVDI() *schema.Resource {
@@ -44,7 +45,7 @@ Ensure that your name_label, pool_id and tags identify a unique VDI.`,
 }
 
 func dataSourceVDIRead(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.XOClient)
+	c := m.(*v2.XOClient)
 
 	id := d.Get("id").(string)
 	nameLabel := d.Get("name_label").(string)
@@ -58,7 +59,7 @@ func dataSourceVDIRead(d *schema.ResourceData, m interface{}) error {
 		Tags:      tagsFromInterfaceSlice(tags),
 	}
 
-	vdis, err := c.GetVDIs(vdi)
+	vdis, err := c.V1Client().GetVDIs(vdi)
 
 	if err != nil {
 		return err

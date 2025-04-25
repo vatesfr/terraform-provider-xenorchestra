@@ -1,7 +1,6 @@
 package xoa
 
 import (
-	"errors"
 	"fmt"
 	"regexp"
 	"time"
@@ -9,6 +8,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/vatesfr/xenorchestra-go-sdk/client"
+	"github.com/vatesfr/xenorchestra-go-sdk/pkg/config"
+	v2 "github.com/vatesfr/xenorchestra-go-sdk/v2"
 )
 
 var (
@@ -74,6 +75,7 @@ func Provider() *schema.Provider {
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"xenorchestra_acl":            resourceAcl(),
+			"xenorchestra_backup":         resourceBackup(),
 			"xenorchestra_bonded_network": resourceXoaBondedNetwork(),
 			"xenorchestra_cloud_config":   resourceCloudConfigRecord(),
 			"xenorchestra_network":        resourceXoaNetwork(),
@@ -82,6 +84,7 @@ func Provider() *schema.Provider {
 			"xenorchestra_vdi":            resourceVDIRecord(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
+			"xenorchestra_backup":       dataSourceXenorchestraBackup(),
 			"xenorchestra_cloud_config": dataSourceXoaCloudConfig(),
 			"xenorchestra_network":      dataSourceXoaNetwork(),
 			"xenorchestra_pif":          dataSourceXoaPIF(),
@@ -99,33 +102,27 @@ func Provider() *schema.Provider {
 	}
 }
 
-func xoaConfigure(d *schema.ResourceData) (interface{}, error) {
-	url := d.Get("url").(string)
-	username := d.Get("username").(string)
-	password := d.Get("password").(string)
-	token := d.Get("token").(string)
-	insecure := d.Get("insecure").(bool)
-	retryMode := d.Get("retry_mode").(string)
-	retryMaxTime := d.Get("retry_max_time").(string)
-
-	duration, err := time.ParseDuration(retryMaxTime)
+func xoaConfigure(d *schema.ResourceData) (any, error) {
+	retryMaxTimeStr := d.Get("retry_max_time").(string)
+	retryMaxDuration, err := time.ParseDuration(retryMaxTimeStr)
 	if err != nil {
-		return client.Config{}, err
+		// This error should ideally not happen due to the ValidateFunc in the schema,
+		// but it's good practice to handle it.
+		return nil, fmt.Errorf("failed to parse retry_max_time '%s': %w", retryMaxTimeStr, err)
 	}
 
-	retry, ok := retryModeMap[retryMode]
-	if !ok {
-		return client.Config{}, errors.New(fmt.Sprintf("retry mode provided invalid: %s", retryMode))
+	v2Config, err := config.NewWithValues(&config.Config{
+		Url:                d.Get("url").(string),
+		Username:           d.Get("username").(string),
+		Password:           d.Get("password").(string),
+		Token:              d.Get("token").(string),
+		InsecureSkipVerify: d.Get("insecure").(bool),
+		RetryMode:          config.ToRetryMode(d.Get("retry_mode").(string)),
+		RetryMaxTime:       retryMaxDuration, // Use the parsed duration
+	})
+	if err != nil {
+		return nil, err
 	}
 
-	config := client.Config{
-		Url:                url,
-		Username:           username,
-		Password:           password,
-		Token:              token,
-		InsecureSkipVerify: insecure,
-		RetryMode:          retry,
-		RetryMaxTime:       duration,
-	}
-	return client.NewClient(config)
+	return v2.New(v2Config)
 }

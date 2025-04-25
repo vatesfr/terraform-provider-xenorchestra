@@ -6,6 +6,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/vatesfr/xenorchestra-go-sdk/client"
+	v2 "github.com/vatesfr/xenorchestra-go-sdk/v2"
 )
 
 var validBondModes []string = []string{"balance-slb", "active-backup", "lacp"}
@@ -76,13 +77,13 @@ func resourceXoaBondedNetwork() *schema.Resource {
 }
 
 func resourceBondedNetworkCreate(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.XOClient)
+	c := m.(*v2.XOClient)
 
 	pifsReq := []string{}
 	for _, pif := range d.Get("pif_ids").([]interface{}) {
 		pifsReq = append(pifsReq, pif.(string))
 	}
-	network, err := c.CreateBondedNetwork(client.CreateBondedNetworkRequest{
+	network, err := c.V1Client().CreateBondedNetwork(client.CreateBondedNetworkRequest{
 		Automatic:       d.Get("automatic").(bool),
 		DefaultIsLocked: d.Get("default_is_locked").(bool),
 		BondMode:        d.Get("bond_mode").(string),
@@ -102,8 +103,8 @@ func resourceBondedNetworkCreate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceBondedNetworkRead(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.XOClient)
-	network, err := c.GetNetwork(
+	c := m.(*v2.XOClient)
+	network, err := c.V1Client().GetNetwork(
 		client.Network{Id: d.Id()})
 
 	if _, ok := err.(client.NotFound); ok {
@@ -122,7 +123,7 @@ func resourceBondedNetworkRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceBondedNetworkUpdate(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.XOClient)
+	c := m.(*v2.XOClient)
 
 	netUpdateReq := client.UpdateNetworkRequest{
 		Id:              d.Id(),
@@ -137,7 +138,7 @@ func resourceBondedNetworkUpdate(d *schema.ResourceData, m interface{}) error {
 		nameDescription := d.Get("name_description").(string)
 		netUpdateReq.NameDescription = &nameDescription
 	}
-	_, err := c.UpdateNetwork(netUpdateReq)
+	_, err := c.V1Client().UpdateNetwork(netUpdateReq)
 	if err != nil {
 		return err
 	}
@@ -145,9 +146,9 @@ func resourceBondedNetworkUpdate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceBondedNetworkDelete(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.XOClient)
+	c := m.(*v2.XOClient)
 
-	err := c.DeleteNetwork(d.Id())
+	err := c.V1Client().DeleteNetwork(d.Id())
 
 	if err != nil {
 		return err

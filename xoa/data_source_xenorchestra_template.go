@@ -6,6 +6,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/vatesfr/xenorchestra-go-sdk/client"
+	v2 "github.com/vatesfr/xenorchestra-go-sdk/v2"
 )
 
 func dataSourceXoaTemplate() *schema.Resource {
@@ -36,7 +37,7 @@ Ensure that your name_label and pool_id identify a unique template.`,
 }
 
 func dataSourceTemplateRead(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.XOClient)
+	c := m.(*v2.XOClient)
 
 	nameLabel := d.Get("name_label").(string)
 	poolId := d.Get("pool_id").(string)
@@ -45,7 +46,7 @@ func dataSourceTemplateRead(d *schema.ResourceData, m interface{}) error {
 		NameLabel: nameLabel,
 		PoolId:    poolId,
 	}
-	templates, err := c.GetTemplate(templateReq)
+	templates, err := c.V1Client().GetTemplate(templateReq)
 
 	if err != nil {
 		return err

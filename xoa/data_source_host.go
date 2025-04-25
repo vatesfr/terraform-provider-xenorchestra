@@ -6,6 +6,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/vatesfr/xenorchestra-go-sdk/client"
+	v2 "github.com/vatesfr/xenorchestra-go-sdk/v2"
 )
 
 func dataSourceXoaHost() *schema.Resource {
@@ -71,9 +72,9 @@ func resourceHostSchema() map[string]*schema.Schema {
 }
 
 func dataSourceHostRead(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.XOClient)
+	c := m.(*v2.XOClient)
 	nameLabel := d.Get("name_label").(string)
-	hosts, err := c.GetHostByName(nameLabel)
+	hosts, err := c.V1Client().GetHostByName(nameLabel)
 
 	if err != nil {
 		return err

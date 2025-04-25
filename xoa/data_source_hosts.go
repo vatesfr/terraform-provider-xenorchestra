@@ -5,6 +5,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/vatesfr/xenorchestra-go-sdk/client"
+	v2 "github.com/vatesfr/xenorchestra-go-sdk/v2"
 )
 
 func dataSourceXoaHosts() *schema.Resource {
@@ -44,18 +45,18 @@ func dataSourceXoaHosts() *schema.Resource {
 }
 
 func dataSourceHostsRead(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.XOClient)
+	c := m.(*v2.XOClient)
 	poolId := d.Get("pool_id").(string)
 	tags := d.Get("tags").(*schema.Set).List()
 
-	pool, err := c.GetPools(client.Pool{Id: poolId})
+	pool, err := c.V1Client().GetPools(client.Pool{Id: poolId})
 	if err != nil {
 		return err
 	}
 	searchHost := client.Host{
 		Pool: pool[0].Id,
 		Tags: tags}
-	hosts, err := c.GetSortedHosts(searchHost, d.Get("sort_by").(string), d.Get("sort_order").(string))
+	hosts, err := c.V1Client().GetSortedHosts(searchHost, d.Get("sort_by").(string), d.Get("sort_order").(string))
 
 	log.Printf("[DEBUG] found the following hosts: %+v", hosts)
 	if err != nil {

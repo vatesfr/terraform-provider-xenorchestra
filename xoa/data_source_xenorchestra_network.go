@@ -3,6 +3,7 @@ package xoa
 import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/vatesfr/xenorchestra-go-sdk/client"
+	v2 "github.com/vatesfr/xenorchestra-go-sdk/v2"
 )
 
 func dataSourceXoaNetwork() *schema.Resource {
@@ -33,12 +34,12 @@ func dataSourceXoaNetwork() *schema.Resource {
 }
 
 func dataSourceNetworkRead(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.XOClient)
+	c := m.(*v2.XOClient)
 
 	nameLabel := d.Get("name_label").(string)
 	poolId := d.Get("pool_id").(string)
 
-	net, err := c.GetNetwork(client.Network{
+	net, err := c.V1Client().GetNetwork(client.Network{
 		NameLabel: nameLabel,
 		PoolId:    poolId,
 	})

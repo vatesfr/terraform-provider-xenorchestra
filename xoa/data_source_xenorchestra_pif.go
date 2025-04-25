@@ -6,6 +6,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/vatesfr/xenorchestra-go-sdk/client"
+	v2 "github.com/vatesfr/xenorchestra-go-sdk/v2"
 )
 
 func dataSourceXoaPIF() *schema.Resource {
@@ -62,7 +63,7 @@ Ensure that your device, vlan, host_id and other arguments identify a unique PIF
 }
 
 func dataSourcePIFRead(d *schema.ResourceData, m interface{}) error {
-	c := m.(client.XOClient)
+	c := m.(*v2.XOClient)
 
 	device := d.Get("device").(string)
 	vlan := d.Get("vlan").(int)
@@ -74,7 +75,7 @@ func dataSourcePIFRead(d *schema.ResourceData, m interface{}) error {
 		Host:   host,
 	}
 
-	pifs, err := c.GetPIF(pifReq)
+	pifs, err := c.V1Client().GetPIF(pifReq)
 
 	if err != nil {
 		return err
