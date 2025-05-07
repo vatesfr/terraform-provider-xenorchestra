@@ -99,7 +99,7 @@ func setBackupData(d *schema.ResourceData, backup any) error {
 	d.Set("enabled", b.Enabled)
 	d.Set("vms", b.VMs)
 
-	settings := map[string]interface{}{
+	settings := map[string]any{
 		"compression_enabled":   b.Settings.CompressionEnabled,
 		"offline_backup":        b.Settings.OfflineBackup,
 		"checkpoint_snapshot":   b.Settings.CheckpointSnapshot,
