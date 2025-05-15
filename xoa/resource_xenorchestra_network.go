@@ -190,10 +190,9 @@ func resourceNetworkUpdate(d *schema.ResourceData, m interface{}) error {
 	c := m.(client.XOClient)
 
 	netUpdateReq := client.UpdateNetworkRequest{
-		Id:              d.Id(),
-		Automatic:       d.Get("automatic").(bool),
-		DefaultIsLocked: d.Get("default_is_locked").(bool),
-		Nbd:             d.Get("nbd").(bool),
+		Id:        d.Id(),
+		Automatic: d.Get("automatic").(bool),
+		Nbd:       d.Get("nbd").(bool),
 	}
 	if d.HasChange("name_label") {
 		nameLabel := d.Get("name_label").(string)
@@ -202,6 +201,10 @@ func resourceNetworkUpdate(d *schema.ResourceData, m interface{}) error {
 	if d.HasChange("name_description") {
 		nameDescription := d.Get("name_description").(string)
 		netUpdateReq.NameDescription = &nameDescription
+	}
+	if d.HasChange("default_is_locked") {
+		defaultIsLocked := d.Get("default_is_locked").(bool)
+		netUpdateReq.DefaultIsLocked = &defaultIsLocked
 	}
 	_, err := c.UpdateNetwork(netUpdateReq)
 	if err != nil {
