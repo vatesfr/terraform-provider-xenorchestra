@@ -57,6 +57,26 @@ Ensure that your device, vlan, host_id and other arguments identify a unique PIF
 				Required:    true,
 				Description: "The VLAN the PIF belongs to.",
 			},
+
+			"bond_slaves": &schema.Schema{
+				Type: schema.TypeList,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+				Optional:    true,
+				ForceNew:    true,
+				Description: "In case of bonded, the pifs (uuid) that should be used for this bonded network.",
+			},
+			"is_bond_master": &schema.Schema{
+				Type:        schema.TypeBool,
+				Computed:    true,
+				Description: "True if this PIF is a bond master.",
+			},
+			"is_bond_slave": &schema.Schema{
+				Type:        schema.TypeBool,
+				Computed:    true,
+				Description: "True if this PIF is a bond slave.",
+			},
 		},
 	}
 }
@@ -95,5 +115,8 @@ func dataSourcePIFRead(d *schema.ResourceData, m interface{}) error {
 	d.Set("pool_id", pif.PoolId)
 	d.Set("network", pif.Network)
 	d.Set("vlan", pif.Vlan)
+	d.Set("bond_slaves", pif.BondSlaves)
+	d.Set("is_bond_master", pif.IsBondMaster)
+	d.Set("is_bond_slave", pif.IsBondSlave)
 	return nil
 }

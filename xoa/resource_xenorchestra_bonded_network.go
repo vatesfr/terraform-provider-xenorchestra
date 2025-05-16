@@ -118,6 +118,32 @@ func resourceBondedNetworkRead(d *schema.ResourceData, m interface{}) error {
 	if len(network.PIFs) < 1 {
 		return errors.New("network should contain more than one PIF")
 	}
+
+	// Get the pif_ids from the PIFS[0].BondSlaves
+	// FIXME: Check if it's ok to use the first PIF
+	bondPif, err := c.GetPIF(client.PIF{Id: network.PIFs[0]})
+	if err != nil {
+		return err
+	}
+	pifs := []string{}
+	for _, pif := range bondPif[0].BondSlaves {
+		pifs = append(pifs, pif)
+	}
+	if err := d.Set("pif_ids", pifs); err != nil {
+		return err
+	}
+
+	// Get bond mode from the master pif
+	//FIXME: Check if master pif works for other mode of bonding
+	for _, pif := range bondPif {
+		if pif.IsBondMaster {
+			bond, err := c.GetBond(client.Bond{Id: pif.Id})
+			if err != nil {
+				return err
+			}
+			d.Set("bond_mode", bond.Mode)
+		}
+	}
 	return bondedNetworkToData(network, d)
 }
 
