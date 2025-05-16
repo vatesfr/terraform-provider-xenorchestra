@@ -18,7 +18,7 @@ func resourceXoaBondedNetwork() *schema.Resource {
 		Read:        resourceBondedNetworkRead,
 		Update:      resourceBondedNetworkUpdate,
 		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
+			State: resourceBondedNetworkImport,
 		},
 		Schema: map[string]*schema.Schema{
 			"automatic": &schema.Schema{
@@ -49,12 +49,14 @@ func resourceXoaBondedNetwork() *schema.Resource {
 				},
 				Optional:    true,
 				ForceNew:    true,
-				Description: "The pifs (uuid) that should be used for this network.",
+				Computed:    true,
+				Description: "The PIFs (uuid) that should be used for this network.",
 			},
 			"bond_mode": &schema.Schema{
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
+				Computed:     true,
 				Description:  "The bond mode that should be used for this network.",
 				ValidateFunc: validation.StringInSlice(validBondModes, false),
 			},
@@ -157,6 +159,46 @@ func resourceBondedNetworkDelete(d *schema.ResourceData, m interface{}) error {
 	}
 	d.SetId("")
 	return nil
+}
+
+// Custom importer to populate pif_ids from BondSlaves of the network's main PIF
+func resourceBondedNetworkImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+	c := m.(client.XOClient)
+	network, err := c.GetNetwork(client.Network{Id: d.Id()})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(network.PIFs) < 1 {
+		return nil, errors.New("network should contain more than one PIF")
+	}
+
+	// Get the bonded pifs and bond mode from the master pif
+	for _, pifID := range network.PIFs {
+		bondPifs, err := c.GetPIF(client.PIF{Id: pifID})
+		if err != nil {
+			return nil, err
+		}
+		if len(bondPifs) < 1 {
+			return nil, errors.New("no PIF returned for ID: %s" + pifID)
+		}
+		if bondPifs[0].IsBondMaster {
+			if err := d.Set("pif_ids", bondPifs[0].BondSlaves); err != nil {
+				return nil, err
+			}
+			bond, err := c.GetBond(client.Bond{Master: bondPifs[0].Id})
+			if err != nil {
+				return nil, err
+			}
+			d.Set("bond_mode", bond.Mode)
+			break
+		}
+	}
+
+	if err := bondedNetworkToData(network, d); err != nil {
+		return nil, err
+	}
+	return []*schema.ResourceData{d}, nil
 }
 
 func bondedNetworkToData(network *client.Network, d *schema.ResourceData) error {
