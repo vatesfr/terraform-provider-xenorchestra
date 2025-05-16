@@ -1,6 +1,6 @@
 module github.com/vatesfr/terraform-provider-xenorchestra
 
-go 1.24
+go 1.24.0
 
 // TODO: Remove this once the xenorchestra-go-sdk is updated
 replace github.com/vatesfr/xenorchestra-go-sdk => ../xenorchestra-go-sdk

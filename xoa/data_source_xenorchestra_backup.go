@@ -2,6 +2,7 @@ package xoa
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/vatesfr/xenorchestra-go-sdk/pkg/payloads"
@@ -16,13 +17,14 @@ func dataSourceXenorchestraBackup() *schema.Resource {
 			"id": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "The ID of the backup job.",
+				Description: "The ID of the backup job. Required if `name` is not set.",
 				Computed:    true,
 			},
 			"name": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "The name of the backup job.",
+				Description: "The name of the backup job. Required if `id` is not set.",
+				Computed:    true,
 			},
 			"mode": {
 				Type:        schema.TypeString,
@@ -30,14 +32,33 @@ func dataSourceXenorchestraBackup() *schema.Resource {
 				Description: "The mode of the backup job.",
 			},
 			"schedule": {
-				Type:        schema.TypeString,
+				Type:        schema.TypeSet,
 				Computed:    true,
-				Description: "The schedule of the backup job.",
-			},
-			"enabled": {
-				Type:        schema.TypeBool,
-				Computed:    true,
-				Description: "Whether the backup job is enabled.",
+				Description: "The schedule configuration for the backup job.",
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"cron": {
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: "The cron expression for the backup job schedule.",
+						},
+						"enabled": {
+							Type:        schema.TypeBool,
+							Computed:    true,
+							Description: "Whether the backup job schedule is enabled.",
+						},
+						"timezone": {
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: "The timezone for the backup job schedule.",
+						},
+						"name": {
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: "The name for the backup job schedule.",
+						},
+					},
+				},
 			},
 			"vms": {
 				Type:        schema.TypeList,
@@ -48,75 +69,173 @@ func dataSourceXenorchestraBackup() *schema.Resource {
 				},
 			},
 			"settings": {
-				Type:        schema.TypeMap,
+				Type:        schema.TypeSet,
 				Computed:    true,
 				Description: "The settings for the backup job.",
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"retention": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"compression_enabled": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"offline_backup": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"checkpoint_snapshot": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"remote_enabled": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"remote_retention": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"report_when_fail_only": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"report_recipients": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+						},
+						"timezone": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
 				},
+			},
+			"schedule_id": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "The UUID of the schedule for this backup job.",
 			},
 		},
 	}
 }
 
-func dataSourceBackupRead(d *schema.ResourceData, m interface{}) error {
+func dataSourceBackupRead(d *schema.ResourceData, m any) error {
 	c := m.(*v2.XOClient)
 	ctx := context.Background()
 
-	if id, ok := d.GetOk("id"); ok {
-		backup, err := c.Backup().GetJob(ctx, id.(string))
-		if err != nil {
-			return err
-		}
+	jobID := d.Get("id").(string)
+	jobName := d.Get("name").(string)
 
-		d.SetId(backup.ID.String())
-		return setBackupData(d, backup)
+	var jobPayload *payloads.BackupJob
+	var err error
+
+	if jobID != "" {
+		jobPayload, err = c.Backup().GetJob(ctx, jobID)
+		if err != nil {
+			d.SetId("")
+			return nil
+		}
+	} else if jobName != "" {
+		jobs, listErr := c.Backup().ListJobs(ctx, 0)
+		if listErr != nil {
+			return fmt.Errorf("failed to list backup jobs: %w", listErr)
+		}
+		found := false
+		for _, job := range jobs {
+			if job.Name == jobName {
+				jobPayload = job
+				found = true
+				break
+			}
+		}
+		if !found {
+			d.SetId("")
+			return nil
+		}
+	} else {
+		return fmt.Errorf("either id or name must be specified")
 	}
 
-	if name, ok := d.GetOk("name"); ok {
-		jobs, err := c.Backup().ListJobs(ctx, 0)
-		if err != nil {
-			return err
-		}
+	d.SetId(jobPayload.ID.String())
 
-		for _, job := range jobs {
-			if job.Name == name.(string) {
-				d.SetId(job.ID.String())
-				return setBackupData(d, job)
+	// Set basic job properties
+	d.Set("name", jobPayload.Name)
+	d.Set("mode", string(jobPayload.Mode))
+
+	// Process VMs
+	var vmList []string
+	switch vms := jobPayload.VMs.(type) {
+	case string:
+		vmList = []string{vms}
+	case []any:
+		vmList = make([]string, len(vms))
+		for i, vm := range vms {
+			if vmStr, ok := vm.(string); ok {
+				vmList[i] = vmStr
+			}
+		}
+	case []string:
+		vmList = vms
+	case map[string]interface{}:
+		vmsMap := vms
+		if idVal, ok := vmsMap["id"]; ok {
+			if idStr, ok := idVal.(string); ok && idStr != "" {
+				vmList = []string{idStr}
 			}
 		}
 	}
+	d.Set("vms", vmList)
 
-	return nil
-}
-
-func setBackupData(d *schema.ResourceData, backup any) error {
-	b := backup.(*payloads.BackupJob)
-
-	d.Set("name", b.Name)
-	d.Set("mode", string(b.Mode))
-	d.Set("schedule", b.Schedule)
-	d.Set("enabled", b.Enabled)
-	d.Set("vms", b.VMs)
-
-	settings := map[string]any{
-		"compression_enabled":   b.Settings.CompressionEnabled,
-		"offline_backup":        b.Settings.OfflineBackup,
-		"checkpoint_snapshot":   b.Settings.CheckpointSnapshot,
-		"remote_enabled":        b.Settings.RemoteEnabled,
-		"remote_retention":      b.Settings.RemoteRetention,
-		"report_when_fail_only": b.Settings.ReportWhenFailOnly,
-	}
-
-	if len(b.Settings.ReportRecipients) > 0 {
-		recipients := make([]string, len(b.Settings.ReportRecipients))
-		for i, recipient := range b.Settings.ReportRecipients {
-			recipients[i] = recipient
+	// Process settings
+	if jobPayload.Settings != nil {
+		if settings, ok := jobPayload.Settings[""]; ok {
+			settingsMap := map[string]any{
+				"retention":             settings.Retention,
+				"compression_enabled":   settings.CompressionEnabled,
+				"offline_backup":        settings.OfflineBackup,
+				"checkpoint_snapshot":   settings.CheckpointSnapshot,
+				"remote_enabled":        settings.RemoteEnabled,
+				"remote_retention":      settings.RemoteRetention,
+				"report_when_fail_only": settings.ReportWhenFailOnly,
+				"report_recipients":     settings.ReportRecipients,
+			}
+			if settings.Timezone != nil {
+				settingsMap["timezone"] = *settings.Timezone
+			}
+			d.Set("settings", []any{settingsMap})
 		}
-		settings["report_recipients"] = recipients
 	}
 
-	d.Set("settings", settings)
+	// Get schedule information
+	schedules, err := c.Schedule().GetAll(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get schedules: %w", err)
+	}
+
+	for _, schedule := range schedules {
+		if schedule.JobID == jobPayload.ID {
+			d.Set("schedule_id", schedule.ID.String())
+			scheduleMap := map[string]any{
+				"cron":     schedule.Cron,
+				"enabled":  schedule.Enabled,
+				"timezone": schedule.Timezone,
+			}
+			if schedule.Name != "" {
+				scheduleMap["name"] = schedule.Name
+			}
+			d.Set("schedule", []any{scheduleMap})
+			return nil
+		}
+	}
+
+	// If no schedule is found, set empty schedule
+	d.Set("schedule", []any{})
 
 	return nil
 }

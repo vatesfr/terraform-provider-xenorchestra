@@ -21,20 +21,40 @@ func resourceBackup() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"schedule": {
-				Type:     schema.TypeString,
-				Required: true,
-			},
-			"enabled": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
-			},
 			"vms": {
 				Type:     schema.TypeList,
 				Required: true,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
+				},
+			},
+			"schedule": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"cron": {
+							Type:        schema.TypeString,
+							Optional:    true,
+							Description: "The cron expression for the backup job schedule.",
+						},
+						"enabled": {
+							Type:        schema.TypeBool,
+							Optional:    true,
+							Default:     false,
+							Description: "Whether the backup job schedule is enabled.",
+						},
+						"timezone": {
+							Type:        schema.TypeString,
+							Optional:    true,
+							Description: "The timezone for the backup job schedule.",
+						},
+						"name": {
+							Type:        schema.TypeString,
+							Optional:    true,
+							Description: "The name for the backup job schedule.",
+						},
+					},
 				},
 			},
 			"settings": {
@@ -88,32 +108,10 @@ func resourceBackup() *schema.Resource {
 					},
 				},
 			},
-			"run_now": {
-				Type:        schema.TypeList,
-				Optional:    true,
-				MaxItems:    1,
-				Description: "Triggers an immediate run of the backup job for specified VMs. Populate this block to trigger a run. Change the 'nonce' to re-trigger with the same settings on a subsequent apply.",
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"vms": {
-							Type:        schema.TypeList,
-							Required:    true,
-							Elem:        &schema.Schema{Type: schema.TypeString},
-							Description: "List of VM IDs to include in this immediate run.",
-						},
-						"schedule": {
-							Type:        schema.TypeString,
-							Optional:    true,
-							Default:     "",
-							Description: "Optional schedule override for this immediate run. If empty, the job runs 'now' without a specific schedule context from this trigger.",
-						},
-						"nonce": {
-							Type:        schema.TypeString,
-							Optional:    true,
-							Description: "A unique string. Change this value to trigger a new run even if 'vms' and 'schedule' are unchanged.",
-						},
-					},
-				},
+			"schedule_id": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "The UUID of the schedule for this backup job.",
 			},
 		},
 		Create: resourceBackupCreate,
@@ -121,6 +119,40 @@ func resourceBackup() *schema.Resource {
 		Update: resourceBackupUpdate,
 		Delete: resourceBackupDelete,
 	}
+}
+
+// In the tf schema, we have the schedule and enabled fields which are enough to create the schedule
+// those params are part of the create backup job however when it comes to update, we need to use the schedule service
+// the schedule his its own object and can be updated independently however it cannot with the edit backup job.
+// So the enabled + schedule from the normal level of backup for creating is top level but then if the schedule object
+// has those fields, we put the priority on the schedule object.
+func getSchedule(d *schema.ResourceData) payloads.Schedule {
+	schedule := payloads.Schedule{}
+
+	scheduleSet := d.Get("schedule").(*schema.Set)
+	if scheduleSet.Len() == 0 {
+		return schedule
+	}
+
+	scheduleMap := scheduleSet.List()[0].(map[string]any)
+
+	if v, ok := scheduleMap["cron"]; ok {
+		schedule.Cron = v.(string)
+	}
+
+	if v, ok := scheduleMap["enabled"]; ok {
+		schedule.Enabled = v.(bool)
+	}
+
+	if v, ok := scheduleMap["timezone"]; ok {
+		schedule.Timezone = v.(string)
+	}
+
+	if v, ok := scheduleMap["name"]; ok {
+		schedule.Name = v.(string)
+	}
+
+	return schedule
 }
 
 func getBackupSettings(d *schema.ResourceData) payloads.BackupSettings {
@@ -162,7 +194,7 @@ func getBackupSettings(d *schema.ResourceData) payloads.BackupSettings {
 	}
 
 	if v, ok := settingsMap["report_recipients"]; ok {
-		if recipients, ok := v.([]any); ok {
+		if recipients, okList := v.([]any); okList {
 			reportRecipients := make([]string, len(recipients))
 			for i, r := range recipients {
 				reportRecipients[i] = r.(string)
@@ -189,52 +221,36 @@ func setBackupSettings(d *schema.ResourceData, settings payloads.BackupSettings)
 	return d.Set("settings", []any{settingsMap})
 }
 
-func handleRunNow(ctx context.Context, d *schema.ResourceData, c *v2.XOClient, jobID uuid.UUID) error {
-	runNowList := d.Get("run_now").([]any)
-	if len(runNowList) > 0 && runNowList[0] != nil {
-		runNowData := runNowList[0].(map[string]any)
-		vmsToRun := expandStringList(runNowData["vms"].([]any))
-		schedule := runNowData["schedule"].(string)
-
-		if len(vmsToRun) == 0 {
-			return fmt.Errorf("'run_now.vms' cannot be empty when 'run_now' block is specified")
-		}
-
-		_, err := c.Backup().RunJobForVMs(ctx, jobID, schedule, vmsToRun)
-		if err != nil {
-			return fmt.Errorf("failed to trigger RunJobForVMs for job ID %s: %w", jobID, err)
-		}
-	}
-	return nil
-}
-
 func resourceBackupCreate(d *schema.ResourceData, m any) error {
 	c := m.(*v2.XOClient)
 	ctx := context.Background()
 
-	settings := getBackupSettings(d)
+	defaultSettings := getBackupSettings(d)
 
 	backupPayload := &payloads.BackupJob{
-		Name:     d.Get("name").(string),
-		Mode:     payloads.BackupJobType(d.Get("mode").(string)),
-		Schedule: d.Get("schedule").(string),
-		Enabled:  d.Get("enabled").(bool),
-		VMs:      expandStringList(d.Get("vms").([]any)),
-		Settings: settings,
+		Name: d.Get("name").(string),
+		Mode: payloads.BackupJobType(d.Get("mode").(string)),
+		VMs:  expandStringList(d.Get("vms").([]any)),
+		Settings: map[string]payloads.BackupSettings{
+			"": defaultSettings,
+		},
 	}
 
-	backup, err := c.Backup().CreateJob(ctx, backupPayload)
+	createdJob, err := c.Backup().CreateJob(ctx, backupPayload)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create backup job: %w", err)
 	}
 
-	d.SetId(backup.ID.String())
+	d.SetId(createdJob.ID.String())
+	schedule := getSchedule(d)
+	schedule.JobID = createdJob.ID
 
-	if _, ok := d.GetOk("run_now"); ok {
-		if err := handleRunNow(ctx, d, c, backup.ID); err != nil {
-			return fmt.Errorf("backup job created (ID: %s) but failed to trigger initial run_now: %w", backup.ID, err)
-		}
+	createdSchedule, err := c.Schedule().Create(ctx, &schedule)
+	if err != nil {
+		return fmt.Errorf("job created but failed to create schedule: %w", err)
 	}
+
+	d.Set("schedule_id", createdSchedule.ID.String())
 
 	return resourceBackupRead(d, m)
 }
@@ -243,42 +259,91 @@ func resourceBackupRead(d *schema.ResourceData, m any) error {
 	c := m.(*v2.XOClient)
 	ctx := context.Background()
 
-	backup, err := c.Backup().GetJob(ctx, d.Id())
+	jobID := d.Id()
+
+	backupJob, err := c.Backup().GetJob(ctx, jobID)
 	if err != nil {
-		return err
+		if err.Error() == fmt.Sprintf("backup job not found with id: %s", jobID) {
+			d.SetId("")
+			return nil
+		}
+		return fmt.Errorf("error reading backup job %s: %w", jobID, err)
 	}
 
-	d.Set("name", backup.Name)
-	d.Set("mode", backup.Mode)
-	d.Set("schedule", backup.Schedule)
-	d.Set("enabled", backup.Enabled)
+	d.Set("name", backupJob.Name)
+	d.Set("mode", string(backupJob.Mode))
 
 	var vmList []string
-	switch vmsTyped := backup.VMs.(type) {
+	switch vms := backupJob.VMs.(type) {
 	case string:
-		vmList = []string{vmsTyped}
+		vmList = []string{vms}
 	case []any:
-		vmList = make([]string, len(vmsTyped))
-		for i, vmID := range vmsTyped {
-			if s, ok := vmID.(string); ok {
-				vmList[i] = s
-			} else {
-				return fmt.Errorf("unexpected type for VM ID in list: %T", vmID)
+		vmList = make([]string, len(vms))
+		for i, vm := range vms {
+			if vmStr, ok := vm.(string); ok {
+				vmList[i] = vmStr
 			}
 		}
 	case []string:
-		vmList = vmsTyped
-	default:
+		vmList = vms
+	case map[string]interface{}:
+		vmsMap := vms
+		if idVal, ok := vmsMap["id"]; ok {
+			if idStr, ok := idVal.(string); ok && idStr != "" {
+				vmList = []string{idStr}
+			}
+		}
 	}
-	if vmList != nil {
-		if err := d.Set("vms", vmList); err != nil {
-			return err
+	d.Set("vms", vmList)
+
+	if backupJob.Settings != nil {
+		if settings, ok := backupJob.Settings[""]; ok {
+			setBackupSettings(d, settings)
 		}
 	}
 
-	if err := setBackupSettings(d, backup.Settings); err != nil {
-		return err
+	scheduleID := d.Get("schedule_id").(string)
+
+	if scheduleID != "" {
+		scheduleUUID, err := uuid.FromString(scheduleID)
+		if err == nil {
+			schedule, err := c.Schedule().Get(ctx, scheduleUUID)
+			if err == nil {
+				scheduleMap := map[string]any{
+					"cron":     schedule.Cron,
+					"enabled":  schedule.Enabled,
+					"timezone": schedule.Timezone,
+				}
+				if schedule.Name != "" {
+					scheduleMap["name"] = schedule.Name
+				}
+				d.Set("schedule", []any{scheduleMap})
+				return nil
+			}
+		}
 	}
+
+	schedules, err := c.Schedule().GetAll(ctx)
+	if err == nil && len(schedules) > 0 {
+		jobUUID, _ := uuid.FromString(jobID)
+		for _, schedule := range schedules {
+			if schedule.JobID == jobUUID {
+				d.Set("schedule_id", schedule.ID.String())
+				scheduleMap := map[string]any{
+					"cron":     schedule.Cron,
+					"enabled":  schedule.Enabled,
+					"timezone": schedule.Timezone,
+				}
+				if schedule.Name != "" {
+					scheduleMap["name"] = schedule.Name
+				}
+				d.Set("schedule", []any{scheduleMap})
+				return nil
+			}
+		}
+	}
+
+	d.Set("schedule", []any{})
 
 	return nil
 }
@@ -292,36 +357,48 @@ func resourceBackupUpdate(d *schema.ResourceData, m any) error {
 		return fmt.Errorf("invalid job ID: %w", err)
 	}
 
+	backupSettings := getBackupSettings(d)
+
 	backupPayload := &payloads.BackupJob{
-		ID:       jobID,
-		Name:     d.Get("name").(string),
-		Mode:     payloads.BackupJobType(d.Get("mode").(string)),
-		Schedule: d.Get("schedule").(string),
-		Enabled:  d.Get("enabled").(bool),
-		VMs:      expandStringList(d.Get("vms").([]any)),
-		Settings: getBackupSettings(d),
+		ID:   jobID,
+		Name: d.Get("name").(string),
+		Mode: payloads.BackupJobType(d.Get("mode").(string)),
+		VMs:  expandStringList(d.Get("vms").([]any)),
+		Settings: map[string]payloads.BackupSettings{
+			"": backupSettings,
+		},
 	}
 
-	hasNonTriggerChanges := d.HasChange("name") ||
-		d.HasChange("mode") ||
-		d.HasChange("schedule") ||
-		d.HasChange("enabled") ||
-		d.HasChange("vms") ||
-		d.HasChange("settings")
-
-	if hasNonTriggerChanges {
-		_, err = c.Backup().UpdateJob(ctx, backupPayload)
-		if err != nil {
-			return err
-		}
+	_, err = c.Backup().UpdateJob(ctx, backupPayload)
+	if err != nil {
+		return fmt.Errorf("failed to update backup job: %w", err)
 	}
 
-	if d.HasChange("run_now") {
-		runNowConfig := d.Get("run_now").([]any)
-		if len(runNowConfig) > 0 && runNowConfig[0] != nil {
-			if err := handleRunNow(ctx, d, c, jobID); err != nil {
-				return fmt.Errorf("backup job updated but failed to trigger run_now: %w", err)
+	if d.HasChange("schedule") || d.HasChange("enabled") || d.HasChange("name") || d.HasChanges("settings.0.timezone") {
+		scheduleID := d.Get("schedule_id").(string)
+
+		schedule := getSchedule(d)
+		schedule.JobID = jobID
+
+		if scheduleID != "" {
+			scheduleUUID, err := uuid.FromString(scheduleID)
+			if err != nil {
+				return fmt.Errorf("invalid schedule ID: %w", err)
 			}
+
+			schedule.ID = scheduleUUID
+
+			_, err = c.Schedule().Update(ctx, scheduleUUID, &schedule)
+			if err != nil {
+				return fmt.Errorf("failed to update schedule: %w", err)
+			}
+		} else {
+			createdSchedule, err := c.Schedule().Create(ctx, &schedule)
+			if err != nil {
+				return fmt.Errorf("failed to create schedule: %w", err)
+			}
+
+			d.Set("schedule_id", createdSchedule.ID.String())
 		}
 	}
 
@@ -331,6 +408,17 @@ func resourceBackupUpdate(d *schema.ResourceData, m any) error {
 func resourceBackupDelete(d *schema.ResourceData, m any) error {
 	c := m.(*v2.XOClient)
 	ctx := context.Background()
+
+	scheduleID := d.Get("schedule_id").(string)
+
+	if scheduleID != "" {
+		scheduleUUID, err := uuid.FromString(scheduleID)
+		if err == nil {
+			if err := c.Schedule().Delete(ctx, scheduleUUID); err != nil {
+				return fmt.Errorf("failed to delete schedule: %w", err)
+			}
+		}
+	}
 
 	return c.Backup().DeleteJob(ctx, uuid.FromStringOrNil(d.Id()))
 }

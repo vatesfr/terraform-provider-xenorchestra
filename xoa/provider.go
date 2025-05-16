@@ -22,13 +22,13 @@ var (
 func Provider() *schema.Provider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
-			"url": &schema.Schema{
+			"url": {
 				Type:        schema.TypeString,
 				Required:    true,
 				DefaultFunc: schema.EnvDefaultFunc("XOA_URL", nil),
 				Description: "Hostname of the xoa router. Can be set via the XOA_URL environment variable.",
 			},
-			"username": &schema.Schema{
+			"username": {
 				Type:          schema.TypeString,
 				Optional:      true,
 				DefaultFunc:   schema.EnvDefaultFunc("XOA_USER", nil),
@@ -36,7 +36,7 @@ func Provider() *schema.Provider {
 				RequiredWith:  []string{"password"},
 				ConflictsWith: []string{"token"},
 			},
-			"password": &schema.Schema{
+			"password": {
 				Type:          schema.TypeString,
 				Optional:      true,
 				DefaultFunc:   schema.EnvDefaultFunc("XOA_PASSWORD", nil),
@@ -44,28 +44,28 @@ func Provider() *schema.Provider {
 				RequiredWith:  []string{"username"},
 				ConflictsWith: []string{"token"},
 			},
-			"token": &schema.Schema{
+			"token": {
 				Type:          schema.TypeString,
 				Optional:      true,
 				DefaultFunc:   schema.EnvDefaultFunc("XOA_TOKEN", nil),
 				Description:   "Password for xoa api. Can be set via the XOA_TOKEN environment variable.",
 				ConflictsWith: []string{"username", "password"},
 			},
-			"insecure": &schema.Schema{
+			"insecure": {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Default:     false,
 				DefaultFunc: schema.EnvDefaultFunc("XOA_INSECURE", nil),
 				Description: "Whether SSL should be verified or not. Can be set via the XOA_INSECURE environment variable.",
 			},
-			"retry_mode": &schema.Schema{
+			"retry_mode": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				DefaultFunc:  schema.EnvDefaultFunc("XOA_RETRY_MODE", "backoff"),
 				Description:  "Specifies if retries should be attempted for requests that require eventual . Can be set via the XOA_RETRY_MODE environment variable.",
 				ValidateFunc: validation.StringInSlice([]string{"backoff", "none"}, false),
 			},
-			"retry_max_time": &schema.Schema{
+			"retry_max_time": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				DefaultFunc:  schema.EnvDefaultFunc("XOA_RETRY_MAX_TIME", "5m"),
@@ -118,7 +118,8 @@ func xoaConfigure(d *schema.ResourceData) (any, error) {
 		Token:              d.Get("token").(string),
 		InsecureSkipVerify: d.Get("insecure").(bool),
 		RetryMode:          config.ToRetryMode(d.Get("retry_mode").(string)),
-		RetryMaxTime:       retryMaxDuration, // Use the parsed duration
+		RetryMaxTime:       retryMaxDuration,
+		Development:        true,
 	})
 	if err != nil {
 		return nil, err
