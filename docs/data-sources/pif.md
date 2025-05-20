@@ -47,8 +47,12 @@ resource "xenorchestra_vm" "demo-vm" {
 ### Read-Only
 
 - `attached` (Boolean) If the PIF is attached to the network.
+- `bond_master` (String) In case of a bond slave, the uuid of the bond master.
+- `bond_slaves` (List of String) In case of a bond master, the PIFs (uuid) that are used for this bond.
 - `host` (String) The host the PIF is associated with.
 - `id` (String) The ID of this resource.
+- `is_bond_master` (Boolean) True if this PIF is a bond master.
+- `is_bond_slave` (Boolean) True if this PIF is a bond slave.
 - `network` (String) The network the PIF is associated with.
 - `pool_id` (String) The pool the PIF is associated with.
 - `uuid` (String) The uuid of the PIF.

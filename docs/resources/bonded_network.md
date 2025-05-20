@@ -80,7 +80,7 @@ resource "xenorchestra_bonded_network" "network_vlan" {
 - `default_is_locked` (Boolean) This argument controls whether the network should enforce VIF locking. This defaults to `false` which means that no filtering rules are applied.
 - `mtu` (Number) The MTU of the network. Defaults to `1500` if unspecified.
 - `name_description` (String)
-- `pif_ids` (List of String) The pifs (uuid) that should be used for this network.
+- `pif_ids` (List of String) The PIFs (uuid) that should be used for this network.
 
 ### Read-Only
 
