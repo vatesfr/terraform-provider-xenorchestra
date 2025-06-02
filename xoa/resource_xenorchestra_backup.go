@@ -22,11 +22,6 @@ func resourceBackup() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"type": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Default:  "backup",
-			},
 			"vms": {
 				Type:     schema.TypeList,
 				Required: true,
@@ -246,12 +241,10 @@ func resourceBackupCreate(d *schema.ResourceData, m any) error {
 			Settings: convertMapToBackupSettings(fullSettings),
 		}
 
-		// Set schedule-specific settings like ExportRetention
 		if settingsListRaw, ok := d.GetOk("settings"); ok {
 			settingsList := settingsListRaw.([]any)
 			for _, settingsData := range settingsList {
 				settingsSchemaMap := settingsData.(map[string]any)
-				// Check for export_retention setting
 				if exportRet, hasExportRetention := settingsSchemaMap["export_retention"]; hasExportRetention {
 					if exportRetInt, ok := exportRet.(int); ok {
 						createdJob.Settings.ExportRetention = &exportRetInt
@@ -260,11 +253,10 @@ func resourceBackupCreate(d *schema.ResourceData, m any) error {
 			}
 		}
 
-		updated, err := c.Backup().UpdateJob(ctx, createdJob)
+		_, err = c.Backup().UpdateJob(ctx, createdJob)
 		if err != nil {
 			return fmt.Errorf("failed to update backup job: %w", err)
 		}
-		fmt.Printf("DEBUG: Updated backup job with ID: %s\n", updated.ID.String())
 	} else {
 		createdJobResp, err := c.Backup().CreateJob(ctx, jobCreationPayload)
 		if err != nil {
@@ -282,9 +274,6 @@ func resourceBackupCreate(d *schema.ResourceData, m any) error {
 	if err := d.Set("mode", string(jobCreationPayload.Mode)); err != nil {
 		return fmt.Errorf("error setting mode: %w", err)
 	}
-	if err := d.Set("type", "backup"); err != nil {
-		return fmt.Errorf("error setting type: %w", err)
-	}
 	if err := d.Set("vms", jobCreationPayload.VMs); err != nil {
 		return fmt.Errorf("error setting vms: %w", err)
 	}
@@ -297,37 +286,34 @@ func resourceBackupRead(d *schema.ResourceData, m any) error {
 	ctx := context.Background()
 
 	jobID := d.Id()
-	fmt.Printf("DEBUG: Reading backup job with ID: %s\n", jobID)
 
 	var backupJobResp *payloads.BackupJobResponse
 	var err error
 
 	for i := 0; i < 3; i++ {
-		fmt.Printf("DEBUG: Attempt %d - calling GetJob with ID: %s\n", i+1, jobID)
 		backupJobResp, err = c.Backup().GetJob(ctx, jobID, payloads.RestAPIJobQueryVM)
 		if err == nil {
-			fmt.Printf("DEBUG: GetJob succeeded on attempt %d\n", i+1)
 			break
 		}
 
-		fmt.Printf("DEBUG: Attempt %d failed with error: %v\n", i+1, err)
 		if i < 2 {
-			fmt.Printf("DEBUG: Sleeping 2 seconds before retry...\n")
 			time.Sleep(2 * time.Second)
 		}
 	}
 
 	if err != nil {
-		fmt.Printf("DEBUG: Error reading backup job after retries: %v\n", err)
 		if err.Error() == fmt.Sprintf("backup job not found with id: %s", jobID) {
-			fmt.Printf("DEBUG: Job not found, setting ID to empty\n")
 			d.SetId("")
 			return nil
 		}
 		return fmt.Errorf("error reading backup job %s: %w", jobID, err)
 	}
 
-	fmt.Printf("DEBUG: Successfully read backup job: %s\n", backupJobResp.Name)
+	if backupJobResp.Schedule != uuid.Nil {
+		if err := d.Set("schedule_id", backupJobResp.Schedule.String()); err != nil {
+			return fmt.Errorf("error setting schedule_id from backup job: %w", err)
+		}
+	}
 
 	if err := d.Set("name", backupJobResp.Name); err != nil {
 		return fmt.Errorf("error setting name: %w", err)
@@ -336,7 +322,6 @@ func resourceBackupRead(d *schema.ResourceData, m any) error {
 		return fmt.Errorf("error setting mode: %w", err)
 	}
 
-	// Handle VMs
 	var vmList []string
 	switch vms := backupJobResp.VMs.(type) {
 	case string:
@@ -374,6 +359,7 @@ func resourceBackupRead(d *schema.ResourceData, m any) error {
 	}
 
 	scheduleID := d.Get("schedule_id").(string)
+	scheduleFound := false
 
 	if scheduleID != "" {
 		scheduleUUID, err := uuid.FromString(scheduleID)
@@ -388,33 +374,49 @@ func resourceBackupRead(d *schema.ResourceData, m any) error {
 				if schedule.Name != "" {
 					scheduleMap["name"] = schedule.Name
 				}
-				d.Set("schedule", []any{scheduleMap})
-				return nil
+				if err := d.Set("schedule", []any{scheduleMap}); err != nil {
+					return fmt.Errorf("error setting schedule: %w", err)
+				}
+				scheduleFound = true
 			}
 		}
 	}
 
-	schedules, err := c.Schedule().GetAll(ctx)
-	if err == nil && len(schedules) > 0 {
-		jobUUID, _ := uuid.FromString(jobID)
-		for _, schedule := range schedules {
-			if schedule.JobID == jobUUID {
-				d.Set("schedule_id", schedule.ID.String())
-				scheduleMap := map[string]any{
-					"cron":     schedule.Cron,
-					"enabled":  schedule.Enabled,
-					"timezone": schedule.Timezone,
+	if !scheduleFound {
+		schedules, err := c.Schedule().GetAll(ctx)
+		if err == nil && len(schedules) > 0 {
+			jobUUID, _ := uuid.FromString(jobID)
+			for _, schedule := range schedules {
+				if schedule.JobID == jobUUID {
+					if err := d.Set("schedule_id", schedule.ID.String()); err != nil {
+						return fmt.Errorf("error setting schedule_id from search: %w", err)
+					}
+					scheduleMap := map[string]any{
+						"cron":     schedule.Cron,
+						"enabled":  schedule.Enabled,
+						"timezone": schedule.Timezone,
+					}
+					if schedule.Name != "" {
+						scheduleMap["name"] = schedule.Name
+					}
+					if err := d.Set("schedule", []any{scheduleMap}); err != nil {
+						return fmt.Errorf("error setting schedule from search: %w", err)
+					}
+					scheduleFound = true
+					break
 				}
-				if schedule.Name != "" {
-					scheduleMap["name"] = schedule.Name
-				}
-				d.Set("schedule", []any{scheduleMap})
-				return nil
 			}
 		}
 	}
 
-	d.Set("schedule", []any{})
+	if !scheduleFound {
+		if err := d.Set("schedule_id", ""); err != nil {
+			return fmt.Errorf("error clearing schedule_id: %w", err)
+		}
+		if err := d.Set("schedule", []any{}); err != nil {
+			return fmt.Errorf("error clearing schedule: %w", err)
+		}
+	}
 
 	return nil
 }
@@ -441,38 +443,36 @@ func resourceBackupUpdate(d *schema.ResourceData, m any) error {
 		}
 
 		backupPayload := &payloads.BackupJob{
-			ID:      jobID,
-			Name:    d.Get("name").(string),
-			Mode:    payloads.BackupJobType(d.Get("mode").(string)),
-			VMs:     expandStringList(d.Get("vms").([]any)),
-			Remotes: remotesPayload,
+			ID:       jobID,
+			Name:     d.Get("name").(string),
+			Mode:     payloads.BackupJobType(d.Get("mode").(string)),
+			VMs:      expandStringList(d.Get("vms").([]any)),
+			Schedule: uuid.FromStringOrNil(d.Get("schedule_id").(string)),
+			Remotes:  remotesPayload,
+		}
+
+		scheduleID := d.Get("schedule_id").(string)
+		if scheduleID != "" {
+			if scheduleUUID, err := uuid.FromString(scheduleID); err == nil {
+				backupPayload.Schedule = scheduleUUID
+			}
 		}
 
 		if d.HasChange("settings") {
-			currentJob, err := c.Backup().GetJob(ctx, d.Id(), payloads.RestAPIJobQueryVM)
-			if err != nil {
-				return fmt.Errorf("failed to read current backup job for settings merge: %w", err)
-			}
+			terraformSettings := getBackupSettings(d, c)
+			backupPayload.Settings = convertMapToBackupSettings(terraformSettings)
 
-			schedule, err := c.Schedule().Get(ctx, uuid.FromStringOrNil(d.Get("schedule_id").(string)))
-			if err != nil {
-				return fmt.Errorf("failed to get schedule: %w", err)
-			}
-
-			currentJob.Schedule = schedule.ID
-			scheduleSettingsRaw := currentJob.Settings[schedule.ID.String()]
-			if scheduleSettingsMap, ok := scheduleSettingsRaw.(map[string]any); ok {
-				if d.HasChange("export_retention") {
-					if exportRet, exists := d.GetOk("settings.0.export_retention"); exists {
-						scheduleSettingsMap["exportRetention"] = exportRet.(int)
+			if settingsListRaw, ok := d.GetOk("settings"); ok {
+				settingsList := settingsListRaw.([]any)
+				for _, settingsData := range settingsList {
+					settingsSchemaMap := settingsData.(map[string]any)
+					if exportRet, hasExportRetention := settingsSchemaMap["export_retention"]; hasExportRetention {
+						if exportRetInt, ok := exportRet.(int); ok {
+							backupPayload.Settings.ExportRetention = &exportRetInt
+						}
 					}
 				}
-				currentJob.Settings[schedule.ID.String()] = scheduleSettingsMap
 			}
-
-			terraformSettings := getBackupSettings(d, c)
-
-			backupPayload.Settings = convertMapToBackupSettings(terraformSettings)
 		}
 
 		_, err = c.Backup().UpdateJob(ctx, backupPayload)
@@ -548,7 +548,6 @@ func getBackupSettings(d *schema.ResourceData, c *v2.XOClient) map[string]any {
 		job, err := c.Backup().GetJob(ctx, d.Id(), payloads.RestAPIJobQueryVM)
 		if err == nil && job.Settings != nil {
 			currentSettingsMap = job.Settings
-			// Get the current default settings (empty key "")
 			if currentDefaults, ok := job.Settings[""].(map[string]any); ok {
 				defaultSettings = currentDefaults
 			}
@@ -589,7 +588,6 @@ func getBackupSettings(d *schema.ResourceData, c *v2.XOClient) map[string]any {
 			}
 		}
 
-		// Helper function to check if a value has actually changed
 		hasChanged := func(tfKey string, apiKey string, newValue any) bool {
 			if len(targetSettings) == 0 {
 				return true
@@ -605,10 +603,9 @@ func getBackupSettings(d *schema.ResourceData, c *v2.XOClient) map[string]any {
 				return !equalValues(tfValue, currentValue)
 			}
 
-			return false // Field not set in Terraform, don't change it
+			return false
 		}
 
-		// Process settings fields
 		if v, ok := settingsSchemaMap["retention"]; ok {
 			if valInt, okInt := v.(int); okInt && hasChanged("retention", "retention", valInt) {
 				targetSettings["retention"] = valInt
@@ -641,7 +638,6 @@ func getBackupSettings(d *schema.ResourceData, c *v2.XOClient) map[string]any {
 		}
 		if v, ok := settingsSchemaMap["report_when_fail_only"]; ok {
 			if valBool, okBool := v.(bool); okBool {
-				// Convert current API value for comparison
 				currentReportWhen := ""
 				if len(targetSettings) > 0 {
 					if reportWhen, exists := targetSettings["reportWhen"]; exists {
@@ -680,28 +676,22 @@ func getBackupSettings(d *schema.ResourceData, c *v2.XOClient) map[string]any {
 			}
 		}
 
-		// Store the settings for this key
 		settingsMap[settingsKey] = targetSettings
 	}
 
-	// Ensure we have default settings if not already set
 	if settingsMap[""] == nil {
 		settingsMap[""] = defaultSettings
 	}
 
-	// Preserve any existing schedule/remote-specific settings that weren't modified
-	if currentSettingsMap != nil {
-		for key, value := range currentSettingsMap {
-			if settingsMap[key] == nil {
-				settingsMap[key] = value
-			}
+	for key, value := range currentSettingsMap {
+		if settingsMap[key] == nil {
+			settingsMap[key] = value
 		}
 	}
 
 	return settingsMap
 }
 
-// Helper function to compare values of different types
 func equalValues(a, b any) bool {
 	if a == nil && b == nil {
 		return true
@@ -710,7 +700,6 @@ func equalValues(a, b any) bool {
 		return false
 	}
 
-	// Handle different numeric types
 	switch aVal := a.(type) {
 	case int:
 		switch bVal := b.(type) {
@@ -754,18 +743,14 @@ func equalValues(a, b any) bool {
 func parseBackupJobSettings(settingsMap map[string]any) map[string]any {
 	result := make(map[string]any)
 
-	// Parse default settings (empty key "")
 	if defaultSettings, ok := settingsMap[""].(map[string]any); ok {
-		// String fields
 		if val, exists := defaultSettings["reportWhen"]; exists {
-			// Convert reportWhen to report_when_fail_only boolean
 			result["report_when_fail_only"] = (val.(string) == "failure")
 		}
 		if val, exists := defaultSettings["timezone"]; exists {
 			result["timezone"] = val.(string)
 		}
 
-		// Boolean fields
 		if val, exists := defaultSettings["offlineBackup"]; exists {
 			result["offline_backup"] = val.(bool)
 		}
@@ -782,7 +767,6 @@ func parseBackupJobSettings(settingsMap map[string]any) map[string]any {
 			result["compression_enabled"] = val.(bool)
 		}
 
-		// Integer fields
 		if val, exists := defaultSettings["retention"]; exists {
 			if floatVal, ok := val.(float64); ok {
 				result["retention"] = int(floatVal)
@@ -798,7 +782,6 @@ func parseBackupJobSettings(settingsMap map[string]any) map[string]any {
 			}
 		}
 
-		// Array fields
 		if val, exists := defaultSettings["reportRecipients"]; exists {
 			if recipients, ok := val.([]interface{}); ok {
 				strRecipients := make([]string, len(recipients))
@@ -810,23 +793,16 @@ func parseBackupJobSettings(settingsMap map[string]any) map[string]any {
 		}
 	}
 
-	// Parse schedule/remote-specific settings
 	for key, value := range settingsMap {
-		if key != "" { // Non-default settings
+		if key != "" {
 			if settingsMap, ok := value.(map[string]any); ok {
-				// For now, we'll only add export_retention from schedule-specific settings
-				// In the future, this could be expanded to handle remote-specific settings too
 				if exportRetention, exists := settingsMap["exportRetention"]; exists {
 					if floatVal, ok := exportRetention.(float64); ok {
 						result["export_retention"] = int(floatVal)
 					} else if intVal, ok := exportRetention.(int); ok {
 						result["export_retention"] = intVal
 					}
-					// If this setting came from a schedule/remote-specific context, note it
-					// This is a simplified approach - ideally we'd return multiple settings blocks
 					if key != "" {
-						// We can't easily determine if this is a schedule ID or remote ID without more context
-						// For now, assume schedule-specific if it has exportRetention
 						result["schedule_id"] = key
 					}
 				}
@@ -837,8 +813,6 @@ func parseBackupJobSettings(settingsMap map[string]any) map[string]any {
 	return result
 }
 
-// convertMapToBackupSettings converts a map[string]any settings structure to BackupSettings
-// This is needed because the SDK expects BackupSettings struct for job creation/update
 func convertMapToBackupSettings(settingsMap map[string]any) payloads.BackupSettings {
 	settings := payloads.BackupSettings{}
 
