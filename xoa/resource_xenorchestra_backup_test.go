@@ -7,6 +7,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/vatesfr/xenorchestra-go-sdk/pkg/payloads"
 	v2 "github.com/vatesfr/xenorchestra-go-sdk/v2"
 )
 
@@ -24,8 +25,8 @@ func TestAccXenorchestraBackup_basic(t *testing.T) {
 					testAccCheckXenorchestraBackupExists(resourceName),
 					resource.TestCheckResourceAttr(resourceName, "name", "terraform-backup-test"),
 					resource.TestCheckResourceAttr(resourceName, "mode", "delta"),
-					resource.TestCheckResourceAttr(resourceName, "enabled", "true"),
-					resource.TestCheckResourceAttrSet(resourceName, "schedule"),
+					resource.TestCheckResourceAttr(resourceName, "schedule.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "schedule.0.enabled", "true"),
 				),
 			},
 			{
@@ -39,7 +40,7 @@ func TestAccXenorchestraBackup_basic(t *testing.T) {
 					testAccCheckXenorchestraBackupExists(resourceName),
 					resource.TestCheckResourceAttr(resourceName, "name", "terraform-backup-updated"),
 					resource.TestCheckResourceAttr(resourceName, "mode", "delta"),
-					resource.TestCheckResourceAttr(resourceName, "enabled", "false"),
+					resource.TestCheckResourceAttr(resourceName, "schedule.0.enabled", "false"),
 				),
 			},
 		},
@@ -57,8 +58,8 @@ func testAccCheckXenorchestraBackupExists(resourceName string) resource.TestChec
 			return fmt.Errorf("no backup job ID is set")
 		}
 
-		c := testAccProvider.Meta().(v2.XOClient)
-		backup, err := c.Backup().GetJob(context.Background(), rs.Primary.ID)
+		c := testAccProvider.Meta().(*v2.XOClient)
+		backup, err := c.Backup().GetJob(context.Background(), rs.Primary.ID, payloads.RestAPIJobQueryVM)
 		if err != nil {
 			return err
 		}
@@ -72,20 +73,20 @@ func testAccCheckXenorchestraBackupExists(resourceName string) resource.TestChec
 }
 
 func testAccCheckXenorchestraBackupDestroy(s *terraform.State) error {
-	c := testAccProvider.Meta().(v2.XOClient)
+	c := testAccProvider.Meta().(*v2.XOClient)
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "xenorchestra_backup" {
 			continue
 		}
 
-		_, err := c.Backup().GetJob(context.Background(), rs.Primary.ID)
+		_, err := c.Backup().GetJob(context.Background(), rs.Primary.ID, payloads.RestAPIJobQueryVM)
 		if err == nil {
 			return fmt.Errorf("backup job still exists")
 		}
 
-		if err.Error() != "not found" {
-			return fmt.Errorf("expected 'not found' error, got %s", err)
+		if err.Error() != fmt.Sprintf("backup job not found with id: %s", rs.Primary.ID) {
+			return fmt.Errorf("expected 'backup job not found' error, got %s", err)
 		}
 	}
 
@@ -98,19 +99,39 @@ func testAccBackupConfig() string {
 	// For now, just use a placeholder that will be replaced in actual testing.
 	return `
 resource "xenorchestra_backup" "test" {
-  name     = "terraform-backup-test"
-  mode     = "delta"
-  schedule = "0 0 * * *"  # Daily at midnight
-  enabled  = true
-  vms      = ["00000000-0000-0000-0000-000000000000"]  # Will be replaced in actual test
+  name = "terraform-backup-test"
+  mode = "delta"
+  vms  = ["00000000-0000-0000-0000-000000000000"]  # Will be replaced in actual test
   
-  settings = {
+  schedule {
+    cron     = "0 0 * * *"  # Daily at midnight
+    enabled  = true
+    name     = "terraform-test-schedule"
+    timezone = "UTC"
+  }
+  
+  settings {
     compression_enabled   = true
     offline_backup        = false
     checkpoint_snapshot   = false
     remote_enabled        = false
     remote_retention      = 0
     report_when_fail_only = true
+    
+    long_term_retention {
+      daily {
+        retention = 2
+      }
+      weekly {
+        retention = 2
+      }
+      monthly {
+        retention = 2
+      }
+      yearly {
+        retention = 1
+      }
+    }
   }
 }
 `
@@ -119,19 +140,39 @@ resource "xenorchestra_backup" "test" {
 func testAccBackupConfigUpdated() string {
 	return `
 resource "xenorchestra_backup" "test" {
-  name     = "terraform-backup-updated"
-  mode     = "delta"
-  schedule = "0 0 * * *"
-  enabled  = false
-  vms      = ["00000000-0000-0000-0000-000000000000"]  # Will be replaced in actual test
+  name = "terraform-backup-updated"
+  mode = "delta"
+  vms  = ["00000000-0000-0000-0000-000000000000"]  # Will be replaced in actual test
   
-  settings = {
+  schedule {
+    cron     = "0 0 * * *"
+    enabled  = false
+    name     = "terraform-test-schedule-updated"
+    timezone = "UTC"
+  }
+  
+  settings {
     compression_enabled   = true
     offline_backup        = true
     checkpoint_snapshot   = true
     remote_enabled        = false
     remote_retention      = 0
     report_when_fail_only = true
+    
+    long_term_retention {
+      daily {
+        retention = 2
+      }
+      weekly {
+        retention = 2
+      }
+      monthly {
+        retention = 2
+      }
+      yearly {
+        retention = 1
+      }
+    }
   }
 }
 `

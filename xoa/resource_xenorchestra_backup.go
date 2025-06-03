@@ -134,6 +134,122 @@ func resourceBackup() *schema.Resource {
 							Type:     schema.TypeBool,
 							Optional: true,
 						},
+						"backup_report_tpl": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"merge_backups_synchronously": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"max_export_rate": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"concurrency": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"long_term_retention": {
+							Type:     schema.TypeList,
+							Optional: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"daily": {
+										Type:     schema.TypeList,
+										Optional: true,
+										MaxItems: 1,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"retention": {
+													Type:     schema.TypeInt,
+													Required: true,
+												},
+											},
+										},
+									},
+									"weekly": {
+										Type:     schema.TypeList,
+										Optional: true,
+										MaxItems: 1,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"retention": {
+													Type:     schema.TypeInt,
+													Required: true,
+												},
+											},
+										},
+									},
+									"monthly": {
+										Type:     schema.TypeList,
+										Optional: true,
+										MaxItems: 1,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"retention": {
+													Type:     schema.TypeInt,
+													Required: true,
+												},
+											},
+										},
+									},
+									"yearly": {
+										Type:     schema.TypeList,
+										Optional: true,
+										MaxItems: 1,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"retention": {
+													Type:     schema.TypeInt,
+													Required: true,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						"offline_snapshot": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  false,
+						},
+						"copy_retention": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"cbt_destroy_snapshot_data": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  false,
+						},
+						"nbd_concurrency": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"prefer_nbd": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  false,
+						},
+						"retention_pool_metadata": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"retention_xo_metadata": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"timeout": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"n_retries_vm_backup_failures": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
 					},
 				},
 			},
@@ -322,6 +438,9 @@ func resourceBackupRead(d *schema.ResourceData, m any) error {
 		return fmt.Errorf("error setting mode: %w", err)
 	}
 
+	// DEBUG: Print raw API response settings
+	fmt.Printf("DEBUG: Raw API Settings: %+v\n", backupJobResp.Settings)
+
 	var vmList []string
 	switch vms := backupJobResp.VMs.(type) {
 	case string:
@@ -335,7 +454,7 @@ func resourceBackupRead(d *schema.ResourceData, m any) error {
 		}
 	case []string:
 		vmList = vms
-	case map[string]interface{}:
+	case map[string]any:
 		vmsMap := vms
 		if idVal, ok := vmsMap["id"]; ok {
 			if idStr, ok := idVal.(string); ok && idStr != "" {
@@ -589,90 +708,122 @@ func getBackupSettings(d *schema.ResourceData, c *v2.XOClient) map[string]any {
 		}
 
 		hasChanged := func(tfKey string, apiKey string, newValue any) bool {
-			if len(targetSettings) == 0 {
+			if d.Id() == "" || len(targetSettings) == 0 {
 				return true
 			}
-
 			currentValue, exists := targetSettings[apiKey]
 			if !exists {
 				return true
 			}
-
 			settingsIndex := 0
 			if tfValue, ok := d.GetOk(fmt.Sprintf("settings.%d.%s", settingsIndex, tfKey)); ok {
 				return !equalValues(tfValue, currentValue)
 			}
-
-			return false
+			return currentValue == nil || !equalValues(newValue, currentValue)
 		}
 
-		if v, ok := settingsSchemaMap["retention"]; ok {
-			if valInt, okInt := v.(int); okInt && hasChanged("retention", "retention", valInt) {
-				targetSettings["retention"] = valInt
+		// Field mappings
+		intFields := map[string]string{
+			"retention":                    "retention",
+			"remote_retention":             "remoteRetention",
+			"copy_retention":               "copyRetention",
+			"concurrency":                  "concurrency",
+			"max_export_rate":              "maxExportRate",
+			"n_retries_vm_backup_failures": "nRetriesVmBackupFailures",
+			"nbd_concurrency":              "nbdConcurrency",
+			"timeout":                      "timeout",
+			"retention_pool_metadata":      "retentionPoolMetadata",
+			"retention_xo_metadata":        "retentionXoMetadata",
+			"export_retention":             "exportRetention",
+		}
+
+		boolFields := map[string]string{
+			"compression_enabled":         "compressionEnabled",
+			"offline_backup":              "offlineBackup",
+			"checkpoint_snapshot":         "checkpointSnapshot",
+			"remote_enabled":              "remoteEnabled",
+			"delete_first":                "deleteFirst",
+			"merge_backups_synchronously": "mergeBackupsSynchronously",
+			"offline_snapshot":            "offlineSnapshot",
+			"cbt_destroy_snapshot_data":   "cbtDestroySnapshotData",
+			"prefer_nbd":                  "preferNbd",
+		}
+
+		stringFields := map[string]string{
+			"timezone":          "timezone",
+			"backup_report_tpl": "backupReportTpl",
+		}
+
+		// Process integer fields
+		for tfKey, apiKey := range intFields {
+			if v, ok := settingsSchemaMap[tfKey]; ok && v != nil && v != 0 {
+				if valInt, okInt := v.(int); okInt && valInt > 0 && hasChanged(tfKey, apiKey, valInt) {
+					targetSettings[apiKey] = valInt
+				}
 			}
 		}
-		if v, ok := settingsSchemaMap["compression_enabled"]; ok {
-			if valBool, okBool := v.(bool); okBool && hasChanged("compression_enabled", "compressionEnabled", valBool) {
-				targetSettings["compressionEnabled"] = valBool
+
+		// Process boolean fields
+		for tfKey, apiKey := range boolFields {
+			if v, ok := settingsSchemaMap[tfKey]; ok {
+				if valBool, okBool := v.(bool); okBool && hasChanged(tfKey, apiKey, valBool) {
+					targetSettings[apiKey] = valBool
+				}
 			}
 		}
-		if v, ok := settingsSchemaMap["offline_backup"]; ok {
-			if valBool, okBool := v.(bool); okBool && hasChanged("offline_backup", "offlineBackup", valBool) {
-				targetSettings["offlineBackup"] = valBool
+
+		// Process string fields
+		for tfKey, apiKey := range stringFields {
+			if v, ok := settingsSchemaMap[tfKey]; ok {
+				if strVal, okStr := v.(string); okStr && strVal != "" && hasChanged(tfKey, apiKey, strVal) {
+					targetSettings[apiKey] = strVal
+				}
 			}
 		}
-		if v, ok := settingsSchemaMap["checkpoint_snapshot"]; ok {
-			if valBool, okBool := v.(bool); okBool && hasChanged("checkpoint_snapshot", "checkpointSnapshot", valBool) {
-				targetSettings["checkpointSnapshot"] = valBool
-			}
-		}
-		if v, ok := settingsSchemaMap["remote_enabled"]; ok {
-			if valBool, okBool := v.(bool); okBool && hasChanged("remote_enabled", "remoteEnabled", valBool) {
-				targetSettings["remoteEnabled"] = valBool
-			}
-		}
-		if v, ok := settingsSchemaMap["remote_retention"]; ok {
-			if valInt, okInt := v.(int); okInt && hasChanged("remote_retention", "remoteRetention", valInt) {
-				targetSettings["remoteRetention"] = valInt
-			}
-		}
+
+		// Special cases
 		if v, ok := settingsSchemaMap["report_when_fail_only"]; ok {
 			if valBool, okBool := v.(bool); okBool {
-				currentReportWhen := ""
-				if len(targetSettings) > 0 {
-					if reportWhen, exists := targetSettings["reportWhen"]; exists {
-						currentReportWhen = reportWhen.(string)
-					}
-				}
-
 				expectedReportWhen := "always"
 				if valBool {
 					expectedReportWhen = "failure"
 				}
-
+				currentReportWhen := ""
+				if reportWhen, exists := targetSettings["reportWhen"]; exists {
+					currentReportWhen = reportWhen.(string)
+				}
 				if currentReportWhen == "" || currentReportWhen != expectedReportWhen {
 					targetSettings["reportWhen"] = expectedReportWhen
 				}
 			}
 		}
+
 		if v, ok := settingsSchemaMap["report_recipients"]; ok {
 			if recipients, okList := v.([]any); okList && hasChanged("report_recipients", "reportRecipients", recipients) {
 				targetSettings["reportRecipients"] = expandStringList(recipients)
 			}
 		}
-		if v, ok := settingsSchemaMap["timezone"]; ok {
-			if tzStr, okStr := v.(string); okStr && tzStr != "" && hasChanged("timezone", "timezone", tzStr) {
-				targetSettings["timezone"] = tzStr
-			}
-		}
-		if v, ok := settingsSchemaMap["export_retention"]; ok {
-			if valInt, okInt := v.(int); okInt && hasChanged("export_retention", "exportRetention", valInt) {
-				targetSettings["exportRetention"] = valInt
-			}
-		}
-		if v, ok := settingsSchemaMap["delete_first"]; ok {
-			if valBool, okBool := v.(bool); okBool && hasChanged("delete_first", "deleteFirst", valBool) {
-				targetSettings["deleteFirst"] = valBool
+
+		if v, ok := settingsSchemaMap["long_term_retention"]; ok {
+			if ltrList, okList := v.([]any); okList && len(ltrList) > 0 {
+				ltrMap := ltrList[0].(map[string]any)
+				longTermRetention := make(map[string]any)
+				for _, period := range []string{"daily", "weekly", "monthly", "yearly"} {
+					if periodData, exists := ltrMap[period]; exists {
+						if periodList, ok := periodData.([]any); ok && len(periodList) > 0 {
+							periodMap := periodList[0].(map[string]any)
+							if retention, hasRetention := periodMap["retention"]; hasRetention {
+								longTermRetention[period] = map[string]any{
+									"retention": retention,
+									"settings":  map[string]any{},
+								}
+							}
+						}
+					}
+				}
+				if len(longTermRetention) > 0 && hasChanged("long_term_retention", "longTermRetention", longTermRetention) {
+					targetSettings["longTermRetention"] = longTermRetention
+				}
 			}
 		}
 
@@ -683,9 +834,11 @@ func getBackupSettings(d *schema.ResourceData, c *v2.XOClient) map[string]any {
 		settingsMap[""] = defaultSettings
 	}
 
-	for key, value := range currentSettingsMap {
-		if settingsMap[key] == nil {
-			settingsMap[key] = value
+	if currentSettingsMap != nil {
+		for key, value := range currentSettingsMap {
+			if settingsMap[key] == nil {
+				settingsMap[key] = value
+			}
 		}
 	}
 
@@ -744,41 +897,69 @@ func parseBackupJobSettings(settingsMap map[string]any) map[string]any {
 	result := make(map[string]any)
 
 	if defaultSettings, ok := settingsMap[""].(map[string]any); ok {
-		if val, exists := defaultSettings["reportWhen"]; exists {
-			result["report_when_fail_only"] = (val.(string) == "failure")
-		}
-		if val, exists := defaultSettings["timezone"]; exists {
-			result["timezone"] = val.(string)
-		}
-
-		if val, exists := defaultSettings["offlineBackup"]; exists {
-			result["offline_backup"] = val.(bool)
-		}
-		if val, exists := defaultSettings["checkpointSnapshot"]; exists {
-			result["checkpoint_snapshot"] = val.(bool)
-		}
-		if val, exists := defaultSettings["deleteFirst"]; exists {
-			result["delete_first"] = val.(bool)
-		}
-		if val, exists := defaultSettings["remoteEnabled"]; exists {
-			result["remote_enabled"] = val.(bool)
-		}
-		if val, exists := defaultSettings["compressionEnabled"]; exists {
-			result["compression_enabled"] = val.(bool)
-		}
-
-		if val, exists := defaultSettings["retention"]; exists {
-			if floatVal, ok := val.(float64); ok {
-				result["retention"] = int(floatVal)
-			} else if intVal, ok := val.(int); ok {
-				result["retention"] = intVal
+		// Helper function: only set field if it exists in API
+		parseOptionalField := func(apiKey, tfKey string, isInt bool) {
+			if val, exists := defaultSettings[apiKey]; exists {
+				if isInt {
+					if floatVal, ok := val.(float64); ok {
+						result[tfKey] = int(floatVal)
+					} else if intVal, ok := val.(int); ok {
+						result[tfKey] = intVal
+					}
+				} else {
+					result[tfKey] = val
+				}
 			}
 		}
-		if val, exists := defaultSettings["remoteRetention"]; exists {
-			if floatVal, ok := val.(float64); ok {
-				result["remote_retention"] = int(floatVal)
-			} else if intVal, ok := val.(int); ok {
-				result["remote_retention"] = intVal
+
+		// Integer fields mapping
+		intFields := map[string]string{
+			"retention":                "retention",
+			"remoteRetention":          "remote_retention",
+			"copyRetention":            "copy_retention",
+			"concurrency":              "concurrency",
+			"maxExportRate":            "max_export_rate",
+			"nRetriesVmBackupFailures": "n_retries_vm_backup_failures",
+			"nbdConcurrency":           "nbd_concurrency",
+			"timeout":                  "timeout",
+			"retentionPoolMetadata":    "retention_pool_metadata",
+			"retentionXoMetadata":      "retention_xo_metadata",
+		}
+
+		// Boolean fields mapping
+		boolFields := map[string]string{
+			"offlineBackup":             "offline_backup",
+			"offlineSnapshot":           "offline_snapshot",
+			"checkpointSnapshot":        "checkpoint_snapshot",
+			"deleteFirst":               "delete_first",
+			"remoteEnabled":             "remote_enabled",
+			"compressionEnabled":        "compression_enabled",
+			"mergeBackupsSynchronously": "merge_backups_synchronously",
+			"cbtDestroySnapshotData":    "cbt_destroy_snapshot_data",
+			"preferNbd":                 "prefer_nbd",
+		}
+
+		// String fields mapping
+		stringFields := map[string]string{
+			"timezone":        "timezone",
+			"backupReportTpl": "backup_report_tpl",
+		}
+
+		// Process all field types
+		for apiKey, tfKey := range intFields {
+			parseOptionalField(apiKey, tfKey, true)
+		}
+		for apiKey, tfKey := range boolFields {
+			parseOptionalField(apiKey, tfKey, false)
+		}
+		for apiKey, tfKey := range stringFields {
+			parseOptionalField(apiKey, tfKey, false)
+		}
+
+		// Special cases
+		if val, exists := defaultSettings["reportWhen"]; exists {
+			if strVal, ok := val.(string); ok {
+				result["report_when_fail_only"] = (strVal == "failure")
 			}
 		}
 
@@ -786,25 +967,51 @@ func parseBackupJobSettings(settingsMap map[string]any) map[string]any {
 			if recipients, ok := val.([]interface{}); ok {
 				strRecipients := make([]string, len(recipients))
 				for i, r := range recipients {
-					strRecipients[i] = r.(string)
+					if str, ok := r.(string); ok {
+						strRecipients[i] = str
+					}
 				}
 				result["report_recipients"] = strRecipients
 			}
 		}
+
+		// Long-term retention
+		if val, exists := defaultSettings["longTermRetention"]; exists {
+			if ltrMap, ok := val.(map[string]any); ok {
+				longTermRetention := make([]map[string]any, 1)
+				ltrData := make(map[string]any)
+
+				for _, period := range []string{"daily", "weekly", "monthly", "yearly"} {
+					if periodData, exists := ltrMap[period]; exists {
+						if periodMap, ok := periodData.(map[string]any); ok {
+							if retention, hasRetention := periodMap["retention"]; hasRetention {
+								ltrData[period] = []map[string]any{{
+									"retention": retention,
+								}}
+							}
+						}
+					}
+				}
+
+				if len(ltrData) > 0 {
+					longTermRetention[0] = ltrData
+					result["long_term_retention"] = longTermRetention
+				}
+			}
+		}
 	}
 
+	// Handle schedule-specific settings
 	for key, value := range settingsMap {
 		if key != "" {
-			if settingsMap, ok := value.(map[string]any); ok {
-				if exportRetention, exists := settingsMap["exportRetention"]; exists {
+			if settingsData, ok := value.(map[string]any); ok {
+				if exportRetention, exists := settingsData["exportRetention"]; exists {
 					if floatVal, ok := exportRetention.(float64); ok {
 						result["export_retention"] = int(floatVal)
 					} else if intVal, ok := exportRetention.(int); ok {
 						result["export_retention"] = intVal
 					}
-					if key != "" {
-						result["schedule_id"] = key
-					}
+					result["schedule_id"] = key
 				}
 			}
 		}
@@ -817,60 +1024,123 @@ func convertMapToBackupSettings(settingsMap map[string]any) payloads.BackupSetti
 	settings := payloads.BackupSettings{}
 
 	if defaultSettings, ok := settingsMap[""].(map[string]any); ok {
-		if val, exists := defaultSettings["retention"]; exists {
-			if intVal, ok := val.(int); ok {
-				settings.Retention = &intVal
+		// Helper function to set integer pointer fields
+		setIntPtr := func(apiKey string, target **int, validate func(int) bool) {
+			if val, exists := defaultSettings[apiKey]; exists {
+				if intVal, ok := val.(int); ok && (validate == nil || validate(intVal)) {
+					*target = &intVal
+				}
 			}
 		}
 
-		if val, exists := defaultSettings["compressionEnabled"]; exists {
-			if boolVal, ok := val.(bool); ok {
-				settings.CompressionEnabled = &boolVal
+		// Helper function to set boolean pointer fields
+		setBoolPtr := func(apiKey string, target **bool) {
+			if val, exists := defaultSettings[apiKey]; exists {
+				if boolVal, ok := val.(bool); ok {
+					*target = &boolVal
+				}
 			}
 		}
 
-		if val, exists := defaultSettings["offlineBackup"]; exists {
-			if boolVal, ok := val.(bool); ok {
-				settings.OfflineBackup = &boolVal
+		// Helper function to set string pointer fields
+		setStringPtr := func(apiKey string, target **string) {
+			if val, exists := defaultSettings[apiKey]; exists {
+				if strVal, ok := val.(string); ok {
+					*target = &strVal
+				}
 			}
 		}
-		if val, exists := defaultSettings["checkpointSnapshot"]; exists {
-			if boolVal, ok := val.(bool); ok {
-				settings.CheckpointSnapshot = &boolVal
-			}
-		}
-		if val, exists := defaultSettings["remoteEnabled"]; exists {
-			if boolVal, ok := val.(bool); ok {
-				settings.RemoteEnabled = &boolVal
-			}
-		}
-		if val, exists := defaultSettings["remoteRetention"]; exists {
-			if intVal, ok := val.(int); ok {
-				settings.RemoteRetention = &intVal
-			}
-		}
+
+		// Set all integer fields
+		setIntPtr("retention", &settings.Retention, nil)
+		setIntPtr("remoteRetention", &settings.RemoteRetention, nil)
+		setIntPtr("copyRetention", &settings.CopyRetention, func(v int) bool { return v > 0 })
+		setIntPtr("concurrency", &settings.Concurrency, func(v int) bool { return v > 0 })
+		setIntPtr("maxExportRate", &settings.MaxExportRate, func(v int) bool { return v > 0 })
+		setIntPtr("nRetriesVmBackupFailures", &settings.NRetriesVmBackupFailures, func(v int) bool { return v >= 0 })
+		setIntPtr("nbdConcurrency", &settings.NbdConcurrency, func(v int) bool { return v > 0 })
+		setIntPtr("timeout", &settings.Timeout, func(v int) bool { return v > 0 })
+		setIntPtr("retentionPoolMetadata", &settings.RetentionPoolMetadata, func(v int) bool { return v > 0 })
+		setIntPtr("retentionXoMetadata", &settings.RetentionXOMetadata, func(v int) bool { return v > 0 })
+
+		// Set all boolean fields
+		setBoolPtr("compressionEnabled", &settings.CompressionEnabled)
+		setBoolPtr("offlineBackup", &settings.OfflineBackup)
+		setBoolPtr("offlineSnapshot", &settings.OfflineSnapshot)
+		setBoolPtr("checkpointSnapshot", &settings.CheckpointSnapshot)
+		setBoolPtr("remoteEnabled", &settings.RemoteEnabled)
+		setBoolPtr("deleteFirst", &settings.DeleteFirst)
+		setBoolPtr("mergeBackupsSynchronously", &settings.MergeBackupsSynchronously)
+		setBoolPtr("cbtDestroySnapshotData", &settings.CbtDestroySnapshotData)
+		setBoolPtr("preferNbd", &settings.PreferNbd)
+
+		// Set all string fields
+		setStringPtr("timezone", &settings.Timezone)
+		setStringPtr("backupReportTpl", &settings.BackupReportTpl)
+
+		// Special cases
 		if val, exists := defaultSettings["reportWhen"]; exists {
 			if strVal, ok := val.(string); ok {
 				reportWhen := payloads.ReportWhenAlways
 				if strVal == "failure" {
 					reportWhen = payloads.ReportWhenFailOnly
+				} else if strVal == "error" {
+					reportWhen = payloads.ReportWhenError
 				}
 				settings.ReportWhen = &reportWhen
 			}
 		}
+
 		if val, exists := defaultSettings["reportRecipients"]; exists {
 			if recipients, ok := val.([]string); ok {
 				settings.ReportRecipients = recipients
+			} else if recipientsInterface, ok := val.([]interface{}); ok {
+				recipients := make([]string, len(recipientsInterface))
+				for i, r := range recipientsInterface {
+					recipients[i] = r.(string)
+				}
+				settings.ReportRecipients = recipients
 			}
 		}
-		if val, exists := defaultSettings["timezone"]; exists {
-			if strVal, ok := val.(string); ok {
-				settings.Timezone = &strVal
+
+		// Long-term retention
+		if val, exists := defaultSettings["longTermRetention"]; exists {
+			if ltrMap, ok := val.(map[string]any); ok {
+				longTermRetention := make(payloads.LongTermRetentionObject)
+				for period, periodData := range ltrMap {
+					if periodMap, ok := periodData.(map[string]any); ok {
+						if retention, hasRetention := periodMap["retention"]; hasRetention {
+							if retentionInt, ok := retention.(int); ok {
+								settingsData := make(map[string]any)
+								if settingsVal, hasSettings := periodMap["settings"]; hasSettings {
+									if settingsMap, ok := settingsVal.(map[string]any); ok {
+										settingsData = settingsMap
+									}
+								}
+								longTermRetention[payloads.LongTermRetentionDurationKey(period)] = payloads.LongTermRetentionDuration{
+									Retention: retentionInt,
+									Settings:  settingsData,
+								}
+							}
+						}
+					}
+				}
+				if len(longTermRetention) > 0 {
+					settings.LongTermRetention = longTermRetention
+				}
 			}
 		}
-		if val, exists := defaultSettings["deleteFirst"]; exists {
-			if boolVal, ok := val.(bool); ok {
-				settings.DeleteFirst = &boolVal
+	}
+
+	// Handle export retention from schedule-specific settings
+	for key, value := range settingsMap {
+		if key != "" {
+			if settingsData, ok := value.(map[string]any); ok {
+				if exportRetention, exists := settingsData["exportRetention"]; exists {
+					if intVal, ok := exportRetention.(int); ok {
+						settings.ExportRetention = &intVal
+					}
+				}
 			}
 		}
 	}
