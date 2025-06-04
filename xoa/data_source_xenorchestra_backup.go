@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/gofrs/uuid"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/vatesfr/xenorchestra-go-sdk/pkg/payloads"
 	v2 "github.com/vatesfr/xenorchestra-go-sdk/v2"
@@ -252,14 +253,12 @@ func dataSourceBackupRead(d *schema.ResourceData, m any) error {
 	var err error
 
 	if jobID != "" {
-		// Get job by ID
 		job, err = c.Backup().GetJob(ctx, jobID, payloads.RestAPIJobQueryVM)
 		if err != nil {
 			d.SetId("")
 			return nil
 		}
 	} else if jobName != "" {
-		// Find job by name
 		jobs, listErr := c.Backup().ListJobs(ctx, 0, payloads.RestAPIJobQueryVM)
 		if listErr != nil {
 			return fmt.Errorf("failed to list backup jobs: %w", listErr)
@@ -281,13 +280,11 @@ func dataSourceBackupRead(d *schema.ResourceData, m any) error {
 		return fmt.Errorf("either id or name must be specified")
 	}
 
-	// Set computed values
 	d.SetId(job.ID.String())
 	d.Set("name", job.Name)
 	d.Set("mode", string(job.Mode))
 	d.Set("vms", normalizeVMs(job.VMs))
 
-	// Parse and set settings
 	if len(job.Settings) > 0 {
 		settings := parseSettingsFromAPI(job.Settings)
 		if len(settings) > 0 {
@@ -295,26 +292,24 @@ func dataSourceBackupRead(d *schema.ResourceData, m any) error {
 		}
 	}
 
-	// Handle schedule if present
-	if job.Schedule.String() != "00000000-0000-0000-0000-000000000000" {
-		d.Set("schedule_id", job.Schedule.String())
+	scheduleID := job.ScheduleID()
+	if scheduleID == uuid.Nil {
+		scheduleID = job.Schedule
+	}
 
-		// Get schedule details
-		schedule, err := c.Schedule().Get(ctx, job.Schedule)
-		if err == nil {
-			scheduleMap := map[string]any{
-				"cron":     schedule.Cron,
-				"enabled":  schedule.Enabled,
-				"timezone": schedule.Timezone,
-			}
-			if schedule.Name != "" {
-				scheduleMap["name"] = schedule.Name
-			}
-			d.Set("schedule", []any{scheduleMap})
+	d.Set("schedule_id", scheduleID.String())
+
+	schedule, err := c.Schedule().Get(ctx, scheduleID)
+	if err == nil {
+		scheduleMap := map[string]any{
+			"cron":     schedule.Cron,
+			"enabled":  schedule.Enabled,
+			"timezone": schedule.Timezone,
 		}
-	} else {
-		d.Set("schedule_id", "")
-		d.Set("schedule", []any{})
+		if schedule.Name != "" {
+			scheduleMap["name"] = schedule.Name
+		}
+		d.Set("schedule", []any{scheduleMap})
 	}
 
 	return nil

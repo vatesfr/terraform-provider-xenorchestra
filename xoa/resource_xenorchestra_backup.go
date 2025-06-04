@@ -37,7 +37,8 @@ func resourceBackup() *schema.Resource {
 			},
 			"schedule": {
 				Type:     schema.TypeSet,
-				Optional: true,
+				Required: true,
+				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"cron": {
@@ -96,7 +97,7 @@ func resourceBackup() *schema.Resource {
 						},
 						"export_retention": {
 							Type:     schema.TypeInt,
-							Optional: true,
+							Required: true,
 						},
 						"delete_first": {
 							Type:     schema.TypeBool,
@@ -273,38 +274,37 @@ func resourceBackupCreate(d *schema.ResourceData, m any) error {
 
 	d.SetId(createdJob.ID.String())
 
-	if scheduleSet := d.Get("schedule").(*schema.Set); scheduleSet.Len() > 0 {
-		scheduleMap := scheduleSet.List()[0].(map[string]any)
+	scheduleSet := d.Get("schedule").(*schema.Set)
+	scheduleMap := scheduleSet.List()[0].(map[string]any)
 
-		schedule := &payloads.Schedule{
-			JobID:    createdJob.ID,
-			Enabled:  scheduleMap["enabled"].(bool),
-			Timezone: "UTC", // Default timezone
-		}
+	schedule := &payloads.Schedule{
+		JobID:    createdJob.ID,
+		Enabled:  scheduleMap["enabled"].(bool),
+		Timezone: scheduleMap["timezone"].(string),
+	}
 
-		if cron, ok := scheduleMap["cron"].(string); ok && cron != "" {
-			schedule.Cron = cron
-		}
-		if timezone, ok := scheduleMap["timezone"].(string); ok && timezone != "" {
-			schedule.Timezone = timezone
-		}
-		if name, ok := scheduleMap["name"].(string); ok && name != "" {
-			schedule.Name = name
-		}
+	if cron, ok := scheduleMap["cron"].(string); ok && cron != "" {
+		schedule.Cron = cron
+	}
+	if timezone, ok := scheduleMap["timezone"].(string); ok && timezone != "" {
+		schedule.Timezone = timezone
+	}
+	if name, ok := scheduleMap["name"].(string); ok && name != "" {
+		schedule.Name = name
+	}
 
-		createdSchedule, err := c.Schedule().Create(ctx, schedule)
-		if err != nil {
-			return fmt.Errorf("failed to create schedule: %w", err)
-		}
+	createdSchedule, err := c.Schedule().Create(ctx, schedule)
+	if err != nil {
+		return fmt.Errorf("failed to create schedule: %w", err)
+	}
 
-		d.Set("schedule_id", createdSchedule.ID.String())
+	d.Set("schedule_id", createdSchedule.ID.String())
 
-		job.ID = createdJob.ID
-		job.Schedule = createdSchedule.ID
-		_, err = c.Backup().UpdateJob(ctx, job)
-		if err != nil {
-			return fmt.Errorf("failed to update backup job with schedule: %w", err)
-		}
+	job.ID = createdJob.ID
+	job.Schedule = createdSchedule.ID
+	_, err = c.Backup().UpdateJob(ctx, job)
+	if err != nil {
+		return fmt.Errorf("failed to update backup job with schedule: %w", err)
 	}
 
 	return resourceBackupRead(d, m)
@@ -336,24 +336,25 @@ func resourceBackupRead(d *schema.ResourceData, m any) error {
 		}
 	}
 
-	if job.Schedule != uuid.Nil {
-		d.Set("schedule_id", job.Schedule.String())
+	scheduleID := job.ScheduleID()
+	if scheduleID == uuid.Nil {
+		scheduleID = job.Schedule
+	}
 
-		schedule, err := c.Schedule().Get(ctx, job.Schedule)
-		if err == nil {
-			scheduleMap := map[string]any{
-				"cron":     schedule.Cron,
-				"enabled":  schedule.Enabled,
-				"timezone": schedule.Timezone,
-			}
-			if schedule.Name != "" {
-				scheduleMap["name"] = schedule.Name
-			}
-			d.Set("schedule", []any{scheduleMap})
+	d.Set("schedule_id", scheduleID.String())
+
+	// Get schedule details
+	schedule, err := c.Schedule().Get(ctx, scheduleID)
+	if err == nil {
+		scheduleMap := map[string]any{
+			"cron":     schedule.Cron,
+			"enabled":  schedule.Enabled,
+			"timezone": schedule.Timezone,
 		}
-	} else {
-		d.Set("schedule_id", "")
-		d.Set("schedule", []any{})
+		if schedule.Name != "" {
+			scheduleMap["name"] = schedule.Name
+		}
+		d.Set("schedule", []any{scheduleMap})
 	}
 
 	return nil
@@ -368,7 +369,6 @@ func resourceBackupUpdate(d *schema.ResourceData, m any) error {
 		return fmt.Errorf("invalid job ID: %w", err)
 	}
 
-	// Build updated job payload
 	job := &payloads.BackupJob{
 		ID:       jobID,
 		Name:     d.Get("name").(string),
@@ -377,7 +377,6 @@ func resourceBackupUpdate(d *schema.ResourceData, m any) error {
 		Settings: buildBackupSettings(d),
 	}
 
-	// Handle remotes
 	if remotesList, ok := d.Get("remotes").([]any); ok && len(remotesList) > 0 {
 		stringRemotes := expandStringList(remotesList)
 		if len(stringRemotes) == 1 {
@@ -387,68 +386,51 @@ func resourceBackupUpdate(d *schema.ResourceData, m any) error {
 		}
 	}
 
-	// Handle schedule reference
 	if scheduleID := d.Get("schedule_id").(string); scheduleID != "" {
 		if scheduleUUID, err := uuid.FromString(scheduleID); err == nil {
 			job.Schedule = scheduleUUID
 		}
 	}
 
-	// Update the job
 	_, err = c.Backup().UpdateJob(ctx, job)
 	if err != nil {
 		return fmt.Errorf("failed to update backup job: %w", err)
 	}
 
-	// Handle schedule changes
 	if d.HasChange("schedule") {
 		scheduleID := d.Get("schedule_id").(string)
+		scheduleUUID, err := uuid.FromString(scheduleID)
+		if err != nil {
+			return fmt.Errorf("invalid schedule ID: %w", err)
+		}
+
+		existingSchedule, err := c.Schedule().Get(ctx, scheduleUUID)
+		if err != nil {
+			return fmt.Errorf("failed to get existing schedule: %w", err)
+		}
+
+		schedule := existingSchedule
+		schedule.ID = scheduleUUID
+
 		scheduleSet := d.Get("schedule").(*schema.Set)
+		scheduleMap := scheduleSet.List()[0].(map[string]any)
 
-		if scheduleSet.Len() > 0 {
-			scheduleMap := scheduleSet.List()[0].(map[string]any)
-			schedule := &payloads.Schedule{
-				JobID:    jobID,
-				Enabled:  scheduleMap["enabled"].(bool),
-				Timezone: "UTC",
-			}
+		if enabled, ok := scheduleMap["enabled"]; ok {
+			schedule.Enabled = enabled.(bool)
+		}
+		if cron, ok := scheduleMap["cron"].(string); ok {
+			schedule.Cron = cron
+		}
+		if timezone, ok := scheduleMap["timezone"].(string); ok {
+			schedule.Timezone = timezone
+		}
+		if name, ok := scheduleMap["name"].(string); ok {
+			schedule.Name = name
+		}
 
-			if cron, ok := scheduleMap["cron"].(string); ok && cron != "" {
-				schedule.Cron = cron
-			}
-			if timezone, ok := scheduleMap["timezone"].(string); ok && timezone != "" {
-				schedule.Timezone = timezone
-			}
-			if name, ok := scheduleMap["name"].(string); ok && name != "" {
-				schedule.Name = name
-			}
-
-			if scheduleID != "" {
-				// Update existing schedule
-				scheduleUUID, err := uuid.FromString(scheduleID)
-				if err != nil {
-					return fmt.Errorf("invalid schedule ID: %w", err)
-				}
-				schedule.ID = scheduleUUID
-				_, err = c.Schedule().Update(ctx, scheduleUUID, schedule)
-				if err != nil {
-					return fmt.Errorf("failed to update schedule: %w", err)
-				}
-			} else {
-				// Create new schedule
-				createdSchedule, err := c.Schedule().Create(ctx, schedule)
-				if err != nil {
-					return fmt.Errorf("failed to create schedule: %w", err)
-				}
-				d.Set("schedule_id", createdSchedule.ID.String())
-			}
-		} else if scheduleID != "" {
-			// Delete schedule
-			scheduleUUID, err := uuid.FromString(scheduleID)
-			if err == nil {
-				c.Schedule().Delete(ctx, scheduleUUID)
-				d.Set("schedule_id", "")
-			}
+		_, err = c.Schedule().Update(ctx, scheduleUUID, schedule)
+		if err != nil {
+			return fmt.Errorf("failed to update schedule: %w", err)
 		}
 	}
 
@@ -459,18 +441,15 @@ func resourceBackupDelete(d *schema.ResourceData, m any) error {
 	c := m.(*v2.XOClient)
 	ctx := context.Background()
 
-	// Delete schedule first if it exists
 	if scheduleID := d.Get("schedule_id").(string); scheduleID != "" {
 		if scheduleUUID, err := uuid.FromString(scheduleID); err == nil {
 			c.Schedule().Delete(ctx, scheduleUUID)
 		}
 	}
 
-	// Delete the backup job
 	return c.Backup().DeleteJob(ctx, uuid.FromStringOrNil(d.Id()))
 }
 
-// Helper functions
 func expandStringList(list []any) []string {
 	result := make([]string, len(list))
 	for i, v := range list {
@@ -485,9 +464,16 @@ func buildBackupSettings(d *schema.ResourceData) payloads.BackupSettings {
 	if settingsList, ok := d.GetOk("settings"); ok {
 		settingsData := settingsList.([]any)[0].(map[string]any)
 
-		// Helper functions for pointer assignment
 		setIntPtr := func(key string, target **int) {
-			if v, ok := settingsData[key]; ok && v.(int) > 0 {
+			if v, ok := settingsData[key]; ok {
+				if val := v.(int); val > 0 {
+					*target = &val
+				}
+			}
+		}
+
+		setIntPtrAllowZero := func(key string, target **int) {
+			if v, ok := settingsData[key]; ok {
 				val := v.(int)
 				*target = &val
 			}
@@ -501,16 +487,17 @@ func buildBackupSettings(d *schema.ResourceData) payloads.BackupSettings {
 		}
 
 		setStringPtr := func(key string, target **string) {
-			if v, ok := settingsData[key]; ok && v.(string) != "" {
-				val := v.(string)
-				*target = &val
+			if v, ok := settingsData[key]; ok {
+				if val := v.(string); val != "" {
+					*target = &val
+				}
 			}
 		}
 
-		// Set integer settings
-		setIntPtr("retention", &settings.Retention)
-		setIntPtr("remote_retention", &settings.RemoteRetention)
-		setIntPtr("export_retention", &settings.ExportRetention)
+		setIntPtrAllowZero("retention", &settings.Retention)
+		setIntPtrAllowZero("remote_retention", &settings.RemoteRetention)
+		setIntPtrAllowZero("export_retention", &settings.ExportRetention)
+
 		setIntPtr("concurrency", &settings.Concurrency)
 		setIntPtr("max_export_rate", &settings.MaxExportRate)
 		setIntPtr("copy_retention", &settings.CopyRetention)
@@ -518,9 +505,8 @@ func buildBackupSettings(d *schema.ResourceData) payloads.BackupSettings {
 		setIntPtr("retention_pool_metadata", &settings.RetentionPoolMetadata)
 		setIntPtr("retention_xo_metadata", &settings.RetentionXOMetadata)
 		setIntPtr("timeout", &settings.Timeout)
-		setIntPtr("n_retries_vm_backup_failures", &settings.NRetriesVmBackupFailures)
+		setIntPtrAllowZero("n_retries_vm_backup_failures", &settings.NRetriesVmBackupFailures)
 
-		// Set boolean settings
 		setBoolPtr("compression_enabled", &settings.CompressionEnabled)
 		setBoolPtr("offline_backup", &settings.OfflineBackup)
 		setBoolPtr("checkpoint_snapshot", &settings.CheckpointSnapshot)
@@ -531,11 +517,9 @@ func buildBackupSettings(d *schema.ResourceData) payloads.BackupSettings {
 		setBoolPtr("cbt_destroy_snapshot_data", &settings.CbtDestroySnapshotData)
 		setBoolPtr("prefer_nbd", &settings.PreferNbd)
 
-		// Set string settings
 		setStringPtr("timezone", &settings.Timezone)
 		setStringPtr("backup_report_tpl", &settings.BackupReportTpl)
 
-		// Handle report settings
 		if v, ok := settingsData["report_when_fail_only"]; ok {
 			reportWhen := payloads.ReportWhenAlways
 			if v.(bool) {
@@ -545,7 +529,7 @@ func buildBackupSettings(d *schema.ResourceData) payloads.BackupSettings {
 		}
 
 		if v, ok := settingsData["report_recipients"]; ok {
-			if recipientsList, ok := v.([]any); ok {
+			if recipientsList, ok := v.([]any); ok && len(recipientsList) > 0 {
 				recipients := make([]string, len(recipientsList))
 				for i, r := range recipientsList {
 					recipients[i] = r.(string)
@@ -554,7 +538,6 @@ func buildBackupSettings(d *schema.ResourceData) payloads.BackupSettings {
 			}
 		}
 
-		// Handle long-term retention
 		if v, ok := settingsData["long_term_retention"]; ok {
 			if ltrList, ok := v.([]any); ok && len(ltrList) > 0 {
 				ltrMap := ltrList[0].(map[string]any)
@@ -565,7 +548,7 @@ func buildBackupSettings(d *schema.ResourceData) payloads.BackupSettings {
 						if periodList, ok := periodData.([]any); ok && len(periodList) > 0 {
 							periodMap := periodList[0].(map[string]any)
 							if retention, hasRetention := periodMap["retention"]; hasRetention {
-								if retentionInt, ok := retention.(int); ok {
+								if retentionInt, ok := retention.(int); ok && retentionInt > 0 {
 									longTermRetention[payloads.LongTermRetentionDurationKey(period)] = payloads.LongTermRetentionDuration{
 										Retention: retentionInt,
 										Settings:  map[string]any{},
@@ -612,10 +595,28 @@ func parseSettingsFromAPI(apiSettings map[string]any) map[string]any {
 	result := make(map[string]any)
 
 	if defaultSettings, ok := apiSettings[""].(map[string]any); ok {
+		setIfExists := func(apiKey, tfKey string) {
+			if val, exists := defaultSettings[apiKey]; exists && val != nil {
+				switch v := val.(type) {
+				case float64:
+					result[tfKey] = int(v)
+				case int:
+					result[tfKey] = v
+				case bool:
+					result[tfKey] = v
+				case string:
+					if v != "" {
+						result[tfKey] = v
+					}
+				default:
+					result[tfKey] = val
+				}
+			}
+		}
+
 		fieldMappings := map[string]string{
 			"retention":                 "retention",
 			"remoteRetention":           "remote_retention",
-			"exportRetention":           "export_retention",
 			"compressionEnabled":        "compression_enabled",
 			"offlineBackup":             "offline_backup",
 			"checkpointSnapshot":        "checkpoint_snapshot",
@@ -638,42 +639,36 @@ func parseSettingsFromAPI(apiSettings map[string]any) map[string]any {
 		}
 
 		for apiKey, tfKey := range fieldMappings {
-			if val, exists := defaultSettings[apiKey]; exists {
-				if floatVal, ok := val.(float64); ok {
-					result[tfKey] = int(floatVal)
-				} else {
-					result[tfKey] = val
-				}
-			}
+			setIfExists(apiKey, tfKey)
 		}
 
-		// Handle special cases
-		if reportWhen, exists := defaultSettings["reportWhen"]; exists {
+		if reportWhen, exists := defaultSettings["reportWhen"]; exists && reportWhen != nil {
 			result["report_when_fail_only"] = (reportWhen == "failure")
 		}
 
-		if recipients, exists := defaultSettings["reportRecipients"]; exists {
-			if recipientsList, ok := recipients.([]any); ok {
+		if recipients, exists := defaultSettings["reportRecipients"]; exists && recipients != nil {
+			if recipientsList, ok := recipients.([]any); ok && len(recipientsList) > 0 {
 				strRecipients := make([]string, len(recipientsList))
 				for i, r := range recipientsList {
 					if str, ok := r.(string); ok {
 						strRecipients[i] = str
 					}
 				}
-				result["report_recipients"] = strRecipients
+				if len(strRecipients) > 0 {
+					result["report_recipients"] = strRecipients
+				}
 			}
 		}
 
-		// Handle long-term retention
-		if val, exists := defaultSettings["longTermRetention"]; exists {
-			if ltrMap, ok := val.(map[string]any); ok {
+		if val, exists := defaultSettings["longTermRetention"]; exists && val != nil {
+			if ltrMap, ok := val.(map[string]any); ok && len(ltrMap) > 0 {
 				longTermRetention := make([]map[string]any, 1)
 				ltrData := make(map[string]any)
 
 				for _, period := range []string{"daily", "weekly", "monthly", "yearly"} {
-					if periodData, exists := ltrMap[period]; exists {
+					if periodData, exists := ltrMap[period]; exists && periodData != nil {
 						if periodMap, ok := periodData.(map[string]any); ok {
-							if retention, hasRetention := periodMap["retention"]; hasRetention {
+							if retention, hasRetention := periodMap["retention"]; hasRetention && retention != nil {
 								ltrData[period] = []map[string]any{{
 									"retention": retention,
 								}}
@@ -690,15 +685,16 @@ func parseSettingsFromAPI(apiSettings map[string]any) map[string]any {
 		}
 	}
 
-	// Handle schedule-specific settings (export_retention)
 	for key, value := range apiSettings {
-		if key != "" {
+		if key != "" && value != nil {
 			if settingsData, ok := value.(map[string]any); ok {
-				if exportRetention, exists := settingsData["exportRetention"]; exists {
-					if floatVal, ok := exportRetention.(float64); ok {
-						result["export_retention"] = int(floatVal)
-					} else if intVal, ok := exportRetention.(int); ok {
-						result["export_retention"] = intVal
+				// Check if this looks like a schedule ID (UUID format) and has exportRetention
+				if exportRetention, exists := settingsData["exportRetention"]; exists && exportRetention != nil {
+					switch v := exportRetention.(type) {
+					case float64:
+						result["export_retention"] = int(v)
+					case int:
+						result["export_retention"] = v
 					}
 				}
 			}
