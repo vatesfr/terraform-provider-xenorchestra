@@ -199,7 +199,7 @@ func Test_getUpdateDiskActions(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		actions := getUpdateDiskActions(c.disk, c.haystack)
+		actions, _ := getUpdateDiskActions(c.disk, c.haystack)
 
 		if !reflect.DeepEqual(c.expectedDiskActions, actions) {
 			t.Errorf("expected updateDiskActions '%+v' to match '%+v' when comparing disk: %+v against the following disks: %+v", c.expectedDiskActions, actions, c.disk, c.haystack)

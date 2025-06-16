@@ -7,7 +7,7 @@ toolchain go1.24.3
 require (
 	github.com/hashicorp/terraform-plugin-docs v0.18.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.34.0
-	github.com/vatesfr/xenorchestra-go-sdk v1.2.0
+	github.com/vatesfr/xenorchestra-go-sdk v1.2.1-0.20250616154451-af7121c5b113
 )
 
 require (
