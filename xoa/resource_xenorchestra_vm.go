@@ -873,6 +873,7 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 
+	haltForUpdates := false
 	if d.HasChange("disk") {
 		oDisk, nDisk := d.GetChange("disk")
 
@@ -882,9 +883,9 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		removals := expandDisks(oSet.Difference(nSet).List())
 		log.Printf("[DEBUG] Found the following disk removals: %v previous set: %v new set: %v\n", oSet.Difference(nSet).List(), oSet, nSet)
 		for _, removal := range removals {
-
-			actions := getUpdateDiskActions(removal, expandDisks(nSet.List()))
-			if len(actions) != 0 {
+			var actions *[]updateDiskActions
+			actions, haltForUpdates = getUpdateDiskActions(removal, expandDisks(nSet.List()))
+			if actions != nil { // Nil means disk needs to be deleted
 				continue
 			}
 
@@ -892,31 +893,8 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 				return err
 			}
 		}
-
-		additions := sortDiskByPostion(expandDisks(nSet.Difference(oSet).List()))
-		log.Printf("[DEBUG] Found the following disk additions: %v previous set: %v new set: %v\n", nSet.Difference(oSet).List(), oSet, nSet)
-		for _, disk := range additions {
-
-			actions := getUpdateDiskActions(disk, expandDisks(oSet.List()))
-			log.Printf("[DEBUG] Found '%v' disk update actions\n", actions)
-
-			if len(actions) == 0 {
-				if _, err := c.CreateDisk(*vm, disk); err != nil {
-					return err
-				}
-				continue
-			}
-
-			for _, action := range actions {
-				log.Printf("[DEBUG] Updating disk with action '%d'\n", action)
-				if err := performDiskUpdateAction(c, action, disk); err != nil {
-					return err
-				}
-			}
-		}
 	}
 
-	haltForUpdates := false
 	if _, nCPUs := d.GetChange("cpus"); d.HasChange("cpus") && nCPUs.(int) > vm.CPUs.Max {
 		haltForUpdates = true
 	}
@@ -1003,6 +981,37 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		}
 		haltPerformed = true
 	}
+
+	if d.HasChange("disk") {
+		// Perform disks updates after VM has been halted, in case some updates require the VM to be halted.
+		oDisk, nDisk := d.GetChange("disk")
+
+		oSet := schema.NewSet(diskHash, oDisk.([]interface{}))
+		nSet := schema.NewSet(diskHash, nDisk.([]interface{}))
+
+		additions := sortDiskByPostion(expandDisks(nSet.Difference(oSet).List()))
+		log.Printf("[DEBUG] Found the following disk additions: %v previous set: %v new set: %v\n", nSet.Difference(oSet).List(), oSet, nSet)
+		for _, disk := range additions {
+
+			actions, _ := getUpdateDiskActions(disk, expandDisks(oSet.List()))
+			log.Printf("[DEBUG] Found '%v' disk update actions\n", actions)
+
+			if actions == nil { // Nil means no update but creation
+				if _, err := c.CreateDisk(*vm, disk); err != nil {
+					return err
+				}
+				continue
+			}
+
+			for _, action := range *actions {
+				log.Printf("[DEBUG] Updating disk with action '%d'\n", action)
+				if err := performDiskUpdateAction(c, action, disk); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
 	vm, err = c.UpdateVm(vmReq)
 
 	if err != nil {
@@ -1365,9 +1374,35 @@ const (
 	diskNameDescriptionUpdate updateDiskActions = iota
 	diskNameLabelUpdate
 	diskAttachmentUpdate
+	diskSizeUpdate
+	diskMigrationUpdate
 )
 
-func getUpdateDiskActions(d client.Disk, disks []client.Disk) []updateDiskActions {
+// String returns the string representation of the updateDiskActions.
+func (a updateDiskActions) String() string {
+	switch a {
+	case diskNameDescriptionUpdate:
+		return "disk NameDescription update"
+	case diskNameLabelUpdate:
+		return "disk NameLabel update"
+	case diskAttachmentUpdate:
+		return "disk attachment update"
+	case diskSizeUpdate:
+		return "disk size update"
+	case diskMigrationUpdate:
+		return "disk migration Update (Sr ID update)"
+	default:
+		return "unknown update action"
+	}
+}
+
+/*
+getUpdateDiskActions determines which update actions are required.
+It returns a slice of update actions to perform and a boolean indicating if updates require the VM to be halted.
+If the slice of update actions is nil, it means the disk doesn't exist in the disks list.
+*/
+func getUpdateDiskActions(d client.Disk, disks []client.Disk) (*[]updateDiskActions, bool) {
+	haltForUpdates := false
 	actions := []updateDiskActions{}
 	var diskFound *client.Disk
 	for _, disk := range disks {
@@ -1376,8 +1411,9 @@ func getUpdateDiskActions(d client.Disk, disks []client.Disk) []updateDiskAction
 		}
 	}
 
+	// No found == disk deleted
 	if diskFound == nil {
-		return actions
+		return nil, haltForUpdates
 	}
 
 	if diskFound.NameLabel != d.NameLabel {
@@ -1388,10 +1424,21 @@ func getUpdateDiskActions(d client.Disk, disks []client.Disk) []updateDiskAction
 		actions = append(actions, diskNameDescriptionUpdate)
 	}
 
+	if diskFound.Size != d.Size {
+		actions = append(actions, diskSizeUpdate)
+		haltForUpdates = d.Attached
+	}
+
+	if diskFound.SrId != d.SrId {
+		log.Printf("[DEBUG] Found the following disk migration: %s previous Sr ID: %v new Sr ID: %v\n", diskFound.NameLabel, d.SrId, diskFound.SrId)
+		actions = append(actions, diskMigrationUpdate)
+	}
+
+	// Attach update action must be the last action as some action required the disk to be detached
 	if diskFound.Attached != d.Attached {
 		actions = append(actions, diskAttachmentUpdate)
 	}
-	return actions
+	return &actions, haltForUpdates
 }
 
 func shouldUpdateDisk(d client.Disk, disks []client.Disk) bool {
@@ -1423,9 +1470,10 @@ func performDiskUpdateAction(c client.XOClient, action updateDiskActions, d clie
 		return c.UpdateVDI(d)
 	case diskNameLabelUpdate:
 		return c.UpdateVDI(d)
+	case diskSizeUpdate:
+		return c.ResizeVDI(d)
 	}
-
-	return errors.New(fmt.Sprintf("disk update action '%d' not handled", action))
+	return errors.New(fmt.Sprintf("disk update action '%s' not handled", action.String()))
 }
 
 func getFormattedMac(macAddress string) string {
