@@ -71,13 +71,22 @@ func resourceVm() *schema.Resource {
 	}
 }
 
-func vmDestroyCloudConfigCustomizeDiff(ctx context.Context, diff *schema.ResourceDiff, v interface{}) error {
+func vmCustomizeDiff(ctx context.Context, diff *schema.ResourceDiff, v interface{}) error {
+	// Check power state and cloudConfig constraints
 	destroyCloudConfig := diff.Get("destroy_cloud_config_vdi_after_boot").(bool)
 	powerState := diff.Get("power_state").(string)
 	powerStateChanged := diff.HasChange("power_state")
 
 	if powerStateChanged && destroyCloudConfig && powerState != client.RunningPowerState {
 		return fmt.Errorf("power_state must be `%s` when destroy_cloud_config_vdi_after_boot set to `true`", client.RunningPowerState)
+	}
+
+	// Check memory constraints
+	memoryMin := diff.Get("memory_min").(int)
+	memoryMax := diff.Get("memory_max").(int)
+	memoryHasChanged := diff.HasChanges("memory_max", "memory_min")
+	if memoryHasChanged && memoryMin > memoryMax {
+		return fmt.Errorf("memory_min (%d) must be less than or equal to memory_max (%d)", memoryMin, memoryMax)
 	}
 	return nil
 }
@@ -215,23 +224,17 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 
 `,
 		},
-		"memory_max": &schema.Schema{
+		"memory_min": &schema.Schema{
 			Type:     schema.TypeInt,
-			Required: true,
-			Description: `The amount of memory in bytes the VM will have. Updates to this field will case a stop and start of the VM if the new value is greater than the dynamic memory max. This can be determined with the following command:
-` + "```" + `
-
-
-$ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd0b8"}' | jq '.[].memory.dynamic'
-[
-  2147483648, # memory dynamic min
-  4294967296  # memory dynamic max (4GB)
-]
-# Updating the VM to use 3GB of memory would happen without stopping/starting the VM
-# Updating the VM to use 5GB of memory would stop/start the VM
-` + "```" + `
-
-`,
+			Optional: true,
+			// Default:     0, // Keep 0 by default, XO will set the appropriate value if not set.
+			Description: `The amount of memory in bytes the VM will have. Set this value equal to memory_max to have a static memory.`,
+			Computed:    true,
+		},
+		"memory_max": &schema.Schema{
+			Type:        schema.TypeInt,
+			Required:    true,
+			Description: `The amount of memory in bytes the VM will have. Updates to this field will cause the VM to stop and start, as it sets both dynamic and static maximums.`,
 		},
 		"resource_set": &schema.Schema{
 			Type:     schema.TypeString,
@@ -438,17 +441,22 @@ Xen Orchestra allows templating cloudinit config through its own custom mechanis
 
 This does not work in terraform since that is applied on Xen Orchestra's client side (Javascript). Terraform provides a "templatefile" function that allows for a similar substitution. Please see the example below for more details.
 `,
-		CustomizeDiff: vmDestroyCloudConfigCustomizeDiff,
+		CustomizeDiff: vmCustomizeDiff,
 		Create:        resourceVmCreate,
 		Read:          resourceVmRead,
 		Update:        resourceVmUpdate,
 		Delete:        resourceVmDelete,
-		SchemaVersion: 1,
+		SchemaVersion: 2,
 		StateUpgraders: []schema.StateUpgrader{
 			{
 				Type:    state.ResourceVmResourceV0().CoreConfigSchema().ImpliedType(),
 				Upgrade: state.VmStateUpgradeV0,
 				Version: 0,
+			},
+			{
+				Type:    state.ResourceVmResourceV0().CoreConfigSchema().ImpliedType(),
+				Upgrade: state.VmStateUpgradeV1,
+				Version: 1,
 			},
 		},
 		Importer: &schema.ResourceImporter{
@@ -565,6 +573,10 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 			Static: []int{
 				0, d.Get("memory_max").(int),
 			},
+			// FIXME: how to set dynamic limits at VM creation?
+			// Dynamic: []int{
+			// 	d.Get("memory_min").(int), d.Get("memory_max").(int),
+			// },
 		},
 		Tags:         vmTags,
 		Disks:        ds,
@@ -796,6 +808,7 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 	memoryMax := d.Get("memory_max").(int)
+	memoryMin := d.Get("memory_min").(int)
 
 	vm, err := c.GetVm(client.Vm{Id: id})
 
@@ -899,7 +912,8 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		haltForUpdates = true
 	}
 
-	if _, nMemoryMax := d.GetChange("memory_max"); d.HasChange("memory_max") && nMemoryMax.(int) > vm.Memory.Static[1] {
+	// Changing memory_max always requires halting the VM (dynamic max = static max)
+	if d.HasChange("memory_max") {
 		haltForUpdates = true
 	}
 
@@ -929,6 +943,9 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		Memory: client.MemoryObject{
 			Static: []int{
 				0, memoryMax,
+			},
+			Dynamic: []int{
+				memoryMin, memoryMax,
 			},
 		},
 		NameLabel:         nameLabel,
@@ -1169,6 +1186,9 @@ func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, cd
 	// d.Set("cloud_config", resource.CloudConfig)
 	if len(resource.Memory.Dynamic) == 2 {
 		if err := d.Set("memory_max", resource.Memory.Dynamic[1]); err != nil {
+			return err
+		}
+		if err := d.Set("memory_min", resource.Memory.Dynamic[0]); err != nil {
 			return err
 		}
 	} else {

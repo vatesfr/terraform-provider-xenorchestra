@@ -74,6 +74,7 @@ Read-Only:
 - `ipv4_addresses` (List of String)
 - `ipv6_addresses` (List of String)
 - `memory_max` (Number)
+- `memory_min` (Number)
 - `name_description` (String)
 - `name_label` (String)
 - `network` (List of Object) (see [below for nested schema](#nestedobjatt--vms--network))

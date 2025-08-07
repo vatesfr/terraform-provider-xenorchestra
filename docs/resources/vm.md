@@ -144,18 +144,7 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 # Updating the VM to use 5 CPUs would stop/start the VM
 ```
 - `disk` (Block List, Min: 1) The disk the VM will have access to. (see [below for nested schema](#nestedblock--disk))
-- `memory_max` (Number) The amount of memory in bytes the VM will have. Updates to this field will case a stop and start of the VM if the new value is greater than the dynamic memory max. This can be determined with the following command:
-```
-
-
-$ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd0b8"}' | jq '.[].memory.dynamic'
-[
-  2147483648, # memory dynamic min
-  4294967296  # memory dynamic max (4GB)
-]
-# Updating the VM to use 3GB of memory would happen without stopping/starting the VM
-# Updating the VM to use 5GB of memory would stop/start the VM
-```
+- `memory_max` (Number) The amount of memory in bytes the VM will have. Updates to this field will cause the VM to stop and start, as it sets both dynamic and static maximums.
 - `name_label` (String) The name of the VM.
 - `network` (Block List, Min: 1) The network for the VM. (see [below for nested schema](#nestedblock--network))
 - `template` (String) The ID of the VM template to create the new VM from.
@@ -178,6 +167,7 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 - `host` (String)
 - `hvm_boot_firmware` (String) The firmware to use for the VM. Possible values are `bios` and `uefi`.
 - `installation_method` (String) This cannot be used with `cdrom`. Possible values are `network` which allows a VM to boot via PXE.
+- `memory_min` (Number) The amount of memory in bytes the VM will have. Set this value equal to memory_max to have a static memory.
 - `name_description` (String) The description of the VM.
 - `power_state` (String) The power state of the VM. This can be Running, Halted, Paused or Suspended.
 - `resource_set` (String)

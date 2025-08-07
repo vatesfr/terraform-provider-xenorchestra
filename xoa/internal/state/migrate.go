@@ -39,6 +39,10 @@ func VmStateUpgradeV0(ctx context.Context, rawState map[string]interface{}, meta
 	return rawState, nil
 }
 
+func VmStateUpgradeV1(ctx context.Context, rawState map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
+	return rawState, nil
+}
+
 func ResourceVmResourceV0() *schema.Resource {
 	return &schema.Resource{
 		Schema: map[string]*schema.Schema{
