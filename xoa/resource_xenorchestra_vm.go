@@ -234,7 +234,7 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 		"memory_max": &schema.Schema{
 			Type:        schema.TypeInt,
 			Required:    true,
-			Description: `The amount of memory in bytes the VM will have. Updates to this field will cause the VM to stop and start, as it sets both dynamic and static maximums.`,
+			Description: `The amount of memory in bytes the VM will have.\n\n!!! WARNING: Updates to this field will cause the VM to stop and start, as it sets both dynamic and static maximums.`,
 		},
 		"resource_set": &schema.Schema{
 			Type:     schema.TypeString,
@@ -573,10 +573,9 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 			Static: []int{
 				0, d.Get("memory_max").(int),
 			},
-			// FIXME: how to set dynamic limits at VM creation?
-			// Dynamic: []int{
-			// 	d.Get("memory_min").(int), d.Get("memory_max").(int),
-			// },
+			Dynamic: []int{
+				d.Get("memory_min").(int), d.Get("memory_max").(int),
+			},
 		},
 		Tags:         vmTags,
 		Disks:        ds,
@@ -912,6 +911,12 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		haltForUpdates = true
 	}
 
+	// Avoid API error by checking static limits before updating
+	if _, nMemoryMin := d.GetChange("memory_min"); d.HasChange("memory_min") && nMemoryMin.(int) < vm.Memory.Static[0] {
+		errMsg := fmt.Sprintf("memory_min (%d) must be less than or equal to the static memory min (%d)", nMemoryMin, vm.Memory.Static[0])
+		log.Print(errMsg)
+		return fmt.Errorf("%s", errMsg)
+	}
 	// Changing memory_max always requires halting the VM (dynamic max = static max)
 	if d.HasChange("memory_max") {
 		haltForUpdates = true
