@@ -454,7 +454,7 @@ This does not work in terraform since that is applied on Xen Orchestra's client 
 				Version: 0,
 			},
 			{
-				Type:    state.ResourceVmResourceV0().CoreConfigSchema().ImpliedType(),
+				Type:    state.ResourceVmResourceV1().CoreConfigSchema().ImpliedType(),
 				Upgrade: state.VmStateUpgradeV1,
 				Version: 1,
 			},
