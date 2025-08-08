@@ -144,7 +144,7 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 # Updating the VM to use 5 CPUs would stop/start the VM
 ```
 - `disk` (Block List, Min: 1) The disk the VM will have access to. (see [below for nested schema](#nestedblock--disk))
-- `memory_max` (Number) The amount of memory in bytes the VM will have. Updates to this field will cause the VM to stop and start, as it sets both dynamic and static maximums.
+- `memory_max` (Number) The amount of memory in bytes the VM will have.\n\n!!! WARNING: Updates to this field will cause the VM to stop and start, as it sets both dynamic and static maximums.
 - `name_label` (String) The name of the VM.
 - `network` (Block List, Min: 1) The network for the VM. (see [below for nested schema](#nestedblock--network))
 - `template` (String) The ID of the VM template to create the new VM from.
