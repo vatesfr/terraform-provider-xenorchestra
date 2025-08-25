@@ -1,4 +1,4 @@
-.PHONY: import testacc testclient test dist ci
+.PHONY: import testacc testclient test dist ci docs debug
 
 TIMEOUT ?= 40m
 GOMAXPROCS ?= 5
@@ -16,6 +16,9 @@ endif
 
 build:
 	go build -o terraform-provider-xenorchestra
+
+debug: 
+	go build -o terraform-provider-xenorchestra -gcflags="all=-N -l"
 
 clean:
 	rm dist/*
@@ -47,3 +50,7 @@ testacc: xoa/testdata/alpine-virt-3.17.0-x86_64.iso
 # has copied that file into place before the tests run
 ci: xoa/testdata/alpine-virt-3.17.0-x86_64.iso
 	TF_ACC_TERRAFORM_PATH=/opt/terraform-provider-xenorchestra/bin/$(TF_VERSION) TF_ACC=1 gotestsum --debug --rerun-fails=5 --max-fails=15 --packages=./xoa  -- ./xoa -v -count=1 -timeout=$(TIMEOUT) -sweep=true -parallel=$(GOMAXPROCS)
+
+docs:
+	@echo "Generating docs..."
+	tfplugindocs generate

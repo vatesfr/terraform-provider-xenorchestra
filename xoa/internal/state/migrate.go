@@ -39,6 +39,29 @@ func VmStateUpgradeV0(ctx context.Context, rawState map[string]interface{}, meta
 	return rawState, nil
 }
 
+func VmStateUpgradeV1(ctx context.Context, rawState map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
+	return rawState, nil
+}
+
+func ResourceVmResourceV1() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"memory_min": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				// Default:     0, // Keep 0 by default, XO will set the appropriate value if not set.
+				Description: `The amount of memory in bytes the VM will have. Set this value equal to memory_max to have a static memory.`,
+				Computed:    true,
+			},
+			"memory_max": {
+				Type:        schema.TypeInt,
+				Required:    true,
+				Description: `The amount of memory in bytes the VM will have.\n\n!!! WARNING: Updates to this field will cause the VM to stop and start, as it sets both dynamic and static maximums.`,
+			},
+		},
+	}
+}
+
 func ResourceVmResourceV0() *schema.Resource {
 	return &schema.Resource{
 		Schema: map[string]*schema.Schema{
