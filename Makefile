@@ -53,4 +53,4 @@ ci: xoa/testdata/alpine-virt-3.17.0-x86_64.iso
 
 docs:
 	@echo "Generating docs..."
-	tfplugindocs generate
+	go generate ./...

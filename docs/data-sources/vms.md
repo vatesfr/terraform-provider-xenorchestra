@@ -3,7 +3,7 @@
 page_title: "xenorchestra_vms Data Source - terraform-provider-xenorchestra"
 subcategory: ""
 description: |-
-  Use this data source to filter Xenorchestra VMs by certain criteria (poolid, powerstate or host) for use in other resources.
+  Use this data source to filter Xenorchestra VMs by certain criteria (pool_id, power_state or host) for use in other resources.
 ---
 
 # xenorchestra_vms (Data Source)

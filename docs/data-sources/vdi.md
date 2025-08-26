@@ -5,7 +5,7 @@ subcategory: ""
 description: |-
   Provides information about a VDI (virtual disk image).
   Note: If there are multiple VDIs that match terraform will fail.
-  Ensure that your namelabel, poolid and tags identify a unique VDI.
+  Ensure that your name_label, pool_id and tags identify a unique VDI.
 ---
 
 # xenorchestra_vdi (Data Source)

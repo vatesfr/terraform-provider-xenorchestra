@@ -5,7 +5,7 @@ subcategory: ""
 description: |-
   Provides information about a VM template that can be used for creating new VMs.
   Note: If there are multiple templates that match terraform will fail.
-  Ensure that your namelabel and poolid identify a unique template.
+  Ensure that your name_label and pool_id identify a unique template.
 ---
 
 # xenorchestra_template (Data Source)
