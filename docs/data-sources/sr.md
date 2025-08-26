@@ -5,7 +5,7 @@ subcategory: ""
 description: |-
   Provides information about a Storage repository to ease the lookup of VM storage information.
   Note: If there are multiple storage repositories that match terraform will fail.
-  Ensure that your namelabel, poolid and tags identify a unique storage repository.
+  Ensure that your name_label, pool_id and tags identify a unique storage repository.
 ---
 
 # xenorchestra_sr (Data Source)

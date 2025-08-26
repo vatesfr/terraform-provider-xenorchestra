@@ -7,8 +7,7 @@ description: |-
   Differences with the Xen Orchestra UI
   Cloudinit
   Xen Orchestra allows templating cloudinit config through its own custom mechanism:
-  * "{name}" is replaced with the VM's name
-  * "%" is replaced with the VM's index
+  "{name}" is replaced with the VM's name"%" is replaced with the VM's index
   This does not work in terraform since that is applied on Xen Orchestra's client side (Javascript). Terraform provides a "templatefile" function that allows for a similar substitution. Please see the example below for more details.
 ---
 
