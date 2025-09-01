@@ -1,12 +1,10 @@
 package main
 
 import (
-	"context"
 	"flag"
-	"log"
 
-	"github.com/vatesfr/terraform-provider-xenorchestra/xoa"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
+	"github.com/vatesfr/terraform-provider-xenorchestra/xoa"
 )
 
 // Generate the Terraform provider documentation using `tfplugindocs`:
@@ -19,16 +17,11 @@ func main() {
 	flag.BoolVar(&debugMode, "debuggable", false, "set to true to run the provider with support for debuggers like delve")
 	flag.Parse()
 
-	if debugMode {
-		err := plugin.Debug(context.Background(), "registry.terraform.io/vatesfr/xenorchestra",
-			&plugin.ServeOpts{
-				ProviderFunc: xoa.Provider,
-			})
-		if err != nil {
-			log.Println(err.Error())
-		}
-	} else {
-		plugin.Serve(&plugin.ServeOpts{
-			ProviderFunc: xoa.Provider})
+	opts := &plugin.ServeOpts{
+		Debug:        debugMode,
+		ProviderAddr: "registry.terraform.io/vatesfr/xenorchestra",
+		ProviderFunc: xoa.Provider,
 	}
+
+	plugin.Serve(opts)
 }
