@@ -1,15 +1,17 @@
 package xoa
 
 import (
-	"log"
+	"context"
 
+	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/vatesfr/xenorchestra-go-sdk/client"
 )
 
 func dataSourceXoaHosts() *schema.Resource {
 	return &schema.Resource{
-		Read:        dataSourceHostsRead,
+		ReadContext: dataSourceHostsReadContext,
 		Description: "Use this data source to filter Xenorchestra hosts by certain criteria (name_label, tags) for use in other resources.",
 		Schema: map[string]*schema.Schema{
 			"master": &schema.Schema{
@@ -43,30 +45,32 @@ func dataSourceXoaHosts() *schema.Resource {
 	}
 }
 
-func dataSourceHostsRead(d *schema.ResourceData, m interface{}) error {
+func dataSourceHostsReadContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(client.XOClient)
 	poolId := d.Get("pool_id").(string)
 	tags := d.Get("tags").(*schema.Set).List()
 
 	pool, err := c.GetPools(client.Pool{Id: poolId})
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	searchHost := client.Host{
 		Pool: pool[0].Id,
 		Tags: tags}
 	hosts, err := c.GetSortedHosts(searchHost, d.Get("sort_by").(string), d.Get("sort_order").(string))
 
-	log.Printf("[DEBUG] found the following hosts: %+v", hosts)
+	tflog.Debug(ctx, "Found hosts", map[string]interface{}{
+		"hosts": hosts,
+	})
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	if err = d.Set("hosts", hostsToMapList(hosts)); err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	if err = d.Set("master", pool[0].Master); err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	d.SetId(pool[0].Master)

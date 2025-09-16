@@ -1,8 +1,10 @@
 package xoa
 
 import (
-	"log"
+	"context"
 
+	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/vatesfr/xenorchestra-go-sdk/client"
@@ -12,11 +14,11 @@ var validLimitType []string = []string{"cpus", "disk", "memory"}
 
 func resourceResourceSet() *schema.Resource {
 	return &schema.Resource{
-		Description: "Creates a Xen Orchestra resource set.",
-		Create:      resourceSetCreate,
-		Read:        resourceSetRead,
-		Update:      resourceSetUpdate,
-		Delete:      resourceSetDelete,
+		Description:   "Creates a Xen Orchestra resource set.",
+		CreateContext: resourceSetCreateContext,
+		ReadContext:   resourceSetReadContext,
+		UpdateContext: resourceSetUpdateContext,
+		DeleteContext: resourceSetDeleteContext,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -66,7 +68,7 @@ func resourceResourceSet() *schema.Resource {
 	}
 }
 
-func resourceSetCreate(d *schema.ResourceData, m interface{}) error {
+func resourceSetCreateContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(client.XOClient)
 
 	name := d.Get("name").(string)
@@ -99,18 +101,21 @@ func resourceSetCreate(d *schema.ResourceData, m interface{}) error {
 	rs, err := c.CreateResourceSet(rsReq)
 
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
-	return resourceSetToData(*rs, d)
+	return diag.FromErr(resourceSetToData(*rs, d))
 }
 
-func resourceSetRead(d *schema.ResourceData, m interface{}) error {
+func resourceSetReadContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(client.XOClient)
 
 	id := d.Id()
 	rs, err := c.GetResourceSetById(id)
-	log.Printf("[DEBUG] Found resource set: %+v with error: %v\n", rs, err)
+	tflog.Debug(ctx, "Found resource set", map[string]interface{}{
+		"resource_set": rs,
+		"error":        err,
+	})
 
 	if _, ok := err.(client.NotFound); ok {
 		d.SetId("")
@@ -118,17 +123,17 @@ func resourceSetRead(d *schema.ResourceData, m interface{}) error {
 	}
 
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
-	return resourceSetToData(*rs, d)
+	return diag.FromErr(resourceSetToData(*rs, d))
 }
 
-func resourceSetUpdate(d *schema.ResourceData, m interface{}) error {
+func resourceSetUpdateContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(client.XOClient)
 
 	id := d.Id()
-	rs, err := c.GetResourceSetById(id)
+	rs, _ := c.GetResourceSetById(id)
 	if d.HasChange("limit") {
 		old, new := d.GetChange("limit")
 
@@ -143,7 +148,7 @@ func resourceSetUpdate(d *schema.ResourceData, m interface{}) error {
 			err := c.AddResourceSetLimit(*rs, t, quantity)
 
 			if err != nil {
-				return err
+				return diag.FromErr(err)
 			}
 		}
 
@@ -155,7 +160,7 @@ func resourceSetUpdate(d *schema.ResourceData, m interface{}) error {
 			err := c.RemoveResourceSetLimit(*rs, t)
 
 			if err != nil {
-				return err
+				return diag.FromErr(err)
 			}
 		}
 	}
@@ -172,7 +177,7 @@ func resourceSetUpdate(d *schema.ResourceData, m interface{}) error {
 			err := c.AddResourceSetSubject(*rs, subject)
 
 			if err != nil {
-				return err
+				return diag.FromErr(err)
 			}
 		}
 
@@ -182,7 +187,7 @@ func resourceSetUpdate(d *schema.ResourceData, m interface{}) error {
 			err := c.RemoveResourceSetSubject(*rs, subject)
 
 			if err != nil {
-				return err
+				return diag.FromErr(err)
 			}
 		}
 	}
@@ -199,7 +204,7 @@ func resourceSetUpdate(d *schema.ResourceData, m interface{}) error {
 			err := c.AddResourceSetObject(*rs, subject)
 
 			if err != nil {
-				return err
+				return diag.FromErr(err)
 			}
 		}
 
@@ -209,26 +214,26 @@ func resourceSetUpdate(d *schema.ResourceData, m interface{}) error {
 			err := c.RemoveResourceSetObject(*rs, object)
 
 			if err != nil {
-				return err
+				return diag.FromErr(err)
 			}
 		}
 	}
-	rs, err = c.GetResourceSetById(id)
+	rs, err := c.GetResourceSetById(id)
 
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
-	return resourceSetToData(*rs, d)
+	return diag.FromErr(resourceSetToData(*rs, d))
 }
 
-func resourceSetDelete(d *schema.ResourceData, m interface{}) error {
+func resourceSetDeleteContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(client.XOClient)
 
 	err := c.DeleteResourceSet(client.ResourceSet{Id: d.Id()})
 
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	d.SetId("")
 	return nil

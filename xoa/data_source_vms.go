@@ -1,9 +1,11 @@
 package xoa
 
 import (
-	"log"
+	"context"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/vatesfr/terraform-provider-xenorchestra/xoa/internal"
 	"github.com/vatesfr/xenorchestra-go-sdk/client"
@@ -13,7 +15,7 @@ func dataSourceXoaVms() *schema.Resource {
 
 	return &schema.Resource{
 		Description: "Use this data source to filter Xenorchestra VMs by certain criteria (pool_id, power_state or host) for use in other resources.",
-		Read:        dataSourceVmsRead,
+		ReadContext: dataSourceVmsReadContext,
 		Schema: map[string]*schema.Schema{
 			"vms": &schema.Schema{
 				Type:        schema.TypeList,
@@ -39,7 +41,7 @@ func dataSourceXoaVms() *schema.Resource {
 	}
 }
 
-func dataSourceVmsRead(d *schema.ResourceData, m interface{}) error {
+func dataSourceVmsReadContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(client.XOClient)
 	searchVm := client.Vm{
 		PowerState: d.Get("power_state").(string),
@@ -49,21 +51,21 @@ func dataSourceVmsRead(d *schema.ResourceData, m interface{}) error {
 
 	vms, err := c.GetVms(searchVm)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
-	if err = d.Set("vms", vmToMapList(vms)); err != nil {
-		return err
+	if err = d.Set("vms", vmToMapList(ctx, vms)); err != nil {
+		return diag.FromErr(err)
 	}
 	d.SetId(internal.Strings([]string{searchVm.PowerState, searchVm.PoolId, searchVm.Host}))
 	return nil
 
 }
 
-func vmToMapList(vms []client.Vm) []map[string]interface{} {
+func vmToMapList(ctx context.Context, vms []client.Vm) []map[string]interface{} {
 	result := make([]map[string]interface{}, 0, len(vms))
 	for _, vm := range vms {
-		log.Printf("[DEBUG] IPS %s\n", vm.Addresses)
+		tflog.Debug(ctx, "Found IPs", map[string]interface{}{"addresses": vm.Addresses})
 		var ipv4 []string
 		var ipv6 []string
 		for key, address := range vm.Addresses {
@@ -73,7 +75,7 @@ func vmToMapList(vms []client.Vm) []map[string]interface{} {
 				ipv6 = append(ipv6, address)
 			}
 		}
-		log.Printf("[DEBUG] VBD on %s (%s) %s\n", vm.VBDs, vm.NameLabel, vm.Id)
+		tflog.Debug(ctx, "VBD info", map[string]interface{}{"vbds": vm.VBDs, "nameLabel": vm.NameLabel, "id": vm.Id})
 		hostMap := map[string]interface{}{
 			"id":                   vm.Id,
 			"name_label":           vm.NameLabel,

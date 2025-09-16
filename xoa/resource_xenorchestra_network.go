@@ -1,10 +1,11 @@
 package xoa
 
 import (
-	"errors"
+	"context"
 	"fmt"
-	"log"
 
+	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/vatesfr/xenorchestra-go-sdk/client"
 )
@@ -13,10 +14,10 @@ var netDefaultDesc string = "Created with Xen Orchestra"
 
 func resourceXoaNetwork() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceNetworkCreate,
-		Delete: resourceNetworkDelete,
-		Read:   resourceNetworkRead,
-		Update: resourceNetworkUpdate,
+		CreateContext: resourceNetworkCreateContext,
+		DeleteContext: resourceNetworkDeleteContext,
+		ReadContext:   resourceNetworkReadContext,
+		UpdateContext: resourceNetworkUpdateContext,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -84,7 +85,7 @@ func resourceXoaNetwork() *schema.Resource {
 	}
 }
 
-func resourceNetworkCreate(d *schema.ResourceData, m interface{}) error {
+func resourceNetworkCreateContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(client.XOClient)
 
 	var pifId string
@@ -92,7 +93,7 @@ func resourceNetworkCreate(d *schema.ResourceData, m interface{}) error {
 		pif, err := getNetworkCreationSourcePIF(c, sourcePIFDevice, d.Get("pool_id").(string))
 
 		if err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 		pifId = pif.Id
 	}
@@ -109,13 +110,16 @@ func resourceNetworkCreate(d *schema.ResourceData, m interface{}) error {
 		PIF:             pifId,
 	})
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	vlan, pifDevice, err := getVlanForNetwork(c, network)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
-	return networkToData(network, vlan, pifDevice, d)
+	if err := networkToData(ctx, network, vlan, pifDevice, d); err != nil {
+		return diag.FromErr(err)
+	}
+	return nil
 }
 
 // This function returns the PIF specified the given device name on the pool's primary host. In order to create
@@ -128,7 +132,7 @@ func getNetworkCreationSourcePIF(c client.XOClient, pifDevice, poolId string) (*
 	}
 
 	if len(pools) != 1 {
-		return nil, errors.New(fmt.Sprintf("expected to find a single pool, instead found %d", len(pools)))
+		return nil, fmt.Errorf("expected to find a single pool, instead found %d", len(pools))
 	}
 
 	pool := pools[0]
@@ -143,7 +147,7 @@ func getNetworkCreationSourcePIF(c client.XOClient, pifDevice, poolId string) (*
 	}
 
 	if len(pifs) != 1 {
-		return nil, errors.New(fmt.Sprintf("expected to find a single PIF, instead found %d. %+v", len(pifs), pifs))
+		return nil, fmt.Errorf("expected to find a single PIF, instead found %d. %+v", len(pifs), pifs)
 	}
 
 	return &pifs[0], nil
@@ -158,14 +162,14 @@ func getVlanForNetwork(c client.XOClient, net *client.Network) (int, string, err
 		}
 
 		if len(pifs) != 1 {
-			return -1, "", errors.New("expected to find single PIF")
+			return -1, "", fmt.Errorf("expected to find single PIF")
 		}
 		return pifs[0].Vlan, pifs[0].Device, nil
 	}
 	return 0, "", nil
 }
 
-func resourceNetworkRead(d *schema.ResourceData, m interface{}) error {
+func resourceNetworkReadContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(client.XOClient)
 	net, err := c.GetNetwork(
 		client.Network{Id: d.Id()})
@@ -176,17 +180,20 @@ func resourceNetworkRead(d *schema.ResourceData, m interface{}) error {
 	}
 
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	vlan, pifDevice, err := getVlanForNetwork(c, net)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
-	return networkToData(net, vlan, pifDevice, d)
+	if err := networkToData(ctx, net, vlan, pifDevice, d); err != nil {
+		return diag.FromErr(err)
+	}
+	return nil
 }
 
-func resourceNetworkUpdate(d *schema.ResourceData, m interface{}) error {
+func resourceNetworkUpdateContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(client.XOClient)
 
 	netUpdateReq := client.UpdateNetworkRequest{
@@ -208,29 +215,29 @@ func resourceNetworkUpdate(d *schema.ResourceData, m interface{}) error {
 	}
 	_, err := c.UpdateNetwork(netUpdateReq)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
-	return resourceNetworkRead(d, m)
+	return resourceNetworkReadContext(ctx, d, m)
 }
 
-func resourceNetworkDelete(d *schema.ResourceData, m interface{}) error {
+func resourceNetworkDeleteContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(client.XOClient)
 
 	err := c.DeleteNetwork(d.Id())
 
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	d.SetId("")
 	return nil
 }
 
-func networkToData(network *client.Network, vlan int, pifDevice string, d *schema.ResourceData) error {
+func networkToData(ctx context.Context, network *client.Network, vlan int, pifDevice string, d *schema.ResourceData) error {
 	d.SetId(network.Id)
 	if err := d.Set("name_label", network.NameLabel); err != nil {
 		return err
 	}
-	log.Printf("This is being called\n")
+	tflog.Debug(ctx, "Reading network data")
 	if err := d.Set("name_description", network.NameDescription); err != nil {
 		return err
 	}

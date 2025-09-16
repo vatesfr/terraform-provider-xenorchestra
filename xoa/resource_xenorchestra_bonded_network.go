@@ -1,8 +1,10 @@
 package xoa
 
 import (
-	"errors"
+	"context"
+	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/vatesfr/xenorchestra-go-sdk/client"
@@ -12,11 +14,11 @@ var validBondModes []string = []string{"balance-slb", "active-backup", "lacp"}
 
 func resourceXoaBondedNetwork() *schema.Resource {
 	return &schema.Resource{
-		Description: "A resource for managing Bonded Xen Orchestra networks. See the XCP-ng [networking docs](https://xcp-ng.org/docs/networking.html) for more details.",
-		Create:      resourceBondedNetworkCreate,
-		Delete:      resourceBondedNetworkDelete,
-		Read:        resourceBondedNetworkRead,
-		Update:      resourceBondedNetworkUpdate,
+		Description:   "A resource for managing Bonded Xen Orchestra networks. See the XCP-ng [networking docs](https://xcp-ng.org/docs/networking.html) for more details.",
+		CreateContext: resourceBondedNetworkCreateContext,
+		DeleteContext: resourceBondedNetworkDeleteContext,
+		ReadContext:   resourceBondedNetworkReadContext,
+		UpdateContext: resourceBondedNetworkUpdateContext,
 		Importer: &schema.ResourceImporter{
 			State: resourceBondedNetworkImport,
 		},
@@ -77,7 +79,7 @@ func resourceXoaBondedNetwork() *schema.Resource {
 	}
 }
 
-func resourceBondedNetworkCreate(d *schema.ResourceData, m interface{}) error {
+func resourceBondedNetworkCreateContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(client.XOClient)
 
 	pifsReq := []string{}
@@ -95,15 +97,18 @@ func resourceBondedNetworkCreate(d *schema.ResourceData, m interface{}) error {
 		PIFs:            pifsReq,
 	})
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	if len(network.PIFs) < 1 {
-		return errors.New("network should contain more than one PIF after creation")
+		return diag.FromErr(fmt.Errorf("network should contain more than one PIF after creation"))
 	}
-	return bondedNetworkToData(network, d)
+	if err := bondedNetworkToData(network, d); err != nil {
+		return diag.FromErr(err)
+	}
+	return nil
 }
 
-func resourceBondedNetworkRead(d *schema.ResourceData, m interface{}) error {
+func resourceBondedNetworkReadContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(client.XOClient)
 	network, err := c.GetNetwork(
 		client.Network{Id: d.Id()})
@@ -114,16 +119,20 @@ func resourceBondedNetworkRead(d *schema.ResourceData, m interface{}) error {
 	}
 
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	if len(network.PIFs) < 1 {
-		return errors.New("network should contain more than one PIF")
+		return diag.FromErr(fmt.Errorf("network should contain more than one PIF"))
 	}
-	return bondedNetworkToData(network, d)
+
+	if err := bondedNetworkToData(network, d); err != nil {
+		return diag.FromErr(err)
+	}
+	return nil
 }
 
-func resourceBondedNetworkUpdate(d *schema.ResourceData, m interface{}) error {
+func resourceBondedNetworkUpdateContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(client.XOClient)
 
 	netUpdateReq := client.UpdateNetworkRequest{
@@ -144,18 +153,18 @@ func resourceBondedNetworkUpdate(d *schema.ResourceData, m interface{}) error {
 	}
 	_, err := c.UpdateNetwork(netUpdateReq)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
-	return resourceBondedNetworkRead(d, m)
+	return resourceBondedNetworkReadContext(ctx, d, m)
 }
 
-func resourceBondedNetworkDelete(d *schema.ResourceData, m interface{}) error {
+func resourceBondedNetworkDeleteContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(client.XOClient)
 
 	err := c.DeleteNetwork(d.Id())
 
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	d.SetId("")
 	return nil
@@ -170,7 +179,7 @@ func resourceBondedNetworkImport(d *schema.ResourceData, m interface{}) ([]*sche
 	}
 
 	if len(network.PIFs) < 1 {
-		return nil, errors.New("network should contain more than one PIF")
+		return nil, fmt.Errorf("network should contain more than one PIF")
 	}
 
 	// Get the bonded pifs and bond mode from the master pif
@@ -180,7 +189,7 @@ func resourceBondedNetworkImport(d *schema.ResourceData, m interface{}) ([]*sche
 			return nil, err
 		}
 		if len(bondPifs) < 1 {
-			return nil, errors.New("no PIF returned for ID: %s" + pifID)
+			return nil, fmt.Errorf("no PIF returned for ID: %s", pifID)
 		}
 		if bondPifs[0].IsBondMaster {
 			if err := d.Set("pif_ids", bondPifs[0].BondSlaves); err != nil {

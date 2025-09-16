@@ -1,11 +1,12 @@
 package xoa
 
 import (
-	"errors"
+	"context"
 	"fmt"
 	"regexp"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/vatesfr/xenorchestra-go-sdk/client"
@@ -95,11 +96,11 @@ func Provider() *schema.Provider {
 			"xenorchestra_vms":          dataSourceXoaVms(),
 			"xenorchestra_vdi":          dataSourceXoaVDI(),
 		},
-		ConfigureFunc: xoaConfigure,
+		ConfigureContextFunc: xoaConfigure,
 	}
 }
 
-func xoaConfigure(d *schema.ResourceData) (interface{}, error) {
+func xoaConfigure(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
 	url := d.Get("url").(string)
 	username := d.Get("username").(string)
 	password := d.Get("password").(string)
@@ -110,12 +111,12 @@ func xoaConfigure(d *schema.ResourceData) (interface{}, error) {
 
 	duration, err := time.ParseDuration(retryMaxTime)
 	if err != nil {
-		return client.Config{}, err
+		return nil, diag.FromErr(err)
 	}
 
 	retry, ok := retryModeMap[retryMode]
 	if !ok {
-		return client.Config{}, errors.New(fmt.Sprintf("retry mode provided invalid: %s", retryMode))
+		return nil, diag.FromErr(fmt.Errorf("retry mode provided invalid: %s", retryMode))
 	}
 
 	config := client.Config{
@@ -127,5 +128,9 @@ func xoaConfigure(d *schema.ResourceData) (interface{}, error) {
 		RetryMode:          retry,
 		RetryMaxTime:       duration,
 	}
-	return client.NewClient(config)
+	c, err := client.NewClient(config)
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+	return c, nil
 }

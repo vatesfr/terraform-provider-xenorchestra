@@ -1,17 +1,18 @@
 package xoa
 
 import (
-	"errors"
+	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/vatesfr/xenorchestra-go-sdk/client"
 )
 
 func dataSourceXoaHost() *schema.Resource {
 	return &schema.Resource{
-		Read:   dataSourceHostRead,
-		Schema: resourceHostSchema(),
+		ReadContext: dataSourceHostReadContext,
+		Schema:      resourceHostSchema(),
 		Description: `Provides information about a host.
 
 **NOTE:** If there are multiple hosts with the same name
@@ -70,17 +71,17 @@ func resourceHostSchema() map[string]*schema.Schema {
 	}
 }
 
-func dataSourceHostRead(d *schema.ResourceData, m interface{}) error {
+func dataSourceHostReadContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(client.XOClient)
 	nameLabel := d.Get("name_label").(string)
 	hosts, err := c.GetHostByName(nameLabel)
 
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	l := len(hosts)
 	if l != 1 {
-		return errors.New(fmt.Sprintf("found `%d` hosts with name_label `%s`. Hosts must be uniquely named to use this data source", l, nameLabel))
+		return diag.FromErr(fmt.Errorf("found `%d` hosts with name_label `%s`. Hosts must be uniquely named to use this data source", l, nameLabel))
 	}
 
 	d.SetId(hosts[0].Id)

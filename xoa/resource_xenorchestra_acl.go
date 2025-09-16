@@ -1,6 +1,9 @@
 package xoa
 
 import (
+	"context"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/vatesfr/xenorchestra-go-sdk/client"
@@ -14,9 +17,9 @@ var validActionOptions = []string{
 
 func resourceAcl() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAclCreate,
-		Read:   resourceAclRead,
-		Delete: resourceAclDelete,
+		CreateContext: resourceAclCreateContext,
+		ReadContext:   resourceAclReadContext,
+		DeleteContext: resourceAclDeleteContext,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -45,7 +48,7 @@ func resourceAcl() *schema.Resource {
 	}
 }
 
-func resourceAclCreate(d *schema.ResourceData, m interface{}) error {
+func resourceAclCreateContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(client.XOClient)
 
 	acl, err := c.CreateAcl(client.Acl{
@@ -54,12 +57,15 @@ func resourceAclCreate(d *schema.ResourceData, m interface{}) error {
 		Action:  d.Get("action").(string),
 	})
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
-	return aclToData(acl, d)
+	if err := aclToData(acl, d); err != nil {
+		return diag.FromErr(err)
+	}
+	return nil
 }
 
-func resourceAclRead(d *schema.ResourceData, m interface{}) error {
+func resourceAclReadContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(client.XOClient)
 
 	acl, err := c.GetAcl(client.Acl{
@@ -72,13 +78,16 @@ func resourceAclRead(d *schema.ResourceData, m interface{}) error {
 	}
 
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
-	return aclToData(acl, d)
+	if err := aclToData(acl, d); err != nil {
+		return diag.FromErr(err)
+	}
+	return nil
 }
 
-func resourceAclDelete(d *schema.ResourceData, m interface{}) error {
+func resourceAclDeleteContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(client.XOClient)
 
 	err := c.DeleteAcl(client.Acl{
@@ -86,7 +95,7 @@ func resourceAclDelete(d *schema.ResourceData, m interface{}) error {
 	})
 
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	d.SetId("")
