@@ -116,10 +116,7 @@ func resourceNetworkCreateContext(ctx context.Context, d *schema.ResourceData, m
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	if err := networkToData(ctx, network, vlan, pifDevice, d); err != nil {
-		return diag.FromErr(err)
-	}
-	return nil
+	return diag.FromErr(networkToData(ctx, network, vlan, pifDevice, d))
 }
 
 // This function returns the PIF specified the given device name on the pool's primary host. In order to create
@@ -187,10 +184,7 @@ func resourceNetworkReadContext(ctx context.Context, d *schema.ResourceData, m i
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	if err := networkToData(ctx, net, vlan, pifDevice, d); err != nil {
-		return diag.FromErr(err)
-	}
-	return nil
+	return diag.FromErr(networkToData(ctx, net, vlan, pifDevice, d))
 }
 
 func resourceNetworkUpdateContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

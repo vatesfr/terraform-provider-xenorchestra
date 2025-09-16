@@ -111,12 +111,12 @@ func xoaConfigure(ctx context.Context, d *schema.ResourceData) (interface{}, dia
 
 	duration, err := time.ParseDuration(retryMaxTime)
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return client.Config{}, diag.FromErr(err)
 	}
 
 	retry, ok := retryModeMap[retryMode]
 	if !ok {
-		return nil, diag.FromErr(fmt.Errorf("retry mode provided invalid: %s", retryMode))
+		return client.Config{}, diag.FromErr(fmt.Errorf("retry mode provided invalid: %s", retryMode))
 	}
 
 	config := client.Config{

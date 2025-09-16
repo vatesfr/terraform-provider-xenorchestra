@@ -381,7 +381,6 @@ func suppressAttachedDiffWhenHalted(k, old, new string, d *schema.ResourceData) 
 	if powerState == client.RunningPowerState {
 		suppress = false
 	}
-	// log.Printf("[DEBUG] VM '%s' attribute has transitioned from '%s' to '%s' when PowerState '%s'. Suppress diff: %t", k, old, new, powerState, suppress)
 	return
 }
 

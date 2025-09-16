@@ -102,10 +102,7 @@ func resourceBondedNetworkCreateContext(ctx context.Context, d *schema.ResourceD
 	if len(network.PIFs) < 1 {
 		return diag.FromErr(fmt.Errorf("network should contain more than one PIF after creation"))
 	}
-	if err := bondedNetworkToData(network, d); err != nil {
-		return diag.FromErr(err)
-	}
-	return nil
+	return diag.FromErr(bondedNetworkToData(network, d))
 }
 
 func resourceBondedNetworkReadContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -125,11 +122,7 @@ func resourceBondedNetworkReadContext(ctx context.Context, d *schema.ResourceDat
 	if len(network.PIFs) < 1 {
 		return diag.FromErr(fmt.Errorf("network should contain more than one PIF"))
 	}
-
-	if err := bondedNetworkToData(network, d); err != nil {
-		return diag.FromErr(err)
-	}
-	return nil
+	return diag.FromErr(bondedNetworkToData(network, d))
 }
 
 func resourceBondedNetworkUpdateContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

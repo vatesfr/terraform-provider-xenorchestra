@@ -59,10 +59,7 @@ func resourceAclCreateContext(ctx context.Context, d *schema.ResourceData, m int
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	if err := aclToData(acl, d); err != nil {
-		return diag.FromErr(err)
-	}
-	return nil
+	return diag.FromErr(aclToData(acl, d))
 }
 
 func resourceAclReadContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -81,10 +78,7 @@ func resourceAclReadContext(ctx context.Context, d *schema.ResourceData, m inter
 		return diag.FromErr(err)
 	}
 
-	if err := aclToData(acl, d); err != nil {
-		return diag.FromErr(err)
-	}
-	return nil
+	return diag.FromErr(aclToData(acl, d))
 }
 
 func resourceAclDeleteContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

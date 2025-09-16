@@ -63,10 +63,7 @@ func resourceVDICreateContext(ctx context.Context, d *schema.ResourceData, m int
 		return diag.FromErr(err)
 	}
 	d.SetId(vdi.VDIId)
-	if err := vdiToData(vdi, d); err != nil {
-		return diag.FromErr(err)
-	}
-	return nil
+	return diag.FromErr(vdiToData(vdi, d))
 }
 
 func resourceVDIReadContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -83,10 +80,7 @@ func resourceVDIReadContext(ctx context.Context, d *schema.ResourceData, m inter
 		return diag.FromErr(err)
 	}
 
-	if err := vdiToData(vdi, d); err != nil {
-		return diag.FromErr(err)
-	}
-	return nil
+	return diag.FromErr(vdiToData(vdi, d))
 }
 
 func resourceVDIUpdateContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -107,10 +101,7 @@ func resourceVDIUpdateContext(ctx context.Context, d *schema.ResourceData, m int
 		return diag.FromErr(err)
 	}
 
-	if err := vdiToData(vdi, d); err != nil {
-		return diag.FromErr(err)
-	}
-	return nil
+	return diag.FromErr(vdiToData(vdi, d))
 }
 
 func resourceVDIDeleteContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

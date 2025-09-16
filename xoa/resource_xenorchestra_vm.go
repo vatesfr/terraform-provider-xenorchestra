@@ -2,7 +2,6 @@ package xoa
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net"
 	"regexp"
@@ -646,10 +645,7 @@ func resourceVmCreateContext(ctx context.Context, d *schema.ResourceData, m inte
 	}
 
 	err = recordToData(ctx, *vm, vifs, vmDisks, cdroms, d)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	return nil
+	return diag.FromErr(err)
 }
 
 func sortDiskByPostion(disks []client.Disk) []client.Disk {
@@ -799,10 +795,8 @@ func resourceVmReadContext(ctx context.Context, d *schema.ResourceData, m interf
 		return diag.FromErr(err)
 	}
 
-	if err := recordToData(ctx, *vm, vifs, disks, cdroms, d); err != nil {
-		return diag.FromErr(err)
-	}
-	return nil
+	err = recordToData(ctx, *vm, vifs, disks, cdroms, d)
+	return diag.FromErr(err)
 }
 
 func resourceVmUpdateContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -1553,7 +1547,7 @@ func performDiskUpdateAction(c client.XOClient, action updateDiskActions, d clie
 	case diskSizeUpdate:
 		return c.ResizeVDI(d)
 	}
-	return errors.New(fmt.Sprintf("disk update action '%s' not handled", action.String()))
+	return fmt.Errorf("disk update action '%s' not handled", action.String())
 }
 
 func getFormattedMac(macAddress string) string {
@@ -1635,7 +1629,6 @@ func extractIpsFromNetworks(networks map[string]string) ([]guestNetwork, error) 
 }
 
 func suppressEquivalentMAC(k, old, new string, d *schema.ResourceData) (suppress bool) {
-	// log.Printf("[DEBUG] Comparing MACs old=%s new=%s\n", old, new)
 	if old == "" {
 		return false
 	}
@@ -1654,13 +1647,8 @@ func suppressAttachedDiffWhenHalted(k, old, new string, d *schema.ResourceData) 
 	powerState := d.Get("power_state").(string)
 	suppress = true
 	ok := d.HasChange("power_state")
-	// if ok {
-	// 	log.Printf("[DEBUG] Power state has been changed\n")
-	// }
-
 	if !ok && powerState == client.RunningPowerState {
 		suppress = false
 	}
-	// log.Printf("[DEBUG] VM '%s' attribute has transitioned from '%s' to '%s' when PowerState '%s'. Suppress diff: %t", k, old, new, powerState, suppress)
 	return
 }
