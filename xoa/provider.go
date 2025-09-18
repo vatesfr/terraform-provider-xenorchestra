@@ -3,12 +3,15 @@ package xoa
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/vatesfr/terraform-provider-xenorchestra/xoa/internal"
 	"github.com/vatesfr/xenorchestra-go-sdk/client"
 )
 
@@ -119,6 +122,10 @@ func xoaConfigure(ctx context.Context, d *schema.ResourceData) (interface{}, dia
 		return client.Config{}, diag.FromErr(fmt.Errorf("retry mode provided invalid: %s", retryMode))
 	}
 
+	// Configure slog to use tflog before to use XO SDK
+	handler := internal.NewTflogHandler(tflog.NewSubsystem(ctx, "xenorchestra_sdk"))
+	logger := slog.New(handler)
+
 	config := client.Config{
 		Url:                url,
 		Username:           username,
@@ -128,7 +135,7 @@ func xoaConfigure(ctx context.Context, d *schema.ResourceData) (interface{}, dia
 		RetryMode:          retry,
 		RetryMaxTime:       duration,
 	}
-	c, err := client.NewClient(config)
+	c, err := client.NewClientWithLogger(config, logger)
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}

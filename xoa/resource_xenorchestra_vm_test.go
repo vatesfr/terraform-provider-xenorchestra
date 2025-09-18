@@ -22,7 +22,7 @@ import (
 func init() {
 	resource.AddTestSweepers("xenorchestra_vm", &resource.Sweeper{
 		Name:         "xenorchestra_vm",
-		F:            client.RemoveVmsWithNamePrefix(accTestPrefix),
+		F:            client.RemoveVmsWithNamePrefixForTests(accTestPrefix),
 		Dependencies: []string{"xenorchestra_resource_set", "xenorchestra_cloud_config"},
 	})
 }
