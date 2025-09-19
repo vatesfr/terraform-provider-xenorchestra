@@ -1,10 +1,11 @@
 package xoa
 
 import (
-	"errors"
+	"context"
 	"fmt"
-	"log"
 
+	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/vatesfr/xenorchestra-go-sdk/client"
 )
@@ -14,7 +15,7 @@ func dataSourceXoaCloudConfig() *schema.Resource {
 		Description: `Provides information about cloud config.
 
 **NOTE:** If there are multiple cloud configs with the same name Terraform will fail. Ensure that your names are unique when using the data source.`,
-		Read: dataSourceCloudConfigRead,
+		ReadContext: dataSourceCloudConfigReadContext,
 		Schema: map[string]*schema.Schema{
 			"name": &schema.Schema{
 				Type:        schema.TypeString,
@@ -30,7 +31,7 @@ func dataSourceXoaCloudConfig() *schema.Resource {
 	}
 }
 
-func dataSourceCloudConfigRead(d *schema.ResourceData, m interface{}) error {
+func dataSourceCloudConfigReadContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(client.XOClient)
 
 	name := d.Get("name").(string)
@@ -38,20 +39,23 @@ func dataSourceCloudConfigRead(d *schema.ResourceData, m interface{}) error {
 	cloudConfigs, err := c.GetCloudConfigByName(name)
 
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	l := len(cloudConfigs)
 	if l != 1 {
-		return errors.New(fmt.Sprintf("found `%d` cloud configs with name `%s`. Cloud configs must be uniquely named to use this data source", l, name))
+		return diag.FromErr(fmt.Errorf("found `%d` cloud configs with name `%s`. Cloud configs must be uniquely named to use this data source", l, name))
 	}
 
 	cloudConfig := cloudConfigs[0]
 
-	log.Printf("[DEBUG] Found cloud config with %+v", cloudConfig)
+	tflog.Debug(ctx, "Found cloud config", map[string]interface{}{
+		"cloud_config": cloudConfig,
+	})
+
 	d.SetId(cloudConfig.Id)
 	if err := d.Set("template", cloudConfig.Template); err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	return nil
 }

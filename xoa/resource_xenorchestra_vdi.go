@@ -1,6 +1,9 @@
 package xoa
 
 import (
+	"context"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/vatesfr/xenorchestra-go-sdk/client"
@@ -14,11 +17,11 @@ var validTypes = []string{
 
 func resourceVDIRecord() *schema.Resource {
 	return &schema.Resource{
-		Description: "Creates a Xen Orchestra vdi resource.",
-		Create:      resourceVDICreate,
-		Read:        resourceVDIRead,
-		Update:      resourceVDIUpdate,
-		Delete:      resourceVDIDelete,
+		Description:   "Creates a Xen Orchestra vdi resource.",
+		CreateContext: resourceVDICreateContext,
+		ReadContext:   resourceVDIReadContext,
+		UpdateContext: resourceVDIUpdateContext,
+		DeleteContext: resourceVDIDeleteContext,
 		Schema: map[string]*schema.Schema{
 			"name_label": &schema.Schema{
 				Type:        schema.TypeString,
@@ -47,7 +50,7 @@ func resourceVDIRecord() *schema.Resource {
 	}
 }
 
-func resourceVDICreate(d *schema.ResourceData, m interface{}) error {
+func resourceVDICreateContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(client.XOClient)
 
 	vdi, err := c.CreateVDI(client.CreateVDIReq{
@@ -57,13 +60,13 @@ func resourceVDICreate(d *schema.ResourceData, m interface{}) error {
 		Type:      d.Get("type").(string),
 	})
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	d.SetId(vdi.VDIId)
-	return vdiToData(vdi, d)
+	return diag.FromErr(vdiToData(vdi, d))
 }
 
-func resourceVDIRead(d *schema.ResourceData, m interface{}) error {
+func resourceVDIReadContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(client.XOClient)
 
 	vdi, err := c.GetVDI(client.VDI{VDIId: d.Id()})
@@ -74,13 +77,13 @@ func resourceVDIRead(d *schema.ResourceData, m interface{}) error {
 	}
 
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
-	return vdiToData(vdi, d)
+	return diag.FromErr(vdiToData(vdi, d))
 }
 
-func resourceVDIUpdate(d *schema.ResourceData, m interface{}) error {
+func resourceVDIUpdateContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(client.XOClient)
 
 	err := c.UpdateVDI(client.Disk{
@@ -90,24 +93,24 @@ func resourceVDIUpdate(d *schema.ResourceData, m interface{}) error {
 		},
 	})
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	vdi, err := c.GetVDI(client.VDI{VDIId: d.Id()})
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
-	return vdiToData(vdi, d)
+	return diag.FromErr(vdiToData(vdi, d))
 }
 
-func resourceVDIDelete(d *schema.ResourceData, m interface{}) error {
+func resourceVDIDeleteContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(client.XOClient)
 
 	err := c.DeleteVDI(d.Id())
 
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	d.SetId("")
 	return nil

@@ -2,9 +2,7 @@ package xoa
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"log"
 	"net"
 	"regexp"
 	"sort"
@@ -12,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/vatesfr/terraform-provider-xenorchestra/xoa/internal"
@@ -66,8 +66,12 @@ func resourceVm() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Schema:      vmSchema,
-		Description: "Creates a Xen Orchestra vm resource.",
+		Schema:        vmSchema,
+		Description:   "Creates a Xen Orchestra vm resource.",
+		CreateContext: resourceVmCreateContext,
+		ReadContext:   resourceVmReadContext,
+		UpdateContext: resourceVmUpdateContext,
+		DeleteContext: resourceVmDeleteContext,
 	}
 }
 
@@ -442,10 +446,10 @@ Xen Orchestra allows templating cloudinit config through its own custom mechanis
 This does not work in terraform since that is applied on Xen Orchestra's client side (Javascript). Terraform provides a "templatefile" function that allows for a similar substitution. Please see the example below for more details.
 `,
 		CustomizeDiff: vmCustomizeDiff,
-		Create:        resourceVmCreate,
-		Read:          resourceVmRead,
-		Update:        resourceVmUpdate,
-		Delete:        resourceVmDelete,
+		CreateContext: resourceVmCreateContext,
+		ReadContext:   resourceVmReadContext,
+		UpdateContext: resourceVmUpdateContext,
+		DeleteContext: resourceVmDeleteContext,
 		SchemaVersion: 2,
 		StateUpgraders: []schema.StateUpgrader{
 			{
@@ -460,7 +464,7 @@ This does not work in terraform since that is applied on Xen Orchestra's client 
 			},
 		},
 		Importer: &schema.ResourceImporter{
-			State: RecordImport,
+			StateContext: RecordImportContext,
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: &duration,
@@ -471,7 +475,7 @@ This does not work in terraform since that is applied on Xen Orchestra's client 
 	}
 }
 
-func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
+func resourceVmCreateContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(client.XOClient)
 
 	vifsMap := []map[string]string{}
@@ -599,7 +603,7 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 
 	vm, err := c.CreateVm(createVmParams, d.Timeout(schema.TimeoutCreate))
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	d.SetId(vm.Id)
 
@@ -619,7 +623,7 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 		var success bool
 		err := c.(*client.Client).Call("vm.set", params, &success)
 		if err != nil {
-			return fmt.Errorf("failed to update vm blocked operations: %w", err)
+			return diag.FromErr(fmt.Errorf("failed to update vm blocked operations: %w", err))
 		}
 
 		vm.BlockedOperations = newBlockedOps
@@ -627,20 +631,21 @@ func resourceVmCreate(d *schema.ResourceData, m interface{}) error {
 
 	vifs, err := c.GetVIFs(vm)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	vmDisks, err := c.GetDisks(vm)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	cdroms, err := c.GetCdroms(vm)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
-	return recordToData(*vm, vifs, vmDisks, cdroms, d)
+	err = recordToData(ctx, *vm, vifs, vmDisks, cdroms, d)
+	return diag.FromErr(err)
 }
 
 func sortDiskByPostion(disks []client.Disk) []client.Disk {
@@ -715,7 +720,7 @@ func cdromsToMapList(disks []client.Disk) []map[string]interface{} {
 	return result
 }
 
-func vifsToMapList(vifs []client.VIF, guestNets []guestNetwork, d *schema.ResourceData) []map[string]interface{} {
+func vifsToMapList(ctx context.Context, vifs []client.VIF, guestNets []guestNetwork, d *schema.ResourceData) []map[string]interface{} {
 	result := make([]map[string]interface{}, 0, len(vifs))
 
 	expectedCidrs := map[string]string{}
@@ -733,7 +738,10 @@ func vifsToMapList(vifs []client.VIF, guestNets []guestNetwork, d *schema.Resour
 		ipv6Addrs := []string{}
 		ipv4Addrs := []string{}
 		device, _ := strconv.Atoi(vif.Device)
-		log.Printf("[DEBUG] Trying to find ip addresses for device '%d' in guest networks: %v\n", device, guestNets)
+		tflog.Debug(ctx, "Trying to find IP addresses for device", map[string]interface{}{
+			"device":         device,
+			"guest_networks": guestNets,
+		})
 		if len(guestNets) > device {
 			ipv4Addrs = guestNets[device]["ipv4"]
 			ipv6Addrs = guestNets[device]["ipv6"]
@@ -756,7 +764,7 @@ func vifsToMapList(vifs []client.VIF, guestNets []guestNetwork, d *schema.Resour
 	return sortNetworkMapByDevice(result)
 }
 
-func resourceVmRead(d *schema.ResourceData, m interface{}) error {
+func resourceVmReadContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(client.XOClient)
 
 	vm, err := c.GetVm(client.Vm{Id: d.Id()})
@@ -767,30 +775,31 @@ func resourceVmRead(d *schema.ResourceData, m interface{}) error {
 	}
 
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	vifs, err := c.GetVIFs(vm)
 
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	disks, err := c.GetDisks(vm)
 
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	cdroms, err := c.GetCdroms(vm)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
-	return recordToData(*vm, vifs, disks, cdroms, d)
+	err = recordToData(ctx, *vm, vifs, disks, cdroms, d)
+	return diag.FromErr(err)
 }
 
-func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
+func resourceVmUpdateContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(client.XOClient)
 
 	id := d.Id()
@@ -812,7 +821,7 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 	vm, err := c.GetVm(client.Vm{Id: id})
 
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	if d.HasChange("network") {
@@ -821,7 +830,11 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		nSet := schema.NewSet(vifHash, newNet.([]interface{}))
 
 		removals := expandNetworks(oSet.Difference(nSet).List())
-		log.Printf("[DEBUG] Found the following network removals: %v previous set: %v new set: %v\n", oSet.Difference(nSet).List(), oSet, nSet)
+		tflog.Debug(ctx, "Found network removals", map[string]interface{}{
+			"removals":     oSet.Difference(nSet).List(),
+			"previous_set": oSet,
+			"new_set":      nSet,
+		})
 		for _, removal := range removals {
 			// We will process the updates with the additons so we only need to deal with
 			// VIFs that need to be removed.
@@ -833,13 +846,17 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 				vifErr := c.DeleteVIF(removal)
 
 				if vifErr != nil {
-					return vifErr
+					return diag.FromErr(vifErr)
 				}
 			}
 		}
 
 		additions := sortNetworksByDevice(expandNetworks(nSet.Difference(oSet).List()))
-		log.Printf("[DEBUG] Found the following network additions: %v previous set: %v new set: %v\n", nSet.Difference(oSet).List(), oSet, nSet)
+		tflog.Debug(ctx, "Found network additions", map[string]interface{}{
+			"additions":    nSet.Difference(oSet).List(),
+			"previous_set": oSet,
+			"new_set":      nSet,
+		})
 		for _, addition := range additions {
 			updateVif, shouldAttach := shouldUpdateVif(*addition, expandNetworks(oSet.List()))
 			var vifErr error
@@ -851,13 +868,13 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 					vifErr = c.DisconnectVIF(addition)
 				}
 				if vifErr != nil {
-					return vifErr
+					return diag.FromErr(vifErr)
 				}
 			} else {
 				_, vifErr := c.CreateVIF(vm, addition)
 
 				if vifErr != nil {
-					return vifErr
+					return diag.FromErr(vifErr)
 				}
 			}
 		}
@@ -870,7 +887,7 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 			err := c.EjectCd(id)
 
 			if err != nil {
-				return err
+				return diag.FromErr(err)
 			}
 		}
 
@@ -880,7 +897,7 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 			err := c.InsertCd(id, cdId)
 
 			if err != nil {
-				return err
+				return diag.FromErr(err)
 			}
 		}
 	}
@@ -893,16 +910,20 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		nSet := schema.NewSet(diskHash, nDisk.([]interface{}))
 
 		removals := expandDisks(oSet.Difference(nSet).List())
-		log.Printf("[DEBUG] Found the following disk removals: %v previous set: %v new set: %v\n", oSet.Difference(nSet).List(), oSet, nSet)
+		tflog.Debug(ctx, "Found disk removals", map[string]interface{}{
+			"removals":     oSet.Difference(nSet).List(),
+			"previous_set": oSet,
+			"new_set":      nSet,
+		})
 		for _, removal := range removals {
 			var actions *[]updateDiskActions
-			actions, haltForUpdates = getUpdateDiskActions(removal, expandDisks(nSet.List()))
+			actions, haltForUpdates = getUpdateDiskActions(ctx, removal, expandDisks(nSet.List()))
 			if actions != nil { // Nil means disk needs to be deleted
 				continue
 			}
 
 			if err := c.DeleteDisk(*vm, removal); err != nil {
-				return err
+				return diag.FromErr(err)
 			}
 		}
 	}
@@ -914,8 +935,8 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 	// Avoid API error by checking static limits before updating
 	if _, nMemoryMin := d.GetChange("memory_min"); d.HasChange("memory_min") && nMemoryMin.(int) < vm.Memory.Static[0] {
 		errMsg := fmt.Sprintf("memory_min (%d) must be less than or equal to the static memory min (%d)", nMemoryMin, vm.Memory.Static[0])
-		log.Print(errMsg)
-		return fmt.Errorf("%s", errMsg)
+		tflog.Error(ctx, errMsg)
+		return diag.FromErr(fmt.Errorf("%s", errMsg))
 	}
 	// Changing memory_max always requires halting the VM (dynamic max = static max)
 	if d.HasChange("memory_max") {
@@ -999,7 +1020,7 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		err := c.HaltVm(id)
 
 		if err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 		haltPerformed = true
 	}
@@ -1012,23 +1033,31 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		nSet := schema.NewSet(diskHash, nDisk.([]interface{}))
 
 		additions := sortDiskByPostion(expandDisks(nSet.Difference(oSet).List()))
-		log.Printf("[DEBUG] Found the following disk additions: %v previous set: %v new set: %v\n", nSet.Difference(oSet).List(), oSet, nSet)
+		tflog.Debug(ctx, "Found disk additions", map[string]interface{}{
+			"additions":    nSet.Difference(oSet).List(),
+			"previous_set": oSet,
+			"new_set":      nSet,
+		})
 		for _, disk := range additions {
 
-			actions, _ := getUpdateDiskActions(disk, expandDisks(oSet.List()))
-			log.Printf("[DEBUG] Found '%v' disk update actions\n", actions)
+			actions, _ := getUpdateDiskActions(ctx, disk, expandDisks(oSet.List()))
+			tflog.Debug(ctx, "Found disk update actions", map[string]interface{}{
+				"actions": actions,
+			})
 
 			if actions == nil { // Nil means no update but creation
 				if _, err := c.CreateDisk(*vm, disk); err != nil {
-					return err
+					return diag.FromErr(err)
 				}
 				continue
 			}
 
 			for _, action := range *actions {
-				log.Printf("[DEBUG] Updating disk with action '%d'\n", action)
+				tflog.Debug(ctx, "Updating disk", map[string]interface{}{
+					"action": action,
+				})
 				if err := performDiskUpdateAction(c, action, disk); err != nil {
-					return err
+					return diag.FromErr(err)
 				}
 			}
 		}
@@ -1037,33 +1066,38 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 	vm, err = c.UpdateVm(vmReq)
 
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
-	log.Printf("[DEBUG] Retrieved vm after update: %+v\n", vm)
+	tflog.Debug(ctx, "Retrieved vm after update", map[string]interface{}{
+		"vm": vm,
+	})
 
 	powerStateChanged := d.HasChange("power_state")
 	_, newPowerState := d.GetChange("power_state")
-	log.Printf("[DEBUG] powerStateChanged=%t newPowerState=%s\n", powerStateChanged, newPowerState)
+	tflog.Debug(ctx, "Power state status", map[string]interface{}{
+		"powerStateChanged": powerStateChanged,
+		"newPowerState":     newPowerState,
+	})
 	if haltForUpdates || powerStateChanged {
 		switch newPowerState {
 		case client.PausedPowerState:
 			err := c.PauseVm(vmReq.Id)
 
 			if err != nil {
-				return err
+				return diag.FromErr(err)
 			}
 		case client.SuspendedPowerState:
 			err := c.SuspendVm(vmReq.Id)
 
 			if err != nil {
-				return err
+				return diag.FromErr(err)
 			}
 		case client.RunningPowerState:
 			err := c.StartVm(vmReq.Id)
 
 			if err != nil {
-				return err
+				return diag.FromErr(err)
 			}
 		case client.HaltedPowerState:
 			// If the VM wasn't halted as part of the update, perform the halt now
@@ -1071,7 +1105,7 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 				err := c.HaltVm(id)
 
 				if err != nil {
-					return err
+					return diag.FromErr(err)
 				}
 			}
 		}
@@ -1085,28 +1119,28 @@ func resourceVmUpdate(d *schema.ResourceData, m interface{}) error {
 		removals := oTags.Difference(nTags)
 		for _, removal := range removals.List() {
 			if err := c.RemoveTag(id, removal.(string)); err != nil {
-				return err
+				return diag.FromErr(err)
 			}
 		}
 
 		additions := nTags.Difference(oTags)
 		for _, addition := range additions.List() {
 			if err := c.AddTag(id, addition.(string)); err != nil {
-				return err
+				return diag.FromErr(err)
 			}
 		}
 	}
 
-	return resourceVmRead(d, m)
+	return resourceVmReadContext(ctx, d, m)
 }
 
-func resourceVmDelete(d *schema.ResourceData, m interface{}) error {
+func resourceVmDeleteContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(client.XOClient)
 
 	err := c.DeleteVm(d.Id())
 
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	d.SetId("")
 	return nil
@@ -1155,7 +1189,7 @@ func expandNetworks(networks []interface{}) []*client.VIF {
 	return vifs
 }
 
-func RecordImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+func RecordImportContext(ctx context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
 	c := m.(client.XOClient)
 
 	vm, err := c.GetVm(client.Vm{Id: d.Id()})
@@ -1181,12 +1215,12 @@ func RecordImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData
 		return rd, err
 	}
 
-	err = recordToData(*vm, vifs, disks, cdroms, d)
+	err = recordToData(ctx, *vm, vifs, disks, cdroms, d)
 
 	return rd, err
 }
 
-func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, cdroms []client.Disk, d *schema.ResourceData) error {
+func recordToData(ctx context.Context, resource client.Vm, vifs []client.VIF, disks []client.Disk, cdroms []client.Disk, d *schema.ResourceData) error {
 	d.SetId(resource.Id)
 	// d.Set("cloud_config", resource.CloudConfig)
 	if len(resource.Memory.Dynamic) == 2 {
@@ -1197,7 +1231,11 @@ func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, cd
 			return err
 		}
 	} else {
-		log.Printf("[WARN] Expected the VM's static memory limits to have two values, %v found instead\n", resource.Memory.Dynamic)
+		tflog.Warn(ctx, "VM's static memory limits", map[string]interface{}{
+			"expected": 2,
+			"found":    len(resource.Memory.Dynamic),
+			"limits":   resource.Memory.Dynamic,
+		})
 	}
 
 	d.Set("cpus", resource.CPUs.Number)
@@ -1245,15 +1283,23 @@ func recordToData(resource client.Vm, vifs []client.VIF, disks []client.Disk, cd
 		return err
 	}
 
-	log.Printf("[DEBUG] Found the following ip addresses: %v\n", resource.Addresses)
+	tflog.Debug(ctx, "Found IP addresses", map[string]interface{}{
+		"addresses": resource.Addresses,
+	})
 	networkIps, err := extractIpsFromNetworks(resource.Addresses)
+
+	tflog.Debug(ctx, "Extracted network interface IPs", map[string]interface{}{
+		"devices": networkIps,
+	})
 
 	if err != nil {
 		return err
 	}
 
-	nets := vifsToMapList(vifs, networkIps, d)
-	fmt.Printf("[DEBUG] Setting the vifsToMapList: %v\n", nets)
+	nets := vifsToMapList(ctx, vifs, networkIps, d)
+	tflog.Debug(ctx, "Setting VIFs", map[string]interface{}{
+		"vifs": nets,
+	})
 	if err := d.Set("network", nets); err != nil {
 		return err
 	}
@@ -1369,7 +1415,6 @@ func vifHash(value interface{}) int {
 	}
 
 	v := fmt.Sprintf("%s-%s-%s-%t", macAddress, networkId, device, attached)
-	log.Printf("[TRACE] Using the following as input to the VIF hash function: %s\n", v)
 
 	return internal.String(v)
 }
@@ -1426,7 +1471,7 @@ getUpdateDiskActions determines which update actions are required.
 It returns a slice of update actions to perform and a boolean indicating if updates require the VM to be halted.
 If the slice of update actions is nil, it means the disk doesn't exist in the disks list.
 */
-func getUpdateDiskActions(d client.Disk, disks []client.Disk) (*[]updateDiskActions, bool) {
+func getUpdateDiskActions(ctx context.Context, d client.Disk, disks []client.Disk) (*[]updateDiskActions, bool) {
 	haltForUpdates := false
 	actions := []updateDiskActions{}
 	var diskFound *client.Disk
@@ -1455,7 +1500,11 @@ func getUpdateDiskActions(d client.Disk, disks []client.Disk) (*[]updateDiskActi
 	}
 
 	if diskFound.SrId != d.SrId {
-		log.Printf("[DEBUG] Found the following disk migration: %s previous Sr ID: %v new Sr ID: %v\n", diskFound.NameLabel, d.SrId, diskFound.SrId)
+		tflog.Debug(ctx, "Found disk migration", map[string]interface{}{
+			"name_label":     diskFound.NameLabel,
+			"previous_sr_id": d.SrId,
+			"new_sr_id":      diskFound.SrId,
+		})
 		actions = append(actions, diskMigrationUpdate)
 	}
 
@@ -1498,7 +1547,7 @@ func performDiskUpdateAction(c client.XOClient, action updateDiskActions, d clie
 	case diskSizeUpdate:
 		return c.ResizeVDI(d)
 	}
-	return errors.New(fmt.Sprintf("disk update action '%s' not handled", action.String()))
+	return fmt.Errorf("disk update action '%s' not handled", action.String())
 }
 
 func getFormattedMac(macAddress string) string {
@@ -1576,12 +1625,10 @@ func extractIpsFromNetworks(networks map[string]string) ([]guestNetwork, error) 
 
 		devices[deviceNum][proto] = append(devices[deviceNum][proto], networks[key])
 	}
-	log.Printf("[DEBUG] Extracted the following network interface ips: %v\n", devices)
 	return devices, nil
 }
 
 func suppressEquivalentMAC(k, old, new string, d *schema.ResourceData) (suppress bool) {
-	fmt.Printf("[DEBUG] Comparing MACs old=%s new=%s\n", old, new)
 	if old == "" {
 		return false
 	}
@@ -1600,13 +1647,8 @@ func suppressAttachedDiffWhenHalted(k, old, new string, d *schema.ResourceData) 
 	powerState := d.Get("power_state").(string)
 	suppress = true
 	ok := d.HasChange("power_state")
-	if ok {
-		log.Printf("[DEBUG] Power state has been changed\n")
-	}
-
 	if !ok && powerState == client.RunningPowerState {
 		suppress = false
 	}
-	log.Printf("[DEBUG] VM '%s' attribute has transitioned from '%s' to '%s' when PowerState '%s'. Suppress diff: %t", k, old, new, powerState, suppress)
 	return
 }

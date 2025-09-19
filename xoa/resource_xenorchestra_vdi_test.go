@@ -13,7 +13,7 @@ import (
 func init() {
 	resource.AddTestSweepers("xenorchestra_vdi", &resource.Sweeper{
 		Name: "xenorchestra_vdi",
-		F:    client.RemoveVDIsWithPrefix(accTestPrefix),
+		F:    client.RemoveVDIsWithPrefixForTests(accTestPrefix),
 	})
 }
 

@@ -1,6 +1,7 @@
 package xoa
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -21,7 +22,7 @@ import (
 func init() {
 	resource.AddTestSweepers("xenorchestra_vm", &resource.Sweeper{
 		Name:         "xenorchestra_vm",
-		F:            client.RemoveVmsWithNamePrefix(accTestPrefix),
+		F:            client.RemoveVmsWithNamePrefixForTests(accTestPrefix),
 		Dependencies: []string{"xenorchestra_resource_set", "xenorchestra_cloud_config"},
 	})
 }
@@ -199,7 +200,7 @@ func Test_getUpdateDiskActions(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		actions, _ := getUpdateDiskActions(c.disk, c.haystack)
+		actions, _ := getUpdateDiskActions(context.TODO(), c.disk, c.haystack)
 
 		if !reflect.DeepEqual(c.expectedDiskActions, actions) {
 			t.Errorf("expected updateDiskActions '%+v' to match '%+v' when comparing disk: %+v against the following disks: %+v", c.expectedDiskActions, actions, c.disk, c.haystack)

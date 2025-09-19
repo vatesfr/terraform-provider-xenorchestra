@@ -1,16 +1,19 @@
 package xoa
 
 import (
+	"context"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/vatesfr/xenorchestra-go-sdk/client"
 )
 
 func resourceCloudConfigRecord() *schema.Resource {
 	return &schema.Resource{
-		Description: "Creates a Xen Orchestra cloud config resource.",
-		Create:      resourceCloudConfigCreate,
-		Read:        resourceCloudConfigRead,
-		Delete:      resourceCloudConfigDelete,
+		Description:   "Creates a Xen Orchestra cloud config resource.",
+		CreateContext: resourceCloudConfigCreateContext,
+		ReadContext:   resourceCloudConfigReadContext,
+		DeleteContext: resourceCloudConfigDeleteContext,
 		Importer: &schema.ResourceImporter{
 			State: CloudConfigImport,
 		},
@@ -32,23 +35,23 @@ func resourceCloudConfigRecord() *schema.Resource {
 	}
 }
 
-func resourceCloudConfigCreate(d *schema.ResourceData, m interface{}) error {
+func resourceCloudConfigCreateContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(client.XOClient)
 
 	cloud_config, err := c.CreateCloudConfig(d.Get("name").(string), d.Get("template").(string))
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	d.SetId(cloud_config.Id)
 	return nil
 }
 
-func resourceCloudConfigRead(d *schema.ResourceData, m interface{}) error {
+func resourceCloudConfigReadContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(client.XOClient)
 
 	cloud_config, err := c.GetCloudConfig(d.Id())
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	if cloud_config == nil {
@@ -61,13 +64,13 @@ func resourceCloudConfigRead(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
-func resourceCloudConfigDelete(d *schema.ResourceData, m interface{}) error {
+func resourceCloudConfigDeleteContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(client.XOClient)
 
 	err := c.DeleteCloudConfig(d.Id())
 
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	d.SetId("")
 	return nil

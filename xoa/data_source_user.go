@@ -1,15 +1,17 @@
 package xoa
 
 import (
-	"log"
+	"context"
 
+	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/vatesfr/xenorchestra-go-sdk/client"
 )
 
 func dataSourceXoaUser() *schema.Resource {
 	return &schema.Resource{
-		Read:        dataSourceUserRead,
+		ReadContext: dataSourceUserReadContext,
 		Description: "Provides information about a Xen Orchestra user. If the Xen Orchestra user account you are using is not an admin, see the `search_in_session` parameter.",
 		Schema: map[string]*schema.Schema{
 			"username": &schema.Schema{
@@ -27,7 +29,7 @@ func dataSourceXoaUser() *schema.Resource {
 	}
 }
 
-func dataSourceUserRead(d *schema.ResourceData, m interface{}) error {
+func dataSourceUserReadContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(client.XOClient)
 
 	username := d.Get("username").(string)
@@ -44,14 +46,16 @@ func dataSourceUserRead(d *schema.ResourceData, m interface{}) error {
 	}
 
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
-	log.Printf("[DEBUG] Found user with %+v", *user)
+	tflog.Debug(ctx, "Found user", map[string]interface{}{
+		"user": *user,
+	})
 
 	d.SetId(user.Id)
 	if err := d.Set("username", user.Email); err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	return nil

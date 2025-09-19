@@ -15,7 +15,7 @@ var rsName string = fmt.Sprintf("%s-resource-set-resource", accTestPrefix)
 func init() {
 	resource.AddTestSweepers("xenorchestra_resource_set", &resource.Sweeper{
 		Name: "xenorchestra_resource_set",
-		F:    client.RemoveResourceSetsWithNamePrefix(accTestPrefix),
+		F:    client.RemoveResourceSetsWithNamePrefixForTests(accTestPrefix),
 	})
 }
 

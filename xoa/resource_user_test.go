@@ -11,6 +11,6 @@ import (
 func init() {
 	resource.AddTestSweepers("xenorchestra_user", &resource.Sweeper{
 		Name: "xenorchestra_user",
-		F:    client.RemoveUsersWithPrefix(accTestPrefix),
+		F:    client.RemoveUsersWithPrefixForTests(accTestPrefix),
 	})
 }
