@@ -832,8 +832,8 @@ func resourceVmUpdateContext(ctx context.Context, d *schema.ResourceData, m inte
 		removals := expandNetworks(oSet.Difference(nSet).List())
 		tflog.Debug(ctx, "Found network removals", map[string]interface{}{
 			"removals":     oSet.Difference(nSet).List(),
-			"previous_set": oSet,
-			"new_set":      nSet,
+			"previous_set": oSet.List(),
+			"new_set":      nSet.List(),
 		})
 		for _, removal := range removals {
 			// We will process the updates with the additons so we only need to deal with
@@ -854,8 +854,8 @@ func resourceVmUpdateContext(ctx context.Context, d *schema.ResourceData, m inte
 		additions := sortNetworksByDevice(expandNetworks(nSet.Difference(oSet).List()))
 		tflog.Debug(ctx, "Found network additions", map[string]interface{}{
 			"additions":    nSet.Difference(oSet).List(),
-			"previous_set": oSet,
-			"new_set":      nSet,
+			"previous_set": oSet.List(),
+			"new_set":      nSet.List(),
 		})
 		for _, addition := range additions {
 			updateVif, shouldAttach := shouldUpdateVif(*addition, expandNetworks(oSet.List()))
@@ -912,8 +912,8 @@ func resourceVmUpdateContext(ctx context.Context, d *schema.ResourceData, m inte
 		removals := expandDisks(oSet.Difference(nSet).List())
 		tflog.Debug(ctx, "Found disk removals", map[string]interface{}{
 			"removals":     oSet.Difference(nSet).List(),
-			"previous_set": oSet,
-			"new_set":      nSet,
+			"previous_set": oSet.List(),
+			"new_set":      nSet.List(),
 		})
 		for _, removal := range removals {
 			var actions *[]updateDiskActions
@@ -1035,8 +1035,8 @@ func resourceVmUpdateContext(ctx context.Context, d *schema.ResourceData, m inte
 		additions := sortDiskByPostion(expandDisks(nSet.Difference(oSet).List()))
 		tflog.Debug(ctx, "Found disk additions", map[string]interface{}{
 			"additions":    nSet.Difference(oSet).List(),
-			"previous_set": oSet,
-			"new_set":      nSet,
+			"previous_set": oSet.List(),
+			"new_set":      nSet.List(),
 		})
 		for _, disk := range additions {
 
