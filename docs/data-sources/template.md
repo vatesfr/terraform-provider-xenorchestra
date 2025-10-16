@@ -44,3 +44,4 @@ resource "xenorchestra_vm" "demo-vm" {
 
 - `id` (String) The ID of this resource.
 - `uuid` (String) The uuid of the template.
+- `boot_firmware` (String) The boot firmware settings of the template.
