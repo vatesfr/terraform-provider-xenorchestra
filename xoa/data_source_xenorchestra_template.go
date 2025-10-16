@@ -26,6 +26,11 @@ Ensure that your name_label and pool_id identify a unique template.`,
 				Description: "The uuid of the template.",
 				Computed:    true,
 			},
+			"boot_firmware": &schema.Schema{
+				Type:        schema.TypeString,
+				Description: "The boot firmware settings of the template.",
+				Computed:    true,
+			},
 			"pool_id": &schema.Schema{
 				Type:        schema.TypeString,
 				Description: "The id of the pool that the template belongs to.",
@@ -40,10 +45,14 @@ func dataSourceTemplateRead(d *schema.ResourceData, m interface{}) error {
 
 	nameLabel := d.Get("name_label").(string)
 	poolId := d.Get("pool_id").(string)
+	bootFirmware := d.Get("boot_firmware").(string)
 
 	templateReq := client.Template{
 		NameLabel: nameLabel,
 		PoolId:    poolId,
+		Boot: client.TemplateBoot{
+			Firmware: bootFirmware,
+		},
 	}
 	templates, err := c.GetTemplate(templateReq)
 
@@ -61,5 +70,6 @@ func dataSourceTemplateRead(d *schema.ResourceData, m interface{}) error {
 	d.SetId(tmpl.Id)
 	d.Set("uuid", tmpl.Uuid)
 	d.Set("name_label", tmpl.NameLabel)
+	d.Set("boot_firmware", tmpl.Boot.Firmware)
 	return nil
 }
