@@ -4,6 +4,8 @@ go 1.24.0
 
 toolchain go1.24.3
 
+replace github.com/vatesfr/xenorchestra-go-sdk => github.com/sakaru/xenorchestra-go-sdk v0.0.0-20251016143107-ad482cbc8c0a
+
 require (
 	github.com/hashicorp/terraform-plugin-docs v0.22.0
 	github.com/hashicorp/terraform-plugin-log v0.9.0
