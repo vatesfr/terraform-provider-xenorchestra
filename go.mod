@@ -8,7 +8,7 @@ require (
 	github.com/hashicorp/terraform-plugin-docs v0.22.0
 	github.com/hashicorp/terraform-plugin-log v0.9.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.37.0
-	github.com/vatesfr/xenorchestra-go-sdk v1.6.0
+	github.com/vatesfr/xenorchestra-go-sdk v1.7.0
 )
 
 require (
