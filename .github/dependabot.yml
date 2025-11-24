@@ -1,6 +1,16 @@
 version: 2
+# Cooldown: Wait 15 days between dependency update PRs to reduce noise
 updates:
   - package-ecosystem: "gomod"
     directory: "/" # Location of package manifests
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 15
+  
+  - package-ecosystem: "terraform"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 15
