@@ -1600,21 +1600,20 @@ func TestAccXenorchestraVm_updatesWithoutRebootForOtherAttrs(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "hvm_boot_firmware", "uefi"),
 				),
 			},
-			// TODO: (#145) Uncomment this once issues with secure_boot have been figured out
-			// {
-			// 	Config: testAccVmConfigUpdateAttr(
-			// 		nameLabel,
-			// 		`
-			// hvm_boot_firmware = "uefi"
-			// secure_boot = true
-			// `),
-			// 	Check: resource.ComposeAggregateTestCheckFunc(
-			// 		testAccVmExists(resourceName),
-			// 		resource.TestCheckResourceAttrSet(resourceName, "id"),
-			// 		resource.TestCheckResourceAttr(resourceName, "hvm_boot_firmware", "uefi"),
-			// 		resource.TestCheckResourceAttr(resourceName, "secure_boot", "true"),
-			// 	),
-			// },
+			{
+				Config: testAccVmConfigUpdateAttr(
+					nameLabel,
+					`
+			hvm_boot_firmware = "uefi"
+			secure_boot = true
+			`),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "hvm_boot_firmware", "uefi"),
+					resource.TestCheckResourceAttr(resourceName, "secure_boot", "true"),
+				),
+			},
 
 			{
 				Config: testAccVmConfigUpdateAttr(

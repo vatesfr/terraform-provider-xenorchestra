@@ -193,8 +193,8 @@ github.com/stretchr/testify v1.5.1/go.mod h1:5W2xD1RspED5o8YsWQXVCued0rvSQ+mT+I5
 github.com/stretchr/testify v1.7.2/go.mod h1:R6va5+xMeoiuVRoj+gSkQ7d3FALtqAAGI1FQKckRals=
 github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu7U=
 github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
-github.com/vatesfr/xenorchestra-go-sdk v1.8.0 h1:gG3H5pKfVi1oFr3dlekJRn2f/o04jZV7YMHggVpLgmg=
-github.com/vatesfr/xenorchestra-go-sdk v1.8.0/go.mod h1:RqblxNWQSJRrAFPD7WzTY/be/ym4A7441rvrpUHaII0=
+github.com/vatesfr/xenorchestra-go-sdk v1.8.1-0.20251201163529-1720b4dd4332 h1:KXJhcg8stI8hay0wJQG9DnGGb3wXEAu/Qp5V90VynUQ=
+github.com/vatesfr/xenorchestra-go-sdk v1.8.1-0.20251201163529-1720b4dd4332/go.mod h1:RqblxNWQSJRrAFPD7WzTY/be/ym4A7441rvrpUHaII0=
 github.com/vmihailenco/msgpack v3.3.3+incompatible/go.mod h1:fy3FlTQTDXWkZ7Bh6AcGMlsjHatGryHQYUTf1ShIgkk=
 github.com/vmihailenco/msgpack v4.0.4+incompatible h1:dSLoQfGFAo3F6OoNhwUmLwVgaUXK79GlxNBwueZn0xI=
 github.com/vmihailenco/msgpack v4.0.4+incompatible/go.mod h1:fy3FlTQTDXWkZ7Bh6AcGMlsjHatGryHQYUTf1ShIgkk=

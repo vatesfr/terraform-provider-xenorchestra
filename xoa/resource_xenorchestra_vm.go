@@ -279,12 +279,12 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 			Default:     0,
 			Optional:    true,
 		},
-		// TODO: (#145) Uncomment this once issues with secure_boot have been figured out
-		// "secure_boot": &schema.Schema{
-		// 	Type:     schema.TypeBool,
-		// 	Default:  false,
-		// 	Optional: true,
-		// },
+		"secure_boot": &schema.Schema{
+			Type:        schema.TypeBool,
+			Description: "Enable UEFI secure boot for the VM.",
+			Default:     false,
+			Optional:    true,
+		},
 		"host": &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
@@ -584,11 +584,10 @@ func resourceVmCreateContext(ctx context.Context, d *schema.ResourceData, m inte
 		Tags:         vmTags,
 		Disks:        ds,
 		Installation: installation,
-		// TODO: (#145) Uncomment this once issues with secure_boot have been figured out
-		// SecureBoot:   d.Get("secure_boot").(bool),
-		VIFsMap:    vifsMap,
-		StartDelay: d.Get("start_delay").(int),
-		WaitForIps: waitForIpsMap,
+		SecureBoot:   d.Get("secure_boot").(bool),
+		VIFsMap:      vifsMap,
+		StartDelay:   d.Get("start_delay").(int),
+		WaitForIps:   waitForIpsMap,
 		Videoram: client.Videoram{
 			Value: d.Get("videoram").(int),
 		},
@@ -983,8 +982,7 @@ func resourceVmUpdateContext(ctx context.Context, d *schema.ResourceData, m inte
 		ExpNestedHvm:      d.Get("exp_nested_hvm").(bool),
 		StartDelay:        d.Get("start_delay").(int),
 		Vga:               d.Get("vga").(string),
-		// TODO: (#145) Uncomment this once issues with secure_boot have been figured out
-		// SecureBoot:        d.Get("secure_boot").(bool),
+		SecureBoot:        d.Get("secure_boot").(bool),
 		Boot: client.Boot{
 			Firmware: d.Get("hvm_boot_firmware").(string),
 		},
@@ -1251,10 +1249,9 @@ func recordToData(ctx context.Context, resource client.Vm, vifs []client.VIF, di
 	}
 	d.Set("power_state", resource.PowerState)
 
-	// TODO: (#145) Uncomment this once issues with secure_boot have been figured out
-	// if err := d.Set("secure_boot", resource.SecureBoot); err != nil {
-	// 	return err
-	// }
+	if err := d.Set("secure_boot", resource.SecureBoot); err != nil {
+		return err
+	}
 
 	if err := d.Set("hvm_boot_firmware", resource.Boot.Firmware); err != nil {
 		return err
