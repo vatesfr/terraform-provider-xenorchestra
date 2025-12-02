@@ -80,6 +80,7 @@ Read-Only:
 - `network` (List of Object) (see [below for nested schema](#nestedobjatt--vms--network))
 - `power_state` (String)
 - `resource_set` (String)
+- `secure_boot` (Boolean)
 - `start_delay` (Number)
 - `tags` (Set of String)
 - `template` (String)

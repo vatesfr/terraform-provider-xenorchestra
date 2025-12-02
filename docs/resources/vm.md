@@ -170,6 +170,7 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 - `name_description` (String) The description of the VM.
 - `power_state` (String) The power state of the VM. This can be Running, Halted, Paused or Suspended.
 - `resource_set` (String)
+- `secure_boot` (Boolean) Enable UEFI secure boot for the VM.
 - `start_delay` (Number) Number of seconds the VM should be delayed from starting.
 - `tags` (Set of String) The tags (labels) applied to the given entity.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
