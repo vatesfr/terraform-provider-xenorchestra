@@ -158,6 +158,7 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 - `cloud_config` (String) The content of the cloud-init config to use. See the cloud init docs for more [information](https://cloudinit.readthedocs.io/en/latest/topics/examples.html).
 - `cloud_network_config` (String) The content of the cloud-init network configuration for the VM (uses [version 1](https://cloudinit.readthedocs.io/en/latest/topics/network-config-format-v1.html))
 - `core_os` (Boolean)
+- `cores_per_socket` (Number) The number of cores per socket for the VM's CPU topology. This value must evenly divide the total number of CPUs. If not set, the VM uses XO/XAPI defaults (typically 1 core per socket).
 - `cpu_cap` (Number)
 - `cpu_weight` (Number)
 - `destroy_cloud_config_vdi_after_boot` (Boolean) Determines whether the cloud config VDI should be deleted once the VM has booted. Defaults to `false`. If set to `true`, power_state must be set to `Running`.
@@ -183,6 +184,7 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 - `id` (String) The ID of this resource.
 - `ipv4_addresses` (List of String) This is only accessible if guest-tools is installed in the VM. While the output contains a list of ipv4 addresses, the presence of an IP address is only guaranteed if `expected_ip_cidr` is set for that interface. The list contains the ipv4 addresses across all network interfaces in order. See the example terraform code for more details.
 - `ipv6_addresses` (List of String) This is only accessible if guest-tools is installed in the VM. While the output contains a list of ipv6 addresses, the presence of an IP address is only guaranteed if `expected_ip_cidr` is set for that interface. The list contains the ipv6 addresses across all network interfaces in order.
+- `sockets` (Number) The number of CPU sockets. This is computed as cpus / cores_per_socket.
 
 <a id="nestedblock--disk"></a>
 ### Nested Schema for `disk`
