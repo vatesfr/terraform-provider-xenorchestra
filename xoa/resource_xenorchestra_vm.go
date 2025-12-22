@@ -242,6 +242,7 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 `,
 		},
 		"cores_per_socket": &schema.Schema{
+			Computed:    true,
 			Type:        schema.TypeInt,
 			Optional:    true,
 			Description: "The number of cores per socket for the VM's CPU topology. This value must evenly divide the total number of CPUs. If not set, the VM uses XO/XAPI defaults (typically 1 core per socket).",
