@@ -172,7 +172,7 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 - `resource_set` (String)
 - `secure_boot` (Boolean) Enable UEFI secure boot for the VM.
 - `start_delay` (Number) Number of seconds the VM should be delayed from starting.
-- `tags` (Set of String) The tags (labels) applied to the given entity.
+- `tags` (Set of String) The tags (labels) applied to the given entity. Not used for filtering if empty.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `vga` (String) The video adapter the VM should use. Possible values include std and cirrus.
 - `videoram` (Number) The videoram option the VM should use. Possible values include 1, 2, 4, 8, 16

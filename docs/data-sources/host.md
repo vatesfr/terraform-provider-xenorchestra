@@ -39,7 +39,7 @@ resource "xenorchestra_vm" "node" {
 
 ### Optional
 
-- `tags` (Set of String) The tags (labels) applied to the given entity.
+- `tags` (Set of String) The tags (labels) applied to the given entity. Not used for filtering if empty.
 
 ### Read-Only
 

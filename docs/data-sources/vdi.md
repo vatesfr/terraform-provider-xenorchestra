@@ -35,7 +35,7 @@ resource "xenorchestra_vm" "demo-vm" {
 - `id` (String) The ID of the VDI.
 - `name_label` (String) The name of the VDI to look up.
 - `pool_id` (String) The ID of the pool the VDI belongs to. This is useful if you have a VDI with the same name on different pools.
-- `tags` (Set of String) The tags (labels) applied to the given entity.
+- `tags` (Set of String) The tags (labels) applied to the given entity. Not used for filtering if empty.
 
 ### Read-Only
 
