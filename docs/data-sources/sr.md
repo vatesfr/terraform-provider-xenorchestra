@@ -43,7 +43,7 @@ resource "xenorchestra_vm" "demo-vm" {
 ### Optional
 
 - `pool_id` (String) The Id of the pool the storage repository exists on.
-- `tags` (Set of String) The tags (labels) applied to the given entity.
+- `tags` (Set of String) The tags (labels) applied to the given entity. Not used for filtering if empty.
 
 ### Read-Only
 

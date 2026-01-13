@@ -9,6 +9,6 @@ func resourceTags() *schema.Schema {
 		Elem: &schema.Schema{
 			Type: schema.TypeString,
 		},
-		Description: "The tags (labels) applied to the given entity.",
+		Description: "The tags (labels) applied to the given entity. Not used for filtering if empty.",
 	}
 }

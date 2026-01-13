@@ -46,7 +46,7 @@ resource "xenorchestra_vm" "vm" {
 
 - `sort_by` (String) The host field to sort the results by (id and name_label are supported).
 - `sort_order` (String) Valid options are `asc` or `desc` and sort order is applied to `sort_by` argument.
-- `tags` (Set of String) The tags (labels) applied to the given entity.
+- `tags` (Set of String) The tags (labels) applied to the given entity. Not used for filtering if empty.
 
 ### Read-Only
 
