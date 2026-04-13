@@ -1,14 +1,12 @@
 module github.com/vatesfr/terraform-provider-xenorchestra
 
-go 1.24.0
-
-toolchain go1.24.3
+go 1.25.8
 
 require (
 	github.com/hashicorp/terraform-plugin-docs v0.24.0
 	github.com/hashicorp/terraform-plugin-log v0.9.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.38.1
-	github.com/vatesfr/xenorchestra-go-sdk v1.10.0
+	github.com/vatesfr/xenorchestra-go-sdk v1.14.0
 )
 
 require (
