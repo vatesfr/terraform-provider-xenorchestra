@@ -43,17 +43,17 @@ Ensure that your name_label, pool_id and tags identify a unique storage reposito
 			},
 			"size": &schema.Schema{
 				Type:        schema.TypeInt,
-				Description: "The storage size.",
+				Description: "The total storage size in bytes.",
 				Computed:    true,
 			},
 			"physical_usage": &schema.Schema{
 				Type:        schema.TypeInt,
-				Description: "The physical storage size.",
+				Description: "The physical storage usage in bytes.",
 				Computed:    true,
 			},
 			"usage": &schema.Schema{
 				Type:        schema.TypeInt,
-				Description: "The current usage for this storage repository.",
+				Description: "The current storage usage in bytes.",
 				Computed:    true,
 			},
 			"tags": resourceTags(),

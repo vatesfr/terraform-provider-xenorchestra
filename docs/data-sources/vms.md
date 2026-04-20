@@ -48,7 +48,7 @@ output "vms_length" {
 ### Read-Only
 
 - `id` (String) The ID of this resource.
-- `vms` (List of Object) A list of information for all vms found in this pool. (see [below for nested schema](#nestedatt--vms))
+- `vms` (List of Object) A list of information for all vms found in this pool. `memory_min`, `memory_max` and `size` are in bytes. `videoram` is in MiB. `cpu_cap` is in hundredths of vCPU (e.g. 100 = 1 vCPU max, 0 means no cap). `start_delay` is in seconds. (see [below for nested schema](#nestedatt--vms))
 
 <a id="nestedatt--vms"></a>
 ### Nested Schema for `vms`

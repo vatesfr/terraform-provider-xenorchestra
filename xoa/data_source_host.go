@@ -60,12 +60,12 @@ func resourceHostSchema() map[string]*schema.Schema {
 		"memory": &schema.Schema{
 			Type:        schema.TypeInt,
 			Computed:    true,
-			Description: "The memory size of the host.",
+			Description: "The total memory size of the host in bytes.",
 		},
 		"memory_usage": &schema.Schema{
 			Type:        schema.TypeInt,
 			Computed:    true,
-			Description: "The memory usage of the host.",
+			Description: "The current memory usage of the host in bytes.",
 		},
 		"tags": resourceTags(),
 	}

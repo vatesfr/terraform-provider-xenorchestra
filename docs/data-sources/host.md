@@ -45,6 +45,6 @@ resource "xenorchestra_vm" "node" {
 
 - `cpus` (Map of Number) CPU information about the host. The 'cores' key will contain the number of cpu cores and the 'sockets' key will contain the number of sockets.
 - `id` (String) The ID of this resource.
-- `memory` (Number) The memory size of the host.
-- `memory_usage` (Number) The memory usage of the host.
+- `memory` (Number) The total memory size of the host in bytes.
+- `memory_usage` (Number) The current memory usage of the host in bytes.
 - `pool_id` (String) Id of the pool that the host belongs to.

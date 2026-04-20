@@ -50,7 +50,7 @@ resource "xenorchestra_vm" "vm" {
 
 ### Read-Only
 
-- `hosts` (List of Object) The resulting hosts after applying the argument filtering. (see [below for nested schema](#nestedatt--hosts))
+- `hosts` (List of Object) The resulting hosts after applying the argument filtering. `memory` and `memory_usage` are in bytes. (see [below for nested schema](#nestedatt--hosts))
 - `id` (String) The ID of this resource.
 - `master` (String) The primary host of the pool.
 

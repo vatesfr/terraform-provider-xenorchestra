@@ -158,8 +158,8 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 - `cloud_config` (String) The content of the cloud-init config to use. See the cloud init docs for more [information](https://cloudinit.readthedocs.io/en/latest/topics/examples.html).
 - `cloud_network_config` (String) The content of the cloud-init network configuration for the VM (uses [version 1](https://cloudinit.readthedocs.io/en/latest/topics/network-config-format-v1.html))
 - `core_os` (Boolean)
-- `cpu_cap` (Number)
-- `cpu_weight` (Number)
+- `cpu_cap` (Number) The CPU usage cap of the VM, in hundredths of vCPU (e.g. 100 = 1 vCPU max). 0 means no cap.
+- `cpu_weight` (Number) The relative CPU scheduling weight for the VM (dimensionless). Higher values give the VM more CPU time relative to others. Valid range is 1-65535. 0 uses the default weight.
 - `destroy_cloud_config_vdi_after_boot` (Boolean) Determines whether the cloud config VDI should be deleted once the VM has booted. Defaults to `false`. If set to `true`, power_state must be set to `Running`.
 - `exp_nested_hvm` (Boolean) Boolean parameter that allows a VM to use nested virtualization.
 - `high_availability` (String) The restart priority for the VM. Possible values are `best-effort`, `restart` and empty string (no restarts on failure. Defaults to empty string
@@ -175,7 +175,7 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 - `tags` (Set of String) The tags (labels) applied to the given entity. Not used for filtering if empty.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `vga` (String) The video adapter the VM should use. Possible values include std and cirrus.
-- `videoram` (Number) The videoram option the VM should use. Possible values include 1, 2, 4, 8, 16
+- `videoram` (Number) The videoram amount in MiB the VM should use. Possible values include 1, 2, 4, 8, 16.
 - `xenstore` (Map of String) The key value pairs to be populated in xenstore.
 
 ### Read-Only
