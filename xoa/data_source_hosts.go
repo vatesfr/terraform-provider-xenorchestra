@@ -23,7 +23,7 @@ func dataSourceXoaHosts() *schema.Resource {
 				Type:        schema.TypeList,
 				Computed:    true,
 				Elem:        resourceHost(),
-				Description: "The resulting hosts after applying the argument filtering.",
+				Description: "The resulting hosts after applying the argument filtering. `memory` and `memory_usage` are in bytes.",
 			},
 			"pool_id": &schema.Schema{
 				Type:        schema.TypeString,

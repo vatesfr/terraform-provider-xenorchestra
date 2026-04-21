@@ -49,8 +49,8 @@ resource "xenorchestra_vm" "demo-vm" {
 
 - `container` (String) The storage container.
 - `id` (String) The ID of this resource.
-- `physical_usage` (Number) The physical storage size.
-- `size` (Number) The storage size.
+- `physical_usage` (Number) The physical storage usage in bytes.
+- `size` (Number) The total storage size in bytes.
 - `sr_type` (String) The type of storage repository (lvm, udev, iso, user, etc).
-- `usage` (Number) The current usage for this storage repository.
+- `usage` (Number) The current storage usage in bytes.
 - `uuid` (String) uuid of the storage repository. This is equivalent to the id.

@@ -21,7 +21,7 @@ func dataSourceXoaVms() *schema.Resource {
 				Type:        schema.TypeList,
 				Computed:    true,
 				Elem:        resourceVm(),
-				Description: "A list of information for all vms found in this pool.",
+				Description: "A list of information for all vms found in this pool. `memory_min`, `memory_max` and `size` are in bytes. `videoram` is in MiB. `cpu_cap` is in hundredths of vCPU (e.g. 100 = 1 vCPU max, 0 means no cap). `start_delay` is in seconds.",
 			},
 			"pool_id": &schema.Schema{
 				Type:        schema.TypeString,

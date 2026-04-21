@@ -200,14 +200,16 @@ func resourceVmSchema() map[string]*schema.Schema {
 			Default:  false,
 		},
 		"cpu_cap": &schema.Schema{
-			Type:     schema.TypeInt,
-			Optional: true,
-			Default:  0,
+			Type:        schema.TypeInt,
+			Optional:    true,
+			Default:     0,
+			Description: "The CPU usage cap of the VM, in hundredths of vCPU (e.g. 100 = 1 vCPU max). 0 means no cap.",
 		},
 		"cpu_weight": &schema.Schema{
-			Type:     schema.TypeInt,
-			Optional: true,
-			Default:  0,
+			Type:        schema.TypeInt,
+			Optional:    true,
+			Default:     0,
+			Description: "The relative CPU scheduling weight for the VM (dimensionless). Higher values give the VM more CPU time relative to others. Valid range is 1-65535. 0 uses the default weight.",
 		},
 		"cpus": &schema.Schema{
 			Type:     schema.TypeInt,
@@ -269,7 +271,7 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 		},
 		"videoram": &schema.Schema{
 			Type:        schema.TypeInt,
-			Description: "The videoram option the VM should use. Possible values include 1, 2, 4, 8, 16",
+			Description: "The videoram amount in MiB the VM should use. Possible values include 1, 2, 4, 8, 16.",
 			Default:     8,
 			Optional:    true,
 		},
