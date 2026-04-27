@@ -2,30 +2,75 @@
 terraform {
   required_providers {
     xenorchestra = {
-      source = "vatesfr/xenorchestra"
-    }
-    xenorchestra_token_auth = {
-      source = "vatesfr/xenorchestra"
+      source  = "vatesfr/xenorchestra"
+      version = ">= 0.35.0, < 1.0.0"
     }
   }
 }
 
 # Configure the XenServer Provider
 provider "xenorchestra" {
-  # Must be ws or wss
-  url      = "ws://hostname-of-server" # Or set XOA_URL environment variable
-  username = "<username>"              # Or set XOA_USER environment variable
-  password = "<password>"              # Or set XOA_PASSWORD environment variable
+  # Must be ws or wss : "wss://hostname-of-server"
+  url      = var.xo_url                               # Or set XOA_URL environment variable
+
+  # The provider supports both token and username/password authentication.
+  # If a token is provided, it will be used for authentication and the username and password will be ignored.
+  username = local.use_token ? null : var.xo_username # Or set XOA_USER environment variable
+  password = local.use_token ? null : var.xo_password # Or set XOA_PASSWORD environment variable
+  token    = local.use_token ? var.xo_token : null    # Or set XOA_TOKEN environment variable
 
   # This is false by default and
   # will disable ssl verification if true.
   # This is useful if your deployment uses
   # a self signed certificate but should be
   # used sparingly!
-  insecure = <false|true>              # Or set XOA_INSECURE environment variable to any value
+  insecure = var.xo_insecure
 }
 
-provider "xenorchestra_token_auth" {
-  # XOA_USER and XOA_PASSWORD cannot be set, nor can their arguments
-  token = "<token from XO>" # or set XOA_TOKEN environment variable
+locals {
+  use_token = var.xo_token != null && trimspace(nonsensitive(var.xo_token)) != ""
+}
+
+variable "xo_url" {
+  description = "XenOrchestra URL"
+  type        = string
+
+  /* Comment this part if you want to be asked for the URL at runtime instead of using an environment variable */
+  default     = null
+  nullable    = true
+}
+
+variable "xo_token" {
+  description = "XenOrchestra API token"
+  type        = string
+  sensitive   = true
+
+  /* Comment this part if you want to be asked for the token at runtime instead of using an environment variable */
+  default     = null
+  nullable    = true
+}
+
+variable "xo_username" {
+  description = "XenOrchestra username"
+  type        = string
+  
+  /* Comment this part if you want to be asked for the username at runtime instead of using an environment variable */
+  default     = null
+  nullable    = true
+}
+
+variable "xo_password" {
+  description = "XenOrchestra password"
+  type        = string
+  sensitive   = true
+  /* Comment this part if you want to be asked for the password at runtime instead of using an environment variable */
+  default     = null
+  nullable    = true
+}
+
+variable "xo_insecure" {
+  description = "Whether to skip TLS verification for XenOrchestra"
+  type        = bool
+  default     = null  # Allow to be configured by environment variable
+  nullable    = true  # Allow to be configured by environment variable 
 }
