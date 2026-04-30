@@ -929,7 +929,7 @@ func resourceVmUpdateContext(ctx context.Context, d *schema.ResourceData, m inte
 		}
 	}
 
-	if _, nCPUs := d.GetChange("cpus"); d.HasChange("cpus") && nCPUs.(int) > vm.CPUs.Max {
+	if shouldHaltVmForCPUOrMemoryUpdate(vm.PowerState, vm.CPUs.Max, vm.Memory.Static[1], cpus, memoryMax) {
 		haltForUpdates = true
 	}
 
@@ -939,11 +939,6 @@ func resourceVmUpdateContext(ctx context.Context, d *schema.ResourceData, m inte
 		tflog.Error(ctx, errMsg)
 		return diag.FromErr(fmt.Errorf("%s", errMsg))
 	}
-	// Changing memory_max always requires halting the VM (dynamic max = static max)
-	if d.HasChange("memory_max") {
-		haltForUpdates = true
-	}
-
 	blockOperations := map[string]string{}
 	if d.HasChange("blocked_operations") {
 		o, n := d.GetChange("blocked_operations")
@@ -1132,6 +1127,22 @@ func resourceVmUpdateContext(ctx context.Context, d *schema.ResourceData, m inte
 	}
 
 	return resourceVmReadContext(ctx, d, m)
+}
+
+// shouldHaltVmForCPUOrMemoryUpdate determines whether the VM should be halted to perform CPU or memory updates.
+// For memory, any change to the max memory requires a halt.
+// For CPU, an increase in the number of CPUs above the current max requires a halt.
+// If the VM is already halted, then no halt is needed for any updates.
+func shouldHaltVmForCPUOrMemoryUpdate(powerState string, currentCPUMax, currentMemoryMax, nextCPUs, nextMemoryMax int) bool {
+	if powerState == client.HaltedPowerState {
+		return false
+	}
+
+	if nextMemoryMax != currentMemoryMax {
+		return true
+	}
+
+	return nextCPUs > currentCPUMax
 }
 
 func resourceVmDeleteContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

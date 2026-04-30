@@ -27,7 +27,7 @@ func init() {
 	})
 }
 
-func Test_extractIpsFromNetworks(t *testing.T) {
+func TestExtractIpsFromNetworks(t *testing.T) {
 	ipv4 := "169.254.169.254"
 	secondIpv4 := "169.254.255.254"
 	ipv6 := "2001:0db8:85a3:0000:0000:8a2e:0370:7334"
@@ -87,7 +87,7 @@ func Test_extractIpsFromNetworks(t *testing.T) {
 	}
 }
 
-func Test_diskHash(t *testing.T) {
+func TestDiskHash(t *testing.T) {
 	nameLabel := "name label"
 	nameDescription := "name description"
 	attached := true
@@ -128,7 +128,7 @@ func Test_diskHash(t *testing.T) {
 	}
 }
 
-func Test_getUpdateDiskActions(t *testing.T) {
+func TestGetUpdateDiskActions(t *testing.T) {
 	cases := []struct {
 		disk                client.Disk
 		haystack            []client.Disk
@@ -208,7 +208,7 @@ func Test_getUpdateDiskActions(t *testing.T) {
 	}
 }
 
-func Test_shouldUpdateDisk(t *testing.T) {
+func TestShouldUpdateDisk(t *testing.T) {
 	cases := []struct {
 		disk                 client.Disk
 		haystack             []client.Disk
@@ -263,7 +263,72 @@ func Test_shouldUpdateDisk(t *testing.T) {
 	}
 }
 
-func Test_shouldUpdateVif(t *testing.T) {
+func TestShouldHaltVmForCPUOrMemoryUpdate(t *testing.T) {
+	tests := []struct {
+		name             string
+		powerState       string
+		currentCPUMax    int
+		nextCPUs         int
+		currentMemoryMax int
+		nextMemoryMax    int
+		expected         bool
+	}{
+		{
+			name:             "running vm halts when cpus exceed max",
+			powerState:       client.RunningPowerState,
+			currentCPUMax:    4,
+			nextCPUs:         5,
+			currentMemoryMax: 8,
+			nextMemoryMax:    8,
+			expected:         true,
+		},
+		{
+			name:             "halted vm does not halt when cpus exceed max",
+			powerState:       client.HaltedPowerState,
+			currentCPUMax:    4,
+			nextCPUs:         5,
+			currentMemoryMax: 8,
+			nextMemoryMax:    8,
+			expected:         false,
+		},
+		{
+			name:             "running vm halts when memory max changes",
+			powerState:       client.RunningPowerState,
+			currentCPUMax:    4,
+			nextCPUs:         4,
+			currentMemoryMax: 8,
+			nextMemoryMax:    16,
+			expected:         true,
+		},
+		{
+			name:             "halted vm does not halt when memory max changes",
+			powerState:       client.HaltedPowerState,
+			currentCPUMax:    4,
+			nextCPUs:         4,
+			currentMemoryMax: 8,
+			nextMemoryMax:    16,
+			expected:         false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result := shouldHaltVmForCPUOrMemoryUpdate(
+				test.powerState,
+				test.currentCPUMax,
+				test.currentMemoryMax,
+				test.nextCPUs,
+				test.nextMemoryMax,
+			)
+
+			if result != test.expected {
+				t.Fatalf("expected halt decision %t, got %t", test.expected, result)
+			}
+		})
+	}
+}
+
+func TestShouldUpdateVif(t *testing.T) {
 	cases := []struct {
 		vif                  client.VIF
 		haystack             []*client.VIF
@@ -1788,6 +1853,41 @@ func TestAccXenorchestraVm_updatingCpusInsideMaxCpuAndMemMinDoesNotRequireReboot
 	})
 }
 
+func TestAccXenorchestraVm_updatingHaltedVmCpuAndMemoryDoesNotRequireReboot(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { testAccPreCheck(t) },
+		// Use a provider that has a XO client that will error if StartVm
+		// or HaltVm are called. This ensures updates do not force a reboot
+		// when the VM is already halted.
+		Providers:    testAccFailToStartAndHaltProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigUpdateAttrsVariableCPUAndMemoryHalted(4, 4295000000, nil, vmName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "cpus", "4"),
+					resource.TestCheckResourceAttr(resourceName, "memory_max", "4295000000"),
+					resource.TestCheckResourceAttr(resourceName, "power_state", client.HaltedPowerState),
+				),
+			},
+			{
+				Config: testAccVmConfigUpdateAttrsVariableCPUAndMemoryHalted(5, 6295000000, nil, vmName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "cpus", "5"),
+					resource.TestCheckResourceAttr(resourceName, "memory_max", "6295000000"),
+					resource.TestCheckResourceAttr(resourceName, "power_state", client.HaltedPowerState),
+				),
+			},
+		},
+	})
+}
+
 func TestAccXenorchestraVm_createAndUpdateWithResourceSet(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
@@ -3101,6 +3201,48 @@ resource "xenorchestra_vm" "bar" {
     }
 }
 `, accTestPool.NameLabel, accDefaultNetwork.NameLabel, memoryMax, memoryMinStr, cpus, nameLabel, nameDescription, ha, powerOn, accDefaultSr.Id)
+}
+
+func testAccVmConfigUpdateAttrsVariableCPUAndMemoryHalted(cpus, memoryMax int, memoryMin *int, nameLabel string) string {
+	var memoryMinStr string
+	if memoryMin == nil {
+		memoryMinStr = "null"
+	} else {
+		memoryMinStr = fmt.Sprintf("%d", *memoryMin)
+	}
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", nameLabel), "template") + testAccTemplateConfig() + fmt.Sprintf(`
+data "xenorchestra_pool" "pool" {
+    name_label = "%s"
+}
+
+data "xenorchestra_network" "network" {
+    name_label = "%s"
+    pool_id = data.xenorchestra_pool.pool.id
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = %d
+	memory_min = %s
+    cpus  = %d
+    cloud_config = xenorchestra_cloud_config.bar.template
+    name_label = "%s"
+	name_description = ""
+    affinity_host = data.xenorchestra_pool.pool.master
+    template = data.xenorchestra_template.template.id
+	high_availability = ""
+	auto_poweron = "false"
+	power_state = "%s"
+    network {
+	network_id = data.xenorchestra_network.network.id
+    }
+
+    disk {
+      sr_id = "%s"
+      name_label = "disk 1"
+      size = 10001317888
+    }
+}
+`, accTestPool.NameLabel, accDefaultNetwork.NameLabel, memoryMax, memoryMinStr, cpus, nameLabel, client.HaltedPowerState, accDefaultSr.Id)
 }
 
 func providerCredentials(username, password string) string {
