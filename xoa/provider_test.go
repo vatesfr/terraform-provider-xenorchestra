@@ -4,8 +4,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/vatesfr/terraform-provider-xenorchestra/xoa/internal"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/vatesfr/terraform-provider-xenorchestra/xoa/internal"
 )
 
 var testAccProviders map[string]*schema.Provider

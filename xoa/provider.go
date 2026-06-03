@@ -90,6 +90,7 @@ func Provider() *schema.Provider {
 			"xenorchestra_network":      dataSourceXoaNetwork(),
 			"xenorchestra_pif":          dataSourceXoaPIF(),
 			"xenorchestra_pool":         dataSourceXoaPool(),
+			"xenorchestra_pools":        dataSourceXoaPools(),
 			"xenorchestra_host":         dataSourceXoaHost(),
 			"xenorchestra_hosts":        dataSourceXoaHosts(),
 			"xenorchestra_template":     dataSourceXoaTemplate(),

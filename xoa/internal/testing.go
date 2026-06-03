@@ -33,10 +33,10 @@ const (
 // You may check for unset keys, however this will also match keys set to empty
 // string. Please provide a map with at least 1 non-empty value.
 //
-//   map[string]string{
-//           "key1": "value",
-//       "key2": "",
-//   }
+//	map[string]string{
+//	        "key1": "value",
+//	    "key2": "",
+//	}
 //
 // Use this function over SDK provided TestCheckFunctions when validating a
 // TypeSet where its elements are a nested object with their own attrs/values.
@@ -191,14 +191,15 @@ func testCheckTypeSetElem(is *terraform.InstanceState, attr, value string) error
 // STATE:
 //
 // data.xenorchestra_hosts.hosts:
-//   ID = 0aea61f4-c9d1-4060-94e8-4eb2024d082c
-//   provider = provider.xenorchestra
-//   hosts.# = 3
-//   hosts.0.name_label = R620-L1
-//   hosts.1.name_label = R620-L3
-//   hosts.2.name_label = R620-L2
-//   sort_by = name_label
-//   sort_order = asc
+//
+//	ID = 0aea61f4-c9d1-4060-94e8-4eb2024d082c
+//	provider = provider.xenorchestra
+//	hosts.# = 3
+//	hosts.0.name_label = R620-L1
+//	hosts.1.name_label = R620-L3
+//	hosts.2.name_label = R620-L2
+//	sort_by = name_label
+//	sort_order = asc
 func TestCheckTypeListAttrSorted(name, attr, sortOrder string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		is, err := instanceState(s, name)

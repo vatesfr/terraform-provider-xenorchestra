@@ -6,9 +6,9 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/vatesfr/terraform-provider-xenorchestra/xoa/internal"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/vatesfr/terraform-provider-xenorchestra/xoa/internal"
 )
 
 func TestAccXenorchestraDataSource_hostsSortedDescByNameLabel(t *testing.T) {
