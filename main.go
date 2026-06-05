@@ -14,7 +14,10 @@ var version = "0.0.1"
 //go:generate terraform-plugin-docs generate
 
 func main() {
-	providerserver.Serve(context.Background(), provider.NewProvider(version), providerserver.ServeOpts{
+	err := providerserver.Serve(context.Background(), provider.NewProvider(version), providerserver.ServeOpts{
 		Address: "registry.terraform.io/vatesfr/xenorchestra",
 	})
+	if err != nil {
+		panic(err)
+	}
 }
