@@ -1,27 +1,20 @@
 package main
 
 import (
-	"flag"
+	"context"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
-	"github.com/vatesfr/terraform-provider-xenorchestra/xoa"
+	"github.com/hashicorp/terraform-plugin-framework/providerserver"
+	"github.com/vatesfr/terraform-provider-xenorchestra/provider"
 )
 
-// Generate the Terraform provider documentation using `tfplugindocs`:
-//
-//go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
+// version is set at compile time by the build system.
+// This can be set with -ldflags "-X main.version=x.y.z"
+var version = "0.0.1"
+
+//go:generate terraform-plugin-docs generate
 
 func main() {
-
-	var debugMode bool
-	flag.BoolVar(&debugMode, "debuggable", false, "set to true to run the provider with support for debuggers like delve")
-	flag.Parse()
-
-	opts := &plugin.ServeOpts{
-		Debug:        debugMode,
-		ProviderAddr: "registry.terraform.io/vatesfr/xenorchestra",
-		ProviderFunc: xoa.Provider,
-	}
-
-	plugin.Serve(opts)
+	providerserver.Serve(context.Background(), provider.NewProvider(version), providerserver.ServeOpts{
+		Address: "registry.terraform.io/vatesfr/xenorchestra",
+	})
 }

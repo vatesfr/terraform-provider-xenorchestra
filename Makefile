@@ -1,56 +1,90 @@
-.PHONY: import testacc testclient test dist ci docs debug
+# Makefile for Xen Orchestra Terraform Provider v2
 
-TIMEOUT ?= 40m
-GOMAXPROCS ?= 5
-TF_VERSION ?= v0.14.11
-ROOT_PKG_PATH := github.com/vatesfr/terraform-provider-xenorchestra
-ifdef TEST
-    TEST := github.com/vatesfr/terraform-provider-xenorchestra/xoa -run '$(TEST)'
-else
-    TEST := ./...
-endif
+.PHONY: all build test generate clean tools
 
-ifdef TF_LOG
-    TF_LOG := TF_LOG=$(TF_LOG)
-endif
+# Go parameters
+GOCMD=go
+GOBUILD=$(GOCMD) build
+GOCLEAN=$(GOCMD) clean
+GOMOD=$(GOCMD) mod
+GOTEST=$(GOCMD) test
+GOGET=$(GOCMD) get
 
+# Binary name
+BINARY_NAME=terraform-provider-xenorchestra
+
+# Build the provider
 build:
-	go build -o terraform-provider-xenorchestra
+	$(GOBUILD) -o $(BINARY_NAME) .
 
-debug: 
-	go build -o terraform-provider-xenorchestra -gcflags="all=-N -l"
+# Build for Linux AMD64 (common for testing)
+build-linux:
+	GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(BINARY_NAME)_linux_amd64 .
 
+# Build for macOS ARM64
+build-darwin:
+	GOOS=darwin GOARCH=arm64 $(GOBUILD) -o $(BINARY_NAME)_darwin_arm64 .
+
+# Build for Windows AMD64
+build-windows:
+	GOOS=windows GOARCH=amd64 $(GOBUILD) -o $(BINARY_NAME)_windows_amd64.exe .
+
+# Build all platforms
+build-all: build-linux build-darwin build-windows
+
+# Generate documentation
+generate:
+	$(GOBUILD) -o tfplugindocs-generated ./tools/tfplugindocs
+	./tfplugindocs-generated generate --provider-name xenorchestra
+
+# Download dependencies
+deps:
+	$(GOMOD) download
+	$(GOMOD) tidy
+
+# Run tests
+test:
+	$(GOTEST) -v ./...
+
+# Run tests with coverage
+test-coverage:
+	$(GOTEST) -v -cover ./...
+
+# Run acceptance tests (requires TF_ACC=1 and XOA credentials)
+testacc:
+	TF_ACC=1 $(GOTEST) -v ./...
+
+# Lint the code
+lint:
+	golangci-lint run ./...
+
+# Clean build artifacts
 clean:
-	rm dist/*
+	$(GOCLEAN)
+	rm -f $(BINARY_NAME)*
 
-dist:
-	./scripts/dist.sh
+# Get tools
+tools:
+	$(GOGET) github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
+	$(GOGET) golang.org/x/lint/golint
+	$(GOGET) github.com/golangci/golangci-lint/cmd/golangci-lint
 
-plan: build
-	terraform init
-	terraform plan
+# All targets
+all: deps build
 
-apply:
-	terraform apply
-
-sweep:
-	TF_ACC=1 $(TF_LOG) go test $(TEST) -sweep=true -v
-
-test: testclient testacc
-
-testclient:
-	cd client; go test $(TEST) -v -count 1 -ldflags "-X $(ROOT_PKG_PATH)/client.integrationTestPrefix=adhoc-xo-go-client"
-
-testacc: xoa/testdata/alpine-virt-3.17.0-x86_64.iso
-	TF_ACC=1 $(TF_LOG) go test $(TEST) -parallel $(GOMAXPROCS) -v -count 1 -timeout $(TIMEOUT) -sweep=true -ldflags "-X $(ROOT_PKG_PATH)/xoa.accTestPrefix=adhoc-terraform-acc"
-
-# This file was previously stored in the git repo with git lfs. GitHub
-# has a very low quota for number of allowed clones and so this needed
-# to be removed from the repo. Add a target to enforce that the CI system
-# has copied that file into place before the tests run
-ci: xoa/testdata/alpine-virt-3.17.0-x86_64.iso
-	TF_ACC_TERRAFORM_PATH=/opt/terraform-provider-xenorchestra/bin/$(TF_VERSION) TF_ACC=1 gotestsum --debug --rerun-fails=5 --max-fails=15 --packages=./xoa  -- ./xoa -v -count=1 -timeout=$(TIMEOUT) -sweep=true -parallel=$(GOMAXPROCS)
-
-docs:
-	@echo "Generating docs..."
-	go generate ./...
+# Help
+help:
+	@echo "Available targets:"
+	@echo "  build          - Build the provider"
+	@echo "  build-linux    - Build for Linux AMD64"
+	@echo "  build-darwin   - Build for macOS ARM64"
+	@echo "  build-windows  - Build for Windows AMD64"
+	@echo "  build-all      - Build for all platforms"
+	@echo "  generate       - Generate documentation"
+	@echo "  deps           - Download dependencies"
+	@echo "  test           - Run unit tests"
+	@echo "  test-coverage  - Run tests with coverage"
+	@echo "  testacc        - Run acceptance tests"
+	@echo "  lint           - Run linter"
+	@echo "  clean          - Clean build artifacts"
+	@echo "  tools          - Install required tools"

@@ -1,11 +1,47 @@
-.terraform/
-terraform-provider-xenorchestra
-crash.log
-# Occasionally test terraform files in this repo
-main.tf
-terraform.tfstate*
-dist/
-vendor
-xoa/testdata/alpine-virt-3.17.0-x86_64.iso
-.autoenv.zsh
+# Binaries
+terraform-provider-xenorchestra*
+*.exe
+*.test
+*.out
+
+# Go workspace
+.go/
+
+# Dependency directories
+vendor/
+
+# IDE
+.idea/
 .vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+bin/
+
+# Go cache
+go.cache/
+
+# Terraform
+.terraform/
+terraform.tfstate
+terraform.tfstate.backup
+
+# Generated documentation
+docs/
+
+# Test files
+*_test.go
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.local
+.env.*.local
