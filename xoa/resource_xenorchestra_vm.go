@@ -92,6 +92,23 @@ func vmCustomizeDiff(ctx context.Context, diff *schema.ResourceDiff, v interface
 	if memoryHasChanged && memoryMin > memoryMax {
 		return fmt.Errorf("memory_min (%d) must be less than or equal to memory_max (%d)", memoryMin, memoryMax)
 	}
+
+	// Check CPU topology constraints
+	cpus := diff.Get("cpus").(int)
+	if cps, ok := diff.GetOkExists("cores_per_socket"); ok {
+		coresPerSocket := cps.(int)
+		if coresPerSocket > cpus {
+			return fmt.Errorf("cores_per_socket (%d) cannot be greater than cpus (%d)", coresPerSocket, cpus)
+		}
+		if cpus%coresPerSocket != 0 {
+			return fmt.Errorf("cores_per_socket (%d) must evenly divide cpus (%d)", coresPerSocket, cpus)
+		}
+		// Keep sockets consistent in the plan: sockets = cpus / cores_per_socket.
+		if err := diff.SetNew("sockets", cpus/coresPerSocket); err != nil {
+			return fmt.Errorf("failed to set sockets from cpu topology: %w", err)
+		}
+	}
+
 	return nil
 }
 
@@ -229,6 +246,18 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 ` + "```" + `
 
 `,
+		},
+		"cores_per_socket": &schema.Schema{
+			Computed:     true,
+			Type:         schema.TypeInt,
+			Optional:     true,
+			ValidateFunc: validation.IntAtLeast(1),
+			Description:  "The number of cores per socket for the VM's CPU topology. This value must evenly divide the total number of CPUs. If not set, the VM uses XO/XAPI defaults (typically 1 core per socket).",
+		},
+		"sockets": &schema.Schema{
+			Type:        schema.TypeInt,
+			Computed:    true,
+			Description: "The number of CPU sockets. This is computed as cpus / cores_per_socket.",
 		},
 		"memory_min": &schema.Schema{
 			Type:     schema.TypeInt,
@@ -600,6 +629,12 @@ func resourceVmCreateContext(ctx context.Context, d *schema.ResourceData, m inte
 	affinityHost := d.Get("affinity_host").(string)
 	if affinityHost != "" {
 		createVmParams.AffinityHost = &affinityHost
+	}
+
+	// Set CPU topology if cores_per_socket is specified
+	if coresPerSocket, ok := d.GetOk("cores_per_socket"); ok {
+		cps := coresPerSocket.(int)
+		createVmParams.CoresPerSocket = &cps
 	}
 
 	vm, err := c.CreateVm(createVmParams, d.Timeout(schema.TimeoutCreate))
@@ -993,6 +1028,12 @@ func resourceVmUpdateContext(ctx context.Context, d *schema.ResourceData, m inte
 		},
 	}
 
+	// Set CPU topology if cores_per_socket is specified
+	if coresPerSocket, ok := d.GetOk("cores_per_socket"); ok && d.HasChange("cores_per_socket") {
+		cps := coresPerSocket.(int)
+		vmReq.CoresPerSocket = &cps
+	}
+
 	if d.HasChange("affinity_host") {
 		vmReq.AffinityHost = &affinityHost
 	}
@@ -1239,6 +1280,20 @@ func recordToData(ctx context.Context, resource client.Vm, vifs []client.VIF, di
 	}
 
 	d.Set("cpus", resource.CPUs.Number)
+
+	// Handle CPU topology (cores_per_socket and sockets)
+	if resource.CoresPerSocket != nil && *resource.CoresPerSocket > 0 {
+		if err := d.Set("cores_per_socket", *resource.CoresPerSocket); err != nil {
+			return err
+		}
+		// Compute sockets = cpus / cores_per_socket
+		sockets := resource.CPUs.Number / (*resource.CoresPerSocket)
+		d.Set("sockets", sockets)
+	} else {
+		// Default: 1 core per socket means sockets = cpus
+		d.Set("sockets", resource.CPUs.Number)
+	}
+
 	d.Set("name_label", resource.NameLabel)
 	d.Set("affinity_host", resource.AffinityHost)
 	d.Set("name_description", resource.NameDescription)
