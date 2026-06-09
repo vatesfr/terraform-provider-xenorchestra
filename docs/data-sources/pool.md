@@ -32,6 +32,7 @@ data "xenorchestra_sr" "local_storage" {
 ### Read-Only
 
 - `cpus` (Map of String) CPU information about the pool. The 'cores' key will contain the number of cpu cores and the 'sockets' key will contain the number of sockets.
+- `default_sr` (String) The default storage repository for the pool.
 - `description` (String) The description of the pool.
-- `id` (String) The ID of this resource.
+- `id` (String) The id of the pool.
 - `master` (String) The id of the primary instance in the pool.

@@ -14,29 +14,61 @@ func dataSourceXoaPool() *schema.Resource {
 	return &schema.Resource{
 		ReadContext: dataSourcePoolReadContext,
 		Description: "Provides information about a pool.",
-		Schema: map[string]*schema.Schema{
-			"name_label": &schema.Schema{
-				Type:        schema.TypeString,
-				Required:    true,
-				Description: "The name_label of the pool to look up.",
-			},
-			"description": &schema.Schema{
-				Type:        schema.TypeString,
-				Computed:    true,
-				Description: "The description of the pool.",
-			},
-			"master": &schema.Schema{
-				Type:        schema.TypeString,
-				Computed:    true,
-				Description: "The id of the primary instance in the pool.",
-			},
-			"cpus": &schema.Schema{
-				Type:        schema.TypeMap,
-				Computed:    true,
-				Elem:        &schema.Schema{Type: schema.TypeString},
-				Description: "CPU information about the pool. " + cpusDesc,
-			},
+		Schema:      resourcePoolSchema(),
+	}
+}
+
+func resourcePoolSchema() map[string]*schema.Schema {
+	return map[string]*schema.Schema{
+		"name_label": &schema.Schema{
+			Type:        schema.TypeString,
+			Required:    true,
+			Description: "The name_label of the pool to look up.",
 		},
+		"description": &schema.Schema{
+			Type:        schema.TypeString,
+			Computed:    true,
+			Description: "The description of the pool.",
+		},
+		"master": &schema.Schema{
+			Type:        schema.TypeString,
+			Computed:    true,
+			Description: "The id of the primary instance in the pool.",
+		},
+		"id": &schema.Schema{
+			Type:        schema.TypeString,
+			Computed:    true,
+			Description: "The id of the pool.",
+		},
+		"default_sr": &schema.Schema{
+			Type:        schema.TypeString,
+			Computed:    true,
+			Description: "The default storage repository for the pool.",
+		},
+		"cpus": &schema.Schema{
+			Type:        schema.TypeMap,
+			Computed:    true,
+			Elem:        &schema.Schema{Type: schema.TypeString},
+			Description: "CPU information about the pool. " + cpusDesc,
+		},
+	}
+}
+
+func poolCpuInfoToMap(cpus client.CpuInfo) map[string]interface{} {
+	return map[string]interface{}{
+		"cores":   fmt.Sprintf("%d", cpus.Cores),
+		"sockets": fmt.Sprintf("%d", cpus.Sockets),
+	}
+}
+
+func poolToMap(pool client.Pool) map[string]interface{} {
+	return map[string]interface{}{
+		"id":          pool.Id,
+		"name_label":  pool.NameLabel,
+		"description": pool.Description,
+		"master":      pool.Master,
+		"cpus":        poolCpuInfoToMap(pool.Cpus),
+		"default_sr":  pool.DefaultSR,
 	}
 }
 
@@ -63,20 +95,10 @@ func dataSourcePoolReadContext(ctx context.Context, d *schema.ResourceData, m in
 	})
 
 	d.SetId(pool.Id)
-	cpus := map[string]string{
-		"sockets": fmt.Sprintf("%d", pool.Cpus.Sockets),
-		"cores":   fmt.Sprintf("%d", pool.Cpus.Cores),
-	}
-	if err := d.Set("description", pool.Description); err != nil {
-		return diag.FromErr(err)
-	}
-	err = d.Set("cpus", cpus)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	if err := d.Set("master", pool.Master); err != nil {
-		return diag.FromErr(err)
+	for k, v := range poolToMap(pool) {
+		if err := d.Set(k, v); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 	return nil
 }
