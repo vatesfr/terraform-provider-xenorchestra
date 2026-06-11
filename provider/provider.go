@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/vatesfr/terraform-provider-xenorchestra/provider/data_sources"
 )
 
 // XenOrchestraProvider is the provider implementation.
@@ -34,7 +35,6 @@ func New(version string) provider.Provider {
 // Metadata returns the provider type name and version.
 func (p *XenOrchestraProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
 	tflog.Info(ctx, "XenOrchestra Terraform Provider - v2")
-	
 	resp.TypeName = "xenorchestra"
 	resp.Version = p.version
 }
@@ -56,7 +56,9 @@ func (p *XenOrchestraProvider) Resources(ctx context.Context) []func() resource.
 }
 
 // DataSources returns the provider's data source implementations.
-// Empty for now - will be added in later phases
 func (p *XenOrchestraProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
-	return []func() datasource.DataSource{}
+	return []func() datasource.DataSource{
+		data_sources.NewPoolDataSource,
+		data_sources.NewPoolsDataSource,
+	}
 }

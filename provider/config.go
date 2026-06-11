@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	v2config "github.com/vatesfr/xenorchestra-go-sdk/pkg/config"
-	"github.com/vatesfr/xenorchestra-go-sdk/v2/client"
+	v2 "github.com/vatesfr/xenorchestra-go-sdk/v2"
 )
 
 // ProviderConfig is the configuration for the XenOrchestra provider.
@@ -23,19 +23,13 @@ type ProviderConfig struct {
 	Insecure types.Bool   `tfsdk:"insecure"`
 }
 
-// ProviderData contains the configured XO client.
-type ProviderData struct {
-	Client *client.Client
-	Config ProviderConfig
-}
-
 // ProviderSchema returns the schema for the provider configuration.
 func ProviderSchema() schema.Schema {
 	return schema.Schema{
 		Description: "Configuration for the Xen Orchestra Terraform provider.",
 		Attributes: map[string]schema.Attribute{
 			"url": schema.StringAttribute{
-				Description: "Hostname of the Xen Orchestra server. If omitted, XOA_URL is used.",
+				Description: "Hostname of the Xen Orchestra server. Can be set via the XOA_URL environment variable.",
 				Optional:    true,
 			},
 			"username": schema.StringAttribute{
@@ -94,7 +88,7 @@ func ConfigureProvider(ctx context.Context, req provider.ConfigureRequest, resp 
 		InsecureSkipVerify: config.Insecure.ValueBool(),
 	}
 	// Create client
-	c, err := client.New(xoConfig)
+	c, err := v2.New(xoConfig)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Failed to create Xen Orchestra client",
@@ -103,14 +97,9 @@ func ConfigureProvider(ctx context.Context, req provider.ConfigureRequest, resp 
 		return
 	}
 
-	// Set the client in the provider data
-	providerData := &ProviderData{
-		Client: c,
-		Config: config,
-	}
-
-	resp.ResourceData = providerData
-	resp.DataSourceData = providerData
+	// Set the client as ProviderData
+	resp.ResourceData = c
+	resp.DataSourceData = c
 }
 
 func applyEnvDefaults(config *ProviderConfig, resp *provider.ConfigureResponse) {
