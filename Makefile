@@ -1,56 +1,39 @@
-.PHONY: import testacc testclient test dist ci docs debug
+# Makefile for Xen Orchestra Terraform Provider v2
 
-TIMEOUT ?= 40m
-GOMAXPROCS ?= 5
-TF_VERSION ?= v0.14.11
-ROOT_PKG_PATH := github.com/vatesfr/terraform-provider-xenorchestra
-ifdef TEST
-    TEST := github.com/vatesfr/terraform-provider-xenorchestra/xoa -run '$(TEST)'
-else
-    TEST := ./...
-endif
+.PHONY: fmt lint test testacc build debug clean install generate
 
-ifdef TF_LOG
-    TF_LOG := TF_LOG=$(TF_LOG)
-endif
+
+# Binary name
+BINARY_NAME=terraform-provider-xenorchestra
+
+default: fmt lint install generate
 
 build:
-	go build -o terraform-provider-xenorchestra
+	go build -v -o $(BINARY_NAME)
 
 debug: 
-	go build -o terraform-provider-xenorchestra -gcflags="all=-N -l"
+	go build -o $(BINARY_NAME) -gcflags="all=-N -l"
 
+# Clean build artifacts
 clean:
-	rm dist/*
+	go clean
+	rm -f $(BINARY_NAME)*
 
-dist:
-	./scripts/dist.sh
+install: build
+	go install -v ./...
 
-plan: build
-	terraform init
-	terraform plan
+lint:
+	golangci-lint run
 
-apply:
-	terraform apply
+generate:
+	cd tools; go generate ./...
 
-sweep:
-	TF_ACC=1 $(TF_LOG) go test $(TEST) -sweep=true -v
+fmt:
+	gofmt -s -w -e .
 
-test: testclient testacc
+test:
+	go test -v -cover -timeout=120s -parallel=10 ./...
 
-testclient:
-	cd client; go test $(TEST) -v -count 1 -ldflags "-X $(ROOT_PKG_PATH)/client.integrationTestPrefix=adhoc-xo-go-client"
+testacc:
+	TF_ACC=1 go test -v -cover -timeout 120m ./...
 
-testacc: xoa/testdata/alpine-virt-3.17.0-x86_64.iso
-	TF_ACC=1 $(TF_LOG) go test $(TEST) -parallel $(GOMAXPROCS) -v -count 1 -timeout $(TIMEOUT) -sweep=true -ldflags "-X $(ROOT_PKG_PATH)/xoa.accTestPrefix=adhoc-terraform-acc"
-
-# This file was previously stored in the git repo with git lfs. GitHub
-# has a very low quota for number of allowed clones and so this needed
-# to be removed from the repo. Add a target to enforce that the CI system
-# has copied that file into place before the tests run
-ci: xoa/testdata/alpine-virt-3.17.0-x86_64.iso
-	TF_ACC_TERRAFORM_PATH=/opt/terraform-provider-xenorchestra/bin/$(TF_VERSION) TF_ACC=1 gotestsum --debug --rerun-fails=5 --max-fails=15 --packages=./xoa  -- ./xoa -v -count=1 -timeout=$(TIMEOUT) -sweep=true -parallel=$(GOMAXPROCS)
-
-docs:
-	@echo "Generating docs..."
-	go generate ./...
