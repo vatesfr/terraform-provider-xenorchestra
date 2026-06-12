@@ -9,19 +9,40 @@ import (
 	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	v2config "github.com/vatesfr/xenorchestra-go-sdk/pkg/config"
 	v2 "github.com/vatesfr/xenorchestra-go-sdk/v2"
 )
 
 // createProviderClient configures the provider client.
-func createProviderClient(config *XenOrchestraProviderModel) (*v2.XOClient, diag.Diagnostics) {
+func createProviderClient(config *xenorchestraProviderModel) (*v2.XOClient, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	if config.URL.IsNull() || config.URL.IsUnknown() || config.URL.ValueString() == "" {
-		diags.AddError(
+	if config.URL.IsNull() {
+		diags.AddAttributeError(
+			path.Root("url"),
 			"Missing Xen Orchestra URL",
-			"Set provider argument 'url' or define the XOA_URL environment variable.",
+			"The provider cannot create the Xen Orchestra API client as there is an unknown configuration value for the Xen Orchestra API host. "+
+				"Set provider argument 'url' or define the XOA_URL environment variable.",
+		)
+		return nil, diags
+	}
+
+	if config.Token.IsNull() && config.Username.IsNull() && config.Password.IsNull() {
+		diags.AddError(
+			"Missing Xen Orchestra credentials",
+			"The provider cannot create the Xen Orchestra API client as there are unknown configuration values for authentication. "+
+				"Set provider arguments 'username' and 'password' or 'token', or define the XOA_USER, XOA_PASSWORD, or XOA_TOKEN environment variables.",
+		)
+		return nil, diags
+	}
+	if config.Username.IsNull() != config.Password.IsNull() && config.Token.IsNull() {
+		diags.AddAttributeError(
+			path.Root("username"),
+			"Invalid Authentication Configuration",
+			"The provider cannot create the Xen Orchestra API client as there is an unknown configuration value for either the username or password. "+
+				"Both 'username' and 'password' must be set together, or both must be unknown. Set provider arguments 'username' and 'password', or define the XOA_USER and XOA_PASSWORD environment variables.",
 		)
 		return nil, diags
 	}
@@ -49,7 +70,7 @@ func createProviderClient(config *XenOrchestraProviderModel) (*v2.XOClient, diag
 	return xoClient, diags
 }
 
-func applyEnvDefaults(config *XenOrchestraProviderModel) diag.Diagnostics {
+func applyEnvDefaults(config *xenorchestraProviderModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 	if (config.URL.IsNull() || config.URL.IsUnknown()) && os.Getenv("XOA_URL") != "" {
 		config.URL = types.StringValue(os.Getenv("XOA_URL"))

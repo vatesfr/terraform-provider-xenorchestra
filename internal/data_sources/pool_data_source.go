@@ -18,17 +18,17 @@ import (
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
-var _ datasource.DataSource = &PoolDataSource{}
+var _ datasource.DataSource = &poolDataSource{}
 
 func NewPoolDataSource() datasource.DataSource {
-	return &PoolDataSource{}
+	return &poolDataSource{}
 }
 
-type PoolDataSource struct {
+type poolDataSource struct {
 	client *v2.XOClient
 }
 
-type PoolDataSourceModel struct {
+type poolDataSourceModel struct {
 	ID          types.String `tfsdk:"id"`
 	NameLabel   types.String `tfsdk:"name_label"`
 	Description types.String `tfsdk:"description"`
@@ -39,10 +39,10 @@ type PoolDataSourceModel struct {
 	Tags        types.List   `tfsdk:"tags"`
 }
 
-func poolModelFromPayload(ctx context.Context, pool *payloads.Pool) (PoolDataSourceModel, diag.Diagnostics) {
+func poolModelFromPayload(ctx context.Context, pool *payloads.Pool) (poolDataSourceModel, diag.Diagnostics) {
 	tags, diags := types.ListValueFrom(ctx, types.StringType, pool.Tags)
 
-	result := PoolDataSourceModel{
+	result := poolDataSourceModel{
 		ID:          types.StringValue(pool.ID.String()),
 		NameLabel:   types.StringValue(pool.NameLabel),
 		Description: types.StringValue(pool.NameDescription),
@@ -94,11 +94,11 @@ func poolSchemaAttributes() map[string]schema.Attribute {
 	}
 }
 
-func (d *PoolDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+func (d *poolDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_pool"
 }
 
-func (d *PoolDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (d *poolDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	// Set "id" to required instead of computed for the single pool data source
 	attrs := poolSchemaAttributes()
 	attrs["id"] = schema.StringAttribute{
@@ -112,12 +112,12 @@ func (d *PoolDataSource) Schema(ctx context.Context, req datasource.SchemaReques
 	}
 }
 
-func (d *PoolDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+func (d *poolDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	d.client = helpers.ProviderDataToXOClient(req.ProviderData, &resp.Diagnostics)
 }
 
-func (d *PoolDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var data PoolDataSourceModel
+func (d *poolDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+	var data poolDataSourceModel
 
 	// Read Terraform configuration data into the model
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)

@@ -20,28 +20,28 @@ import (
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
-var _ datasource.DataSource = &PoolsDataSource{}
+var _ datasource.DataSource = &poolsDataSource{}
 
 func NewPoolsDataSource() datasource.DataSource {
-	return &PoolsDataSource{}
+	return &poolsDataSource{}
 }
 
-type PoolsDataSource struct {
+type poolsDataSource struct {
 	client *v2.XOClient
 }
 
-type PoolsDataSourceModel struct {
+type poolsDataSourceModel struct {
 	Tags      types.Set    `tfsdk:"tags"`
 	SortBy    types.String `tfsdk:"sort_by"`
 	SortOrder types.String `tfsdk:"sort_order"`
 	Pools     types.List   `tfsdk:"pools"`
 }
 
-func (d *PoolsDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+func (d *poolsDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_pools"
 }
 
-func (d *PoolsDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (d *poolsDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: "Use this data source to filter Xen Orchestra pools by certain criteria (tags) for use in other resources.",
 		Attributes: map[string]schema.Attribute{
@@ -69,12 +69,12 @@ func (d *PoolsDataSource) Schema(ctx context.Context, req datasource.SchemaReque
 	}
 }
 
-func (d *PoolsDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+func (d *poolsDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	d.client = helpers.ProviderDataToXOClient(req.ProviderData, &resp.Diagnostics)
 }
 
-func (d *PoolsDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var data PoolsDataSourceModel
+func (d *poolsDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+	var data poolsDataSourceModel
 
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
@@ -136,7 +136,7 @@ func (d *PoolsDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 		})
 	}
 
-	poolsTf := make([]PoolDataSourceModel, 0, len(pools))
+	poolsTf := make([]poolDataSourceModel, 0, len(pools))
 	for _, pool := range pools {
 		poolTf, diags := poolModelFromPayload(ctx, pool)
 		resp.Diagnostics.Append(diags...)
@@ -156,7 +156,7 @@ func (d *PoolsDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 		return
 	}
 
-	result := PoolsDataSourceModel{
+	result := poolsDataSourceModel{
 		Tags:      data.Tags,
 		SortBy:    data.SortBy,
 		SortOrder: data.SortOrder,
