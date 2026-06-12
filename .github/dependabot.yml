@@ -7,3 +7,19 @@ updates:
       interval: "weekly"
     cooldown:
       default-days: 15
+  - package-ecosystem: "gomod"
+    directory: "/tools"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 15
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    groups:
+      "github-actions":
+        patterns:
+          - "*" # Group all GitHub Actions dependencies together
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 15

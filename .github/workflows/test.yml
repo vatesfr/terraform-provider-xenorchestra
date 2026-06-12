@@ -1,0 +1,97 @@
+# Terraform Provider testing workflow.
+name: Tests
+
+# This GitHub action runs your tests for each pull request and push.
+# Optionally, you can turn it on using a schedule for regular testing.
+on:
+  pull_request:
+    paths-ignore:
+      - 'README.md'
+  push:
+    paths-ignore:
+      - 'README.md'
+
+# Testing only needs permissions to read the repository contents.
+permissions:
+  contents: read
+
+jobs:
+  # Ensure project builds before running testing matrix
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6.0.3
+      - uses: actions/setup-go@v6.4.0
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+      - run: go mod download
+      - run: go build -v .
+      - name: Run linters
+        uses: golangci/golangci-lint-action@v9.2.1
+        with:
+          version: latest
+
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.3
+      - uses: actions/setup-go@v6.4.0
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+      # We need the latest version of Terraform for our documentation generation to use
+      - uses: hashicorp/setup-terraform@v4.0.1
+        with:
+          terraform_wrapper: false
+      - run: make generate
+      - name: git diff
+        run: |
+          git diff --compact-summary --exit-code || \
+            (echo; echo "Unexpected difference in directories after code generation. Run 'make generate' command and commit."; exit 1)
+
+  # Run acceptance tests in a matrix with Terraform CLI versions
+  test-acc:
+    name: 'Acceptance Tests: Terraform ${{ matrix.terraform }}'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        # Terraform versions
+        terraform:
+          - '1.13.*'
+          - '1.14.*'
+    steps:
+      - uses: actions/checkout@v6.0.3
+      - uses: actions/setup-go@v6.4.0
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+      - uses: hashicorp/setup-terraform@v4.0.1
+        with:
+          terraform_version: ${{ matrix.terraform }}
+          terraform_wrapper: false
+      - run: go mod download
+      - env:
+          TF_ACC: "1"
+        run: go test -v -cover ./internal/provider/
+        timeout-minutes: 10
+
+  # Run unit tests
+  test-unit:
+    name: 'Unit Tests'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6.0.3
+      - uses: actions/setup-go@v6.4.0
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+      - run: go mod download
+      - run: go test -v -cover ./internal/...
