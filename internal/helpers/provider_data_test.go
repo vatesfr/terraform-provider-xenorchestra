@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	v2 "github.com/vatesfr/xenorchestra-go-sdk/v2"
 	"github.com/stretchr/testify/assert"
+	v2 "github.com/vatesfr/xenorchestra-go-sdk/v2"
 )
 
 func TestProviderDataToXOClient_NilInput(t *testing.T) {
