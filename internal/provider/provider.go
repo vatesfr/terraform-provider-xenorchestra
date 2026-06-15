@@ -16,6 +16,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	datasources "github.com/vatesfr/terraform-provider-xenorchestra/v2/internal/data_sources"
+	resources "github.com/vatesfr/terraform-provider-xenorchestra/v2/internal/resources"
 )
 
 // Ensure xenorchestraProvider satisfies various provider interfaces.
@@ -102,7 +103,9 @@ func (p *xenorchestraProvider) Configure(ctx context.Context, req provider.Confi
 }
 
 func (p *xenorchestraProvider) Resources(ctx context.Context) []func() resource.Resource {
-	return []func() resource.Resource{}
+	return []func() resource.Resource{
+		resources.NewNetworkResource,
+	}
 }
 
 func (p *xenorchestraProvider) EphemeralResources(ctx context.Context) []func() ephemeral.EphemeralResource {
