@@ -1299,6 +1299,9 @@ func recordToData(ctx context.Context, resource client.Vm, vifs []client.VIF, di
 	d.Set("name_description", resource.NameDescription)
 	d.Set("high_availability", resource.HA)
 	d.Set("auto_poweron", resource.AutoPoweron)
+	if resource.Template != "" {
+		d.Set("template", resource.Template)
+	}
 	if resource.ResourceSet != nil {
 		d.Set("resource_set", resource.ResourceSet.Id)
 	} else {
