@@ -78,8 +78,13 @@ func resourceVm() *schema.Resource {
 func vmCustomizeDiff(ctx context.Context, diff *schema.ResourceDiff, v interface{}) error {
 	// Check power state and cloudConfig constraints
 	destroyCloudConfig := diff.Get("destroy_cloud_config_vdi_after_boot").(bool)
+	cloudConfig := diff.Get("cloud_config").(string)
 	powerState := diff.Get("power_state").(string)
 	powerStateChanged := diff.HasChange("power_state")
+
+	if destroyCloudConfig && cloudConfig == "" {
+		return fmt.Errorf("cloud_config must be specified when destroy_cloud_config_vdi_after_boot is set to `true`")
+	}
 
 	if powerStateChanged && destroyCloudConfig && powerState != client.RunningPowerState {
 		return fmt.Errorf("power_state must be `%s` when destroy_cloud_config_vdi_after_boot set to `true`", client.RunningPowerState)
@@ -202,12 +207,9 @@ func resourceVmSchema() map[string]*schema.Schema {
 			Optional:    true,
 		},
 		"destroy_cloud_config_vdi_after_boot": &schema.Schema{
-			Type:     schema.TypeBool,
-			Optional: true,
-			Default:  false,
-			RequiredWith: []string{
-				"cloud_config",
-			},
+			Type:        schema.TypeBool,
+			Optional:    true,
+			Default:     false,
 			ForceNew:    true,
 			Description: "Determines whether the cloud config VDI should be deleted once the VM has booted. Defaults to `false`. If set to `true`, power_state must be set to `Running`.",
 		},
@@ -1257,6 +1259,10 @@ func RecordImportContext(ctx context.Context, d *schema.ResourceData, m interfac
 	}
 
 	err = recordToData(ctx, *vm, vifs, disks, cdroms, d)
+
+	if err := d.Set("destroy_cloud_config_vdi_after_boot", false); err != nil {
+		return rd, err
+	}
 
 	return rd, err
 }
