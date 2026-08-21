@@ -14,7 +14,7 @@ func dataSourceXoaStorageRepository() *schema.Resource {
 		Description: `Provides information about a Storage repository to ease the lookup of VM storage information.
 
 **Note:** If there are multiple storage repositories that match terraform will fail.
-Ensure that your name_label, pool_id and tags identify a unique storage repository.`,
+Ensure that your name_label, pool_id, host_id and tags identify a unique storage repository.`,
 		Schema: map[string]*schema.Schema{
 			"name_label": &schema.Schema{
 				Description: "The name of the storage repository to look up",
@@ -28,6 +28,11 @@ Ensure that your name_label, pool_id and tags identify a unique storage reposito
 			},
 			"pool_id": &schema.Schema{
 				Description: "The Id of the pool the storage repository exists on.",
+				Type:        schema.TypeString,
+				Optional:    true,
+			},
+			"host_id": &schema.Schema{
+				Description: "The Id of the host the storage repository exists on. For host-local storage repositories the SR's `container` is the host itself, so this filters the repositories down to a single host when several hosts in the pool share the same SR name.",
 				Type:        schema.TypeString,
 				Optional:    true,
 			},
@@ -66,6 +71,7 @@ func dataSourceStorageRepositoryRead(d *schema.ResourceData, m interface{}) erro
 
 	nameLabel := d.Get("name_label").(string)
 	poolId := d.Get("pool_id").(string)
+	hostId := d.Get("host_id").(string)
 	tags := d.Get("tags").(*schema.Set).List()
 
 	sr := client.StorageRepository{
@@ -78,6 +84,18 @@ func dataSourceStorageRepositoryRead(d *schema.ResourceData, m interface{}) erro
 
 	if err != nil {
 		return err
+	}
+
+	// The SDK cannot filter by host, but for host-local SRs the SR's
+	// `container` is the host that owns it, so filter by container here.
+	if hostId != "" {
+		filtered := make([]client.StorageRepository, 0, len(srs))
+		for _, s := range srs {
+			if s.Container == hostId {
+				filtered = append(filtered, s)
+			}
+		}
+		srs = filtered
 	}
 
 	l := len(srs)

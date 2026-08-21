@@ -93,6 +93,46 @@ func TestAccXenorchestraDataSource_storageRepositoryWithNonExistantPoolId(t *tes
 	)
 }
 
+func TestAccXenorchestraDataSource_storageRepositoryWithHostId(t *testing.T) {
+	resourceName := "data.xenorchestra_sr.sr"
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccXenorchestraDataSourceStorageRepositoryHostConfig(accTestPool.Id, accTestHost.Id),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckXenorchestraDataSourceStorageRepository(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "sr_type"),
+					resource.TestCheckResourceAttrSet(resourceName, "pool_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "uuid"),
+					resource.TestCheckResourceAttrSet(resourceName, "container"),
+					resource.TestCheckResourceAttr(resourceName, "name_label", accDefaultSr.NameLabel),
+					resource.TestCheckResourceAttr(resourceName, "host_id", accTestHost.Id)),
+			},
+		},
+	},
+	)
+}
+
+func TestAccXenorchestraDataSource_storageRepositoryWithNonExistantHostId(t *testing.T) {
+	// Proves the host filter narrows the results: SRs with the default name
+	// exist in the test pool, but none live on a host with this id, so the
+	// lookup must come back empty instead of returning a match.
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config:      testAccXenorchestraDataSourceStorageRepositoryHostConfig(accTestPool.Id, "00000000-0000-0000-0000-000000000000"),
+				ExpectError: regexp.MustCompile("found `0` srs that match"),
+			},
+		},
+	},
+	)
+}
+
 func testAccCheckXenorchestraDataSourceStorageRepository(n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
@@ -129,4 +169,17 @@ data "xenorchestra_sr" "sr" {
 }
 `, accDefaultSr.NameLabel, poolId, accTestPrefix)
 
+}
+
+func testAccXenorchestraDataSourceStorageRepositoryHostConfig(poolId string, hostId string) string {
+	return fmt.Sprintf(`
+data "xenorchestra_sr" "sr" {
+    name_label = "%s"
+    pool_id = "%s"
+    host_id = "%s"
+    tags = [
+	"%s"
+    ]
+}
+`, accDefaultSr.NameLabel, poolId, hostId, accTestPrefix)
 }

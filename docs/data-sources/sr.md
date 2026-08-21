@@ -5,7 +5,7 @@ subcategory: ""
 description: |-
   Provides information about a Storage repository to ease the lookup of VM storage information.
   Note: If there are multiple storage repositories that match terraform will fail.
-  Ensure that your name_label, pool_id and tags identify a unique storage repository.
+  Ensure that your name_label, pool_id, host_id and tags identify a unique storage repository.
 ---
 
 # xenorchestra_sr (Data Source)
@@ -13,7 +13,7 @@ description: |-
 Provides information about a Storage repository to ease the lookup of VM storage information.
 
 **Note:** If there are multiple storage repositories that match terraform will fail.
-Ensure that your name_label, pool_id and tags identify a unique storage repository.
+Ensure that your name_label, pool_id, host_id and tags identify a unique storage repository.
 
 ## Example Usage
 
@@ -42,6 +42,7 @@ resource "xenorchestra_vm" "demo-vm" {
 
 ### Optional
 
+- `host_id` (String) The Id of the host the storage repository exists on. For host-local storage repositories the SR's `container` is the host itself, so this filters the repositories down to a single host when several hosts in the pool share the same SR name.
 - `pool_id` (String) The Id of the pool the storage repository exists on.
 - `tags` (Set of String) The tags (labels) applied to the given entity. Not used for filtering if empty.
 
