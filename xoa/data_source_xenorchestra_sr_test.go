@@ -3,6 +3,7 @@ package xoa
 import (
 	"fmt"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -18,7 +19,9 @@ func TestAccXenorchestraDataSource_storageRepository(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccXenorchestraDataSourceStorageRepositoryConfig(accDefaultSr.NameLabel),
+				Config: testAccXenorchestraDataSourceStorageRepositoryConfig(storageRepositoryConfig{
+					nameLabel: accDefaultSr.NameLabel,
+				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckXenorchestraDataSourceStorageRepository(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -43,7 +46,9 @@ func TestAccXenorchestraDataSource_storageRepositoryNotFound(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccXenorchestraDataSourceStorageRepositoryConfig("not found"),
+				Config: testAccXenorchestraDataSourceStorageRepositoryConfig(storageRepositoryConfig{
+					nameLabel: "not found",
+				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckXenorchestraDataSourceStorageRepository(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -65,7 +70,10 @@ func TestAccXenorchestraDataSource_storageRepositoryWithPoolId(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccXenorchestraDataSourceStorageRepositoryPoolConfig(accDefaultSr.PoolId),
+				Config: testAccXenorchestraDataSourceStorageRepositoryConfig(storageRepositoryConfig{
+					nameLabel: accDefaultSr.NameLabel,
+					poolID:    accDefaultSr.PoolId,
+				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckXenorchestraDataSourceStorageRepository(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -85,8 +93,57 @@ func TestAccXenorchestraDataSource_storageRepositoryWithNonExistantPoolId(t *tes
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config:      testAccXenorchestraDataSourceStorageRepositoryPoolConfig(nonExistantPoolId),
+				Config: testAccXenorchestraDataSourceStorageRepositoryConfig(storageRepositoryConfig{
+					nameLabel: accDefaultSr.NameLabel,
+					poolID:    nonExistantPoolId,
+				}),
 				ExpectError: regexp.MustCompile(`Could not find client.StorageRepository with query`),
+			},
+		},
+	},
+	)
+}
+
+func TestAccXenorchestraDataSource_storageRepositoryWithHostId(t *testing.T) {
+	resourceName := "data.xenorchestra_sr.sr"
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccXenorchestraDataSourceStorageRepositoryConfig(storageRepositoryConfig{
+					poolID: accTestPool.Id,
+					hostID: accTestHost.Id,
+				}),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckXenorchestraDataSourceStorageRepository(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "sr_type"),
+					resource.TestCheckResourceAttrSet(resourceName, "pool_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "uuid"),
+					resource.TestCheckResourceAttrSet(resourceName, "container"),
+					resource.TestCheckResourceAttr(resourceName, "name_label", accDefaultSr.NameLabel),
+					resource.TestCheckResourceAttr(resourceName, "host_id", accTestHost.Id)),
+			},
+		},
+	},
+	)
+}
+
+func TestAccXenorchestraDataSource_storageRepositoryWithNonExistantHostId(t *testing.T) {
+	// Proves the host filter narrows the results: SRs with the default name
+	// exist in the test pool, but none live on a host with this id, so the
+	// lookup must come back empty instead of returning a match.
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccXenorchestraDataSourceStorageRepositoryConfig(storageRepositoryConfig{
+					poolID: accTestPool.Id,
+					hostID: "00000000-0000-0000-0000-000000000000",
+				}),
+				ExpectError: regexp.MustCompile("found `0` srs that match"),
 			},
 		},
 	},
@@ -107,26 +164,24 @@ func testAccCheckXenorchestraDataSourceStorageRepository(n string) resource.Test
 	}
 }
 
-func testAccXenorchestraDataSourceStorageRepositoryConfig(srNameLabel string) string {
-	return fmt.Sprintf(`
-data "xenorchestra_sr" "sr" {
-    name_label = "%s"
-    tags = [
-	"%s"
-    ]
-}
-`, srNameLabel, accTestPrefix)
+type storageRepositoryConfig struct {
+	nameLabel string
+	poolID    string
+	hostID    string
 }
 
-func testAccXenorchestraDataSourceStorageRepositoryPoolConfig(poolId string) string {
+func testAccXenorchestraDataSourceStorageRepositoryConfig(config storageRepositoryConfig) string {
+	var optionalAttributes strings.Builder
+	if config.poolID != "" {
+		fmt.Fprintf(&optionalAttributes, "    pool_id = %q\n", config.poolID)
+	}
+	if config.hostID != "" {
+		fmt.Fprintf(&optionalAttributes, "    host_id = %q\n", config.hostID)
+	}
 	return fmt.Sprintf(`
 data "xenorchestra_sr" "sr" {
-    name_label = "%s"
-    pool_id = "%s"
-    tags = [
-	"%s"
-    ]
+    name_label = %q
+%s    tags = [%q]
 }
-`, accDefaultSr.NameLabel, poolId, accTestPrefix)
-
+`, config.nameLabel, optionalAttributes.String(), accTestPrefix)
 }
