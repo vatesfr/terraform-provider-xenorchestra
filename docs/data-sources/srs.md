@@ -73,6 +73,6 @@ Read-Only:
 - `pool_id` (String)
 - `size` (Number)
 - `sr_type` (String)
-- `tags` (List of String)
+- `tags` (Set of String)
 - `usage` (Number)
 - `uuid` (String)

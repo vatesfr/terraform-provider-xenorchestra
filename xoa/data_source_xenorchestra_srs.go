@@ -130,59 +130,21 @@ func srsToMapList(srs []client.StorageRepository) []map[string]interface{} {
 }
 
 func resourceSr() *schema.Resource {
+	srSchema := resourceSrSchema()
+	// The element of a list can only expose computed attributes, so the
+	// filterable fields are redeclared as computed here, like name_label is
+	// for the pools data source.
+	srSchema["name_label"] = &schema.Schema{
+		Type:        schema.TypeString,
+		Computed:    true,
+		Description: "The name of the storage repository.",
+	}
+	srSchema["pool_id"] = &schema.Schema{
+		Type:        schema.TypeString,
+		Computed:    true,
+		Description: "The Id of the pool the storage repository exists on.",
+	}
 	return &schema.Resource{
-		Schema: map[string]*schema.Schema{
-			"id": &schema.Schema{
-				Type:        schema.TypeString,
-				Computed:    true,
-				Description: "The id of the storage repository.",
-			},
-			"uuid": &schema.Schema{
-				Type:        schema.TypeString,
-				Computed:    true,
-				Description: "uuid of the storage repository. This is equivalent to the id.",
-			},
-			"name_label": &schema.Schema{
-				Type:        schema.TypeString,
-				Computed:    true,
-				Description: "The name of the storage repository.",
-			},
-			"pool_id": &schema.Schema{
-				Type:        schema.TypeString,
-				Computed:    true,
-				Description: "The Id of the pool the storage repository exists on.",
-			},
-			"sr_type": &schema.Schema{
-				Type:        schema.TypeString,
-				Computed:    true,
-				Description: "The type of storage repository (lvm, udev, iso, user, etc).",
-			},
-			"container": &schema.Schema{
-				Type:        schema.TypeString,
-				Computed:    true,
-				Description: "The storage container. For host-local storage repositories this is the id of the hosting host.",
-			},
-			"size": &schema.Schema{
-				Type:        schema.TypeInt,
-				Computed:    true,
-				Description: "The total storage size in bytes.",
-			},
-			"physical_usage": &schema.Schema{
-				Type:        schema.TypeInt,
-				Computed:    true,
-				Description: "The physical storage usage in bytes.",
-			},
-			"usage": &schema.Schema{
-				Type:        schema.TypeInt,
-				Computed:    true,
-				Description: "The current storage usage in bytes.",
-			},
-			"tags": &schema.Schema{
-				Type:        schema.TypeList,
-				Computed:    true,
-				Elem:        &schema.Schema{Type: schema.TypeString},
-				Description: "The tags (labels) applied to the storage repository.",
-			},
-		},
+		Schema: srSchema,
 	}
 }
