@@ -9,60 +9,70 @@ import (
 )
 
 func dataSourceXoaStorageRepository() *schema.Resource {
+	srSchema := resourceSrSchema()
+	srSchema["host_id"] = &schema.Schema{
+		Description: "The Id of the host the storage repository exists on. For host-local storage repositories the SR's `container` is the host itself, so this filters the repositories down to a single host when several hosts in the pool share the same SR name.",
+		Type:        schema.TypeString,
+		Optional:    true,
+	}
 	return &schema.Resource{
 		Read: dataSourceStorageRepositoryRead,
 		Description: `Provides information about a Storage repository to ease the lookup of VM storage information.
 
 **Note:** If there are multiple storage repositories that match terraform will fail.
 Ensure that your name_label, pool_id, host_id and tags identify a unique storage repository.`,
-		Schema: map[string]*schema.Schema{
-			"name_label": &schema.Schema{
-				Description: "The name of the storage repository to look up",
-				Type:        schema.TypeString,
-				Required:    true,
-			},
-			"sr_type": &schema.Schema{
-				Description: "The type of storage repository (lvm, udev, iso, user, etc).",
-				Type:        schema.TypeString,
-				Computed:    true,
-			},
-			"pool_id": &schema.Schema{
-				Description: "The Id of the pool the storage repository exists on.",
-				Type:        schema.TypeString,
-				Optional:    true,
-			},
-			"host_id": &schema.Schema{
-				Description: "The Id of the host the storage repository exists on. For host-local storage repositories the SR's `container` is the host itself, so this filters the repositories down to a single host when several hosts in the pool share the same SR name.",
-				Type:        schema.TypeString,
-				Optional:    true,
-			},
-			"uuid": &schema.Schema{
-				Type:        schema.TypeString,
-				Description: "uuid of the storage repository. This is equivalent to the id.",
-				Computed:    true,
-			},
-			"container": &schema.Schema{
-				Type:        schema.TypeString,
-				Description: "The storage container.",
-				Computed:    true,
-			},
-			"size": &schema.Schema{
-				Type:        schema.TypeInt,
-				Description: "The total storage size in bytes.",
-				Computed:    true,
-			},
-			"physical_usage": &schema.Schema{
-				Type:        schema.TypeInt,
-				Description: "The physical storage usage in bytes.",
-				Computed:    true,
-			},
-			"usage": &schema.Schema{
-				Type:        schema.TypeInt,
-				Description: "The current storage usage in bytes.",
-				Computed:    true,
-			},
-			"tags": resourceTags(),
+		Schema: srSchema,
+	}
+}
+
+func resourceSrSchema() map[string]*schema.Schema {
+	return map[string]*schema.Schema{
+		"id": &schema.Schema{
+			Type:        schema.TypeString,
+			Computed:    true,
+			Description: "The ID of this resource.",
 		},
+		"name_label": &schema.Schema{
+			Description: "The name of the storage repository to look up",
+			Type:        schema.TypeString,
+			Required:    true,
+		},
+		"sr_type": &schema.Schema{
+			Description: "The type of storage repository (lvm, udev, iso, user, etc).",
+			Type:        schema.TypeString,
+			Computed:    true,
+		},
+		"pool_id": &schema.Schema{
+			Description: "The Id of the pool the storage repository exists on.",
+			Type:        schema.TypeString,
+			Optional:    true,
+		},
+		"uuid": &schema.Schema{
+			Type:        schema.TypeString,
+			Description: "uuid of the storage repository. This is equivalent to the id.",
+			Computed:    true,
+		},
+		"container": &schema.Schema{
+			Type:        schema.TypeString,
+			Description: "The storage container. For host-local storage repositories this is the id of the hosting host.",
+			Computed:    true,
+		},
+		"size": &schema.Schema{
+			Type:        schema.TypeInt,
+			Description: "The total storage size in bytes.",
+			Computed:    true,
+		},
+		"physical_usage": &schema.Schema{
+			Type:        schema.TypeInt,
+			Description: "The physical storage usage in bytes.",
+			Computed:    true,
+		},
+		"usage": &schema.Schema{
+			Type:        schema.TypeInt,
+			Description: "The current storage usage in bytes.",
+			Computed:    true,
+		},
+		"tags": resourceTags(),
 	}
 }
 
@@ -106,14 +116,27 @@ func dataSourceStorageRepositoryRead(d *schema.ResourceData, m interface{}) erro
 	sr = srs[0]
 
 	d.SetId(sr.Id)
-	d.Set("sr_type", sr.SRType)
-	d.Set("uuid", sr.Uuid)
-	d.Set("pool_id", sr.PoolId)
-	d.Set("size", sr.Size)
-	d.Set("physical_usage", sr.PhysicalUsage)
-	d.Set("usage", sr.Usage)
-	d.Set("container", sr.Container)
+	for k, v := range srToMap(sr) {
+		if err := d.Set(k, v); err != nil {
+			return err
+		}
+	}
 	return nil
+}
+
+func srToMap(sr client.StorageRepository) map[string]interface{} {
+	return map[string]interface{}{
+		"id":             sr.Id,
+		"uuid":           sr.Uuid,
+		"name_label":     sr.NameLabel,
+		"pool_id":        sr.PoolId,
+		"sr_type":        sr.SRType,
+		"container":      sr.Container,
+		"size":           sr.Size,
+		"physical_usage": sr.PhysicalUsage,
+		"usage":          sr.Usage,
+		"tags":           sr.Tags,
+	}
 }
 
 func tagsFromInterfaceSlice(values []interface{}) []string {

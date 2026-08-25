@@ -96,6 +96,7 @@ func Provider() *schema.Provider {
 			"xenorchestra_template":     dataSourceXoaTemplate(),
 			"xenorchestra_resource_set": dataSourceXoaResourceSet(),
 			"xenorchestra_sr":           dataSourceXoaStorageRepository(),
+			"xenorchestra_srs":          dataSourceXoaSrs(),
 			"xenorchestra_user":         dataSourceXoaUser(),
 			"xenorchestra_vms":          dataSourceXoaVms(),
 			"xenorchestra_vdi":          dataSourceXoaVDI(),

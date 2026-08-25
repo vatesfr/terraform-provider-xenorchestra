@@ -48,7 +48,7 @@ resource "xenorchestra_vm" "demo-vm" {
 
 ### Read-Only
 
-- `container` (String) The storage container.
+- `container` (String) The storage container. For host-local storage repositories this is the id of the hosting host.
 - `id` (String) The ID of this resource.
 - `physical_usage` (Number) The physical storage usage in bytes.
 - `size` (Number) The total storage size in bytes.
