@@ -106,14 +106,27 @@ func dataSourceStorageRepositoryRead(d *schema.ResourceData, m interface{}) erro
 	sr = srs[0]
 
 	d.SetId(sr.Id)
-	d.Set("sr_type", sr.SRType)
-	d.Set("uuid", sr.Uuid)
-	d.Set("pool_id", sr.PoolId)
-	d.Set("size", sr.Size)
-	d.Set("physical_usage", sr.PhysicalUsage)
-	d.Set("usage", sr.Usage)
-	d.Set("container", sr.Container)
+	for k, v := range srToMap(sr) {
+		if err := d.Set(k, v); err != nil {
+			return err
+		}
+	}
 	return nil
+}
+
+func srToMap(sr client.StorageRepository) map[string]interface{} {
+	return map[string]interface{}{
+		"id":             sr.Id,
+		"uuid":           sr.Uuid,
+		"name_label":     sr.NameLabel,
+		"pool_id":        sr.PoolId,
+		"sr_type":        sr.SRType,
+		"container":      sr.Container,
+		"size":           sr.Size,
+		"physical_usage": sr.PhysicalUsage,
+		"usage":          sr.Usage,
+		"tags":           sr.Tags,
+	}
 }
 
 func tagsFromInterfaceSlice(values []interface{}) []string {
