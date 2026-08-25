@@ -26,3 +26,21 @@ data "xenorchestra_srs" "iso_srs" {
   pool_id = "your-pool-id"
   sr_type = "iso"
 }
+
+# Get the storage repository with the most free space
+data "xenorchestra_srs" "localsrs" {
+  name_label = "Local storage"
+}
+
+locals {
+  # Free space (in bytes) for each SR
+  local_storage_free_space = [
+    for sr in data.xenorchestra_srs.localsrs.srs :
+    sr.size - sr.physical_usage
+  ]
+
+  # The SR with the most free space
+  most_free_local_sr = data.xenorchestra_srs.localsrs.srs[
+    index(local.local_storage_free_space, max(local.local_storage_free_space...))
+  ]
+}
