@@ -60,6 +60,7 @@ func resourceVm() *schema.Resource {
 	delete(vmSchema, "cdrom")
 	delete(vmSchema, "installation_method")
 	delete(vmSchema, "destroy_cloud_config_vdi_after_boot")
+	delete(vmSchema, "share")
 	vmSchema["id"] = &schema.Schema{
 		Type:     schema.TypeString,
 		Required: true,
@@ -96,6 +97,19 @@ func vmCustomizeDiff(ctx context.Context, diff *schema.ResourceDiff, v interface
 	memoryHasChanged := diff.HasChanges("memory_max", "memory_min")
 	if memoryHasChanged && memoryMin > memoryMax {
 		return fmt.Errorf("memory_min (%d) must be less than or equal to memory_max (%d)", memoryMin, memoryMax)
+	}
+
+	// Check share constraints
+	oShare, nShare := diff.GetChange("share")
+	share := nShare.(bool)
+	if share && diff.Get("resource_set").(string) == "" {
+		return fmt.Errorf("resource_set must be specified when share is set to `true`")
+	}
+	// A VM shared in a resource set is always shared in Xen Orchestra (there is no
+	// unshare operation), so share can only be switched off if the VM is
+	// leaving its resource set at the same time.
+	if oShare.(bool) && !share && diff.Get("resource_set").(string) != "" {
+		return fmt.Errorf("share cannot be set to `false` while the VM stays in a resource set: unsharing requires removing resource_set, or recreating the VM")
 	}
 
 	// Check CPU topology constraints
@@ -276,6 +290,12 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 		"resource_set": &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
+		},
+		"share": &schema.Schema{
+			Type:        schema.TypeBool,
+			Optional:    true,
+			Default:     false,
+			Description: "Allow the subjects of the resource set to use the VM. Only applies when resource_set is set. Can be changed on an existing VM, but setting it to `false` requires the VM to leave its resource set at the same time, since a VM shared in a resource set is always shared in Xen Orchestra (there is no unshare operation).",
 		},
 		"ipv4_addresses": &schema.Schema{
 			Type:        schema.TypeList,
@@ -631,6 +651,12 @@ func resourceVmCreateContext(ctx context.Context, d *schema.ResourceData, m inte
 	affinityHost := d.Get("affinity_host").(string)
 	if affinityHost != "" {
 		createVmParams.AffinityHost = &affinityHost
+	}
+
+	// XO treats share=false and share absent identically, so only send it
+	// when true.
+	if share := d.Get("share").(bool); share {
+		createVmParams.Share = &share
 	}
 
 	// Set CPU topology if cores_per_socket is specified
@@ -1038,6 +1064,14 @@ func resourceVmUpdateContext(ctx context.Context, d *schema.ResourceData, m inte
 
 	if d.HasChange("affinity_host") {
 		vmReq.AffinityHost = &affinityHost
+	}
+
+	// share is only sent when it changes. A false -> true change is shared
+	// in place by XO; a true -> false change can only happen together with
+	// leaving the resource set, which XO handles on its own.
+	if d.HasChange("share") {
+		share := d.Get("share").(bool)
+		vmReq.Share = &share
 	}
 
 	if d.HasChange("xenstore") {

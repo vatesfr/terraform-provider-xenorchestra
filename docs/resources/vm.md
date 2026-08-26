@@ -172,6 +172,7 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 - `power_state` (String) The power state of the VM. This can be Running, Halted, Paused or Suspended.
 - `resource_set` (String)
 - `secure_boot` (Boolean) Enable UEFI secure boot for the VM.
+- `share` (Boolean) Allow the subjects of the resource set to use the VM. Only applies when resource_set is set. Can be changed on an existing VM, but setting it to `false` requires the VM to leave its resource set at the same time, since a VM shared in a resource set is always shared in Xen Orchestra (there is no unshare operation).
 - `start_delay` (Number) Number of seconds the VM should be delayed from starting.
 - `tags` (Set of String) The tags (labels) applied to the given entity. Not used for filtering if empty.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
