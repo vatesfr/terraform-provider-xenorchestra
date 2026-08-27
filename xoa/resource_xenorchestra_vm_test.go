@@ -766,6 +766,81 @@ func TestAccXenorchestraVm_ensureVmsInResourceSetsCanBeUpdatedByNonAdminUsers(t 
 	})
 }
 
+func TestAccXenorchestraVm_shareInResourceSet(t *testing.T) {
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
+	resourceName := "xenorchestra_vm.bar"
+
+	// Capture the id of the first VM to prove that sharing happens in place
+	// (no recreation)
+	var vmId string
+	checkVmId := func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource not found: %s", resourceName)
+		}
+		if vmId == "" {
+			vmId = rs.Primary.ID
+			return nil
+		}
+		if rs.Primary.ID != vmId {
+			return fmt.Errorf("VM should not have been recreated (id changed to %s)", rs.Primary.ID)
+		}
+		return nil
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			// Create the VM in a resource set, without sharing it
+			{
+				Config: testAccVmShareConfig(vmName, false),
+				Check: resource.ComposeTestCheckFunc(
+					checkVmId,
+					resource.TestCheckResourceAttr(resourceName, "share", "false"),
+				),
+			},
+			// Share the VM in place (no recreation)
+			{
+				Config: testAccVmShareConfig(vmName, true),
+				Check: resource.ComposeTestCheckFunc(
+					checkVmId,
+					resource.TestCheckResourceAttr(resourceName, "share", "true"),
+				),
+			},
+			// Unsharing while staying in the resource set is rejected at plan time
+			{
+				Config:      testAccVmShareConfig(vmName, false),
+				ExpectError: regexp.MustCompile("share cannot be set to `false` while the VM stays in a resource set"),
+			},
+			// Unshare the VM by removing it from the resource set (in place)
+			{
+				Config: testAccVmConfigWithoutResourceSet(vmName),
+				Check: resource.ComposeTestCheckFunc(
+					checkVmId,
+					resource.TestCheckResourceAttr(resourceName, "resource_set", ""),
+					resource.TestCheckResourceAttr(resourceName, "share", "false"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccXenorchestraVm_shareRequiresResourceSet(t *testing.T) {
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config:      testAccVmShareWithoutResourceSetConfig(vmName),
+				ExpectError: regexp.MustCompile("resource_set must be specified when share is set to `true`"),
+			},
+		},
+	})
+}
+
 func TestAccXenorchestraVm_cdromAndInstallationMethodsCannotBeSpecifiedTogether(t *testing.T) {
 	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	resource.ParallelTest(t, resource.TestCase{
@@ -3179,6 +3254,59 @@ resource "xenorchestra_resource_set" "rs" {
     }
 }
 `, accDefaultNetwork.NameLabel, accTestPool.Id, accTestPrefix, vmName, accUser.Id, accDefaultSr.Id)
+}
+
+func testAccVmShareConfig(vmName string, share bool) string {
+	shareAttr := ""
+	if share {
+		shareAttr = "share = true"
+	}
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccVmResourceSet(vmName) + fmt.Sprintf(`
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 4295000000
+    cpus  = 1
+    cloud_config = xenorchestra_cloud_config.bar.template
+    name_label = "%s"
+    name_description = "description"
+    template = data.xenorchestra_template.template.id
+    resource_set = xenorchestra_resource_set.rs.id
+    %s
+    network {
+	network_id = data.xenorchestra_network.network.id
+    }
+
+    disk {
+      sr_id = "%s"
+      name_label = "disk 1"
+      size = 10001317888
+    }
+}
+`, vmName, shareAttr, accDefaultSr.Id)
+}
+
+func testAccVmShareWithoutResourceSetConfig(vmName string) string {
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccVmResourceSet(vmName) + fmt.Sprintf(`
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 4295000000
+    cpus  = 1
+    cloud_config = xenorchestra_cloud_config.bar.template
+    name_label = "%s"
+    name_description = "description"
+    template = data.xenorchestra_template.template.id
+    share = true
+    network {
+	network_id = data.xenorchestra_network.network.id
+    }
+
+    disk {
+      sr_id = "%s"
+      name_label = "disk 1"
+      size = 10001317888
+    }
+}
+`, vmName, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithoutResourceSet(vmName string) string {
