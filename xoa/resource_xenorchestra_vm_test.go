@@ -132,7 +132,7 @@ func Test_getUpdateDiskActions(t *testing.T) {
 	cases := []struct {
 		disk                client.Disk
 		haystack            []client.Disk
-		expectedDiskActions []updateDiskActions
+		expectedDiskActions *[]updateDiskActions
 	}{
 		{
 			disk: client.Disk{
@@ -151,7 +151,7 @@ func Test_getUpdateDiskActions(t *testing.T) {
 					client.VDI{},
 				},
 			},
-			expectedDiskActions: []updateDiskActions{diskAttachmentUpdate},
+			expectedDiskActions: &[]updateDiskActions{diskAttachmentUpdate},
 		},
 		{
 			disk: client.Disk{
@@ -176,7 +176,7 @@ func Test_getUpdateDiskActions(t *testing.T) {
 					},
 				},
 			},
-			expectedDiskActions: []updateDiskActions{diskNameLabelUpdate, diskNameDescriptionUpdate, diskAttachmentUpdate},
+			expectedDiskActions: &[]updateDiskActions{diskNameLabelUpdate, diskNameDescriptionUpdate, diskAttachmentUpdate},
 		},
 		{
 			disk: client.Disk{
@@ -195,7 +195,8 @@ func Test_getUpdateDiskActions(t *testing.T) {
 					client.VDI{},
 				},
 			},
-			expectedDiskActions: []updateDiskActions{},
+			// The disk is missing from the haystack, meaning it was deleted.
+			expectedDiskActions: nil,
 		},
 	}
 
