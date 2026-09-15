@@ -61,4 +61,8 @@ func TestMain(m *testing.M) {
 		}
 	}
 
+	// Without the sweeping setup above, the tests still have to run: the
+	// acceptance tests skip themselves unless TF_ACC is set, the unit tests do
+	// not and would otherwise never run.
+	os.Exit(m.Run())
 }
