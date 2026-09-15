@@ -57,7 +57,6 @@ func Provider() *schema.Provider {
 			"insecure": &schema.Schema{
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Default:     false,
 				DefaultFunc: schema.EnvDefaultFunc("XOA_INSECURE", nil),
 				Description: "Whether SSL should be verified or not. Can be set via the XOA_INSECURE environment variable.",
 			},
