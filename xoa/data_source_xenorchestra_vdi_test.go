@@ -49,6 +49,27 @@ func TestAccXenorchestraDataSource_vdiByNameLabel(t *testing.T) {
 	)
 }
 
+func TestAccXenorchestraDataSource_vdiByNameLabelWithoutPoolId(t *testing.T) {
+	resourceName := "data.xenorchestra_vdi.vdi"
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccXenorchestraDataSourceVDIConfigWithoutPoolId(testIso.NameLabel),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckXenorchestraDataSourceVDI(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "name_label"),
+					resource.TestCheckResourceAttr(resourceName, "pool_id", accTestPool.Id),
+					resource.TestCheckResourceAttr(resourceName, "parent", ""),
+				),
+			},
+		},
+	},
+	)
+}
+
 func TestAccXenorchestraDataSource_vdiNotFound(t *testing.T) {
 	resourceName := "data.xenorchestra_vdi.vdi"
 	resource.Test(t, resource.TestCase{
@@ -62,7 +83,7 @@ func TestAccXenorchestraDataSource_vdiNotFound(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "name_label"),
 				),
-				ExpectError: regexp.MustCompile(`Could not find client.VDI with query`),
+				ExpectError: regexp.MustCompile(`could not find a VDI that matches`),
 			},
 		},
 	},
@@ -103,6 +124,14 @@ data "xenorchestra_vdi" "vdi" {
     pool_id = "%s"
 }
 `, nameLabel, accTestPool.Id)
+}
+
+func testAccXenorchestraDataSourceVDIConfigWithoutPoolId(nameLabel string) string {
+	return fmt.Sprintf(`
+data "xenorchestra_vdi" "vdi" {
+    name_label = "%s"
+}
+`, nameLabel)
 }
 
 func testAccCheckXenorchestraDataSourceVDI(n string) resource.TestCheckFunc {

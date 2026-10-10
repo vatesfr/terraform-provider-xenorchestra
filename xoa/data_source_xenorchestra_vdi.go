@@ -1,10 +1,10 @@
 package xoa
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/vatesfr/terraform-provider-xenorchestra/xoa/internal"
 	"github.com/vatesfr/xenorchestra-go-sdk/client"
 )
 
@@ -46,30 +46,32 @@ Ensure that your name_label, pool_id and tags identify a unique VDI.`,
 func dataSourceVDIRead(d *schema.ResourceData, m interface{}) error {
 	c := m.(client.XOClient)
 
-	id := d.Get("id").(string)
-	nameLabel := d.Get("name_label").(string)
-	poolId := d.Get("pool_id").(string)
 	tags := d.Get("tags").(*schema.Set).List()
-
-	vdi := client.VDI{
-		VDIId:     id,
-		NameLabel: nameLabel,
-		PoolId:    poolId,
+	filter := internal.VDIFilter{
+		Id:        d.Get("id").(string),
+		NameLabel: d.Get("name_label").(string),
+		PoolId:    d.Get("pool_id").(string),
 		Tags:      tagsFromInterfaceSlice(tags),
 	}
 
-	vdis, err := c.GetVDIs(vdi)
+	allVdis, err := c.GetAllVDIs()
 
 	if err != nil {
 		return err
 	}
 
+	vdis := internal.FilterVDIs(allVdis, filter)
+
 	l := len(vdis)
-	if l != 1 {
-		return errors.New(fmt.Sprintf("found `%d` VDIs that match %+v. VDIs must be uniquely named to use this data source", l, vdis))
+	if l == 0 {
+		return fmt.Errorf("could not find a VDI that matches %+v", filter)
 	}
 
-	vdi = vdis[0]
+	if l > 1 {
+		return fmt.Errorf("found `%d` VDIs that match %+v. VDIs must be uniquely named to use this data source", l, vdis)
+	}
+
+	vdi := vdis[0]
 
 	d.SetId(vdi.VDIId)
 	d.Set("name_label", vdi.NameLabel)
