@@ -2,6 +2,7 @@ package xoa
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"regexp"
@@ -905,13 +906,21 @@ func resourceVmUpdateContext(ctx context.Context, d *schema.ResourceData, m inte
 			updateVif, _ := shouldUpdateVif(*removal, expandNetworks(nSet.List()))
 			if updateVif {
 				continue
-			} else {
+			}
 
-				vifErr := c.DeleteVIF(removal)
-
-				if vifErr != nil {
-					return diag.FromErr(vifErr)
-				}
+			// MAC addresses are not unique across XO (clones, replicas...), so
+			// the lookup is scoped to the VM.
+			removal.VmId = vm.Id
+			vifErr := c.DeleteVIF(removal)
+			var notFound client.NotFound
+			if errors.As(vifErr, &notFound) {
+				tflog.Debug(ctx, "VIF to remove is no longer attached to the VM, skipping", map[string]interface{}{
+					"vif": removal,
+				})
+				continue
+			}
+			if vifErr != nil {
+				return diag.FromErr(vifErr)
 			}
 		}
 
@@ -925,6 +934,7 @@ func resourceVmUpdateContext(ctx context.Context, d *schema.ResourceData, m inte
 			updateVif, shouldAttach := shouldUpdateVif(*addition, expandNetworks(oSet.List()))
 			var vifErr error
 			if updateVif {
+				addition.VmId = vm.Id
 				switch shouldAttach {
 				case true:
 					vifErr = c.ConnectVIF(addition)
