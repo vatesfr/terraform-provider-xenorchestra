@@ -313,6 +313,56 @@ func Test_shouldUpdateVif(t *testing.T) {
 			expectedShouldUpdate: false,
 			expectedShouldAttach: false,
 		},
+		// The matching VIF is not the last one of the haystack.
+		{
+			vif: client.VIF{
+				Device:     "0",
+				MacAddress: "02:00:00:00:00:00",
+				Network:    "net",
+				Attached:   false,
+			},
+			haystack: []*client.VIF{
+				&client.VIF{
+					Device:     "0",
+					MacAddress: "02:00:00:00:00:00",
+					Network:    "net",
+					Attached:   true,
+				},
+				&client.VIF{
+					Device:     "1",
+					MacAddress: "02:00:00:00:00:11",
+					Network:    "net",
+					Attached:   true,
+				},
+			},
+			expectedShouldUpdate: true,
+			expectedShouldAttach: false,
+		},
+		// Two VIFs share the same MAC address, the device tells them apart.
+		{
+			vif: client.VIF{
+				Device:     "1",
+				MacAddress: "02:00:00:00:00:00",
+				Network:    "net",
+				Attached:   true,
+			},
+			haystack: []*client.VIF{
+				&client.VIF{
+					Device:     "0",
+					MacAddress: "02:00:00:00:00:00",
+					Network:    "net",
+					Attached:   true,
+				},
+				&client.VIF{
+					Device:     "1",
+					MacAddress: "02:00:00:00:00:00",
+					Network:    "net",
+					Attached:   false,
+				},
+			},
+			expectedShouldUpdate: true,
+			expectedShouldAttach: true,
+		},
 	}
 
 	for _, c := range cases {

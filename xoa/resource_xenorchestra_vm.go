@@ -1516,20 +1516,21 @@ func vifHash(value interface{}) int {
 	return internal.String(v)
 }
 
+// shouldUpdateVif reports whether vif only differs from its counterpart in vifs
+// by its attachment state, in which case it can be connected or disconnected
+// instead of being recreated. The second value is the attachment state to apply.
 func shouldUpdateVif(vif client.VIF, vifs []*client.VIF) (bool, bool) {
-	found := false
-	vifCopy := vif
-	var vifFound client.VIF
 	for _, vifToCheck := range vifs {
-		if vifToCheck.Id == vifCopy.Id || vifToCheck.MacAddress == vifCopy.MacAddress {
-			found = true
-			vifFound = *vifToCheck
+		if !vif.Compare(*vifToCheck) {
+			continue
 		}
-	}
 
-	vifFound.Attached = !vifFound.Attached
-	if found && vifHash(vifCopy) == vifHash(vifFound) {
-		return true, vifCopy.Attached
+		vifFound := *vifToCheck
+		vifFound.Attached = !vifFound.Attached
+		if vifHash(vif) == vifHash(vifFound) {
+			return true, vif.Attached
+		}
+		return false, false
 	}
 
 	return false, false
