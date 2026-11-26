@@ -142,7 +142,6 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 # Updating the VM to use 3 CPUs would happen without stopping/starting the VM
 # Updating the VM to use 5 CPUs would stop/start the VM
 ```
-- `disk` (Block List, Min: 1) The disk the VM will have access to. (see [below for nested schema](#nestedblock--disk))
 - `memory_max` (Number) The amount of memory in bytes the VM will have.\n\n!!! WARNING: Updates to this field will cause the VM to stop and start, as it sets both dynamic and static maximums.
 - `name_label` (String) The name of the VM.
 - `network` (Block List, Min: 1) The network for the VM. (see [below for nested schema](#nestedblock--network))
@@ -162,6 +161,7 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 - `cpu_cap` (Number) The CPU usage cap of the VM, in hundredths of vCPU (e.g. 100 = 1 vCPU max). 0 means no cap.
 - `cpu_weight` (Number) The relative CPU scheduling weight for the VM (dimensionless). Higher values give the VM more CPU time relative to others. Valid range is 1-65535. 0 uses the default weight.
 - `destroy_cloud_config_vdi_after_boot` (Boolean) Determines whether the cloud config VDI should be deleted once the VM has booted. Defaults to `false`. If set to `true`, power_state must be set to `Running`.
+- `disk` (Block List) The disk the VM will have access to. A VM can be created without any disk (e.g. to live boot from an ISO or the network), in which case any disk of the template is removed. Such a VM cannot use `cloud_config`, since Xen Orchestra stores the cloud-init drive on the SR of the VM's first disk. (see [below for nested schema](#nestedblock--disk))
 - `exp_nested_hvm` (Boolean) Boolean parameter that allows a VM to use nested virtualization.
 - `high_availability` (String) The restart priority for the VM. Possible values are `best-effort`, `restart` and empty string (no restarts on failure. Defaults to empty string
 - `host` (String)
@@ -187,27 +187,6 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 - `ipv4_addresses` (List of String) This is only accessible if guest-tools is installed in the VM. While the output contains a list of ipv4 addresses, the presence of an IP address is only guaranteed if `expected_ip_cidr` is set for that interface. The list contains the ipv4 addresses across all network interfaces in order. See the example terraform code for more details.
 - `ipv6_addresses` (List of String) This is only accessible if guest-tools is installed in the VM. While the output contains a list of ipv6 addresses, the presence of an IP address is only guaranteed if `expected_ip_cidr` is set for that interface. The list contains the ipv6 addresses across all network interfaces in order.
 - `sockets` (Number) The number of CPU sockets. This is computed as cpus / cores_per_socket.
-
-<a id="nestedblock--disk"></a>
-### Nested Schema for `disk`
-
-Required:
-
-- `name_label` (String) The name for the disk
-- `size` (Number) The size in bytes for the disk.
-- `sr_id` (String) The storage repository ID to use.
-
-Optional:
-
-- `attached` (Boolean) Whether the device should be attached to the VM.
-- `name_description` (String) The description for the disk
-
-Read-Only:
-
-- `position` (String) Indicates the order of the block device.
-- `vbd_id` (String)
-- `vdi_id` (String)
-
 
 <a id="nestedblock--network"></a>
 ### Nested Schema for `network`
@@ -235,6 +214,27 @@ Read-Only:
 Required:
 
 - `id` (String) The ID of the ISO (VDI) to attach to the VM. This can be easily provided by using the `vdi` data source.
+
+
+<a id="nestedblock--disk"></a>
+### Nested Schema for `disk`
+
+Required:
+
+- `name_label` (String) The name for the disk
+- `size` (Number) The size in bytes for the disk.
+- `sr_id` (String) The storage repository ID to use.
+
+Optional:
+
+- `attached` (Boolean) Whether the device should be attached to the VM.
+- `name_description` (String) The description for the disk
+
+Read-Only:
+
+- `position` (String) Indicates the order of the block device.
+- `vbd_id` (String)
+- `vdi_id` (String)
 
 
 <a id="nestedblock--timeouts"></a>
