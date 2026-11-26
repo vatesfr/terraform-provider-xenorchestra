@@ -12,11 +12,13 @@ var testAccProviders map[string]*schema.Provider
 var testAccTokenAuthProviders map[string]*schema.Provider
 var testAccFailToStartAndHaltProviders map[string]*schema.Provider
 var testAccFailToDeleteVmProviders map[string]*schema.Provider
+var testAccShutdownBeforeDestroyProviders map[string]*schema.Provider
 
 var testAccProvider *schema.Provider
 var testAccTokenAuthProvider *schema.Provider
 var testAccFailToStartHaltVmProvider *schema.Provider
 var testAccFailToDeleteVmProvider *schema.Provider
+var testAccShutdownBeforeDestroyProvider *schema.Provider
 
 func init() {
 	testAccProvider = Provider()
@@ -38,6 +40,11 @@ func init() {
 	testAccFailToDeleteVmProvider.ConfigureFunc = internal.GetFailToDeleteVmXOClient
 	testAccFailToDeleteVmProviders = map[string]*schema.Provider{
 		"xenorchestra": testAccFailToDeleteVmProvider,
+	}
+	testAccShutdownBeforeDestroyProvider = Provider()
+	testAccShutdownBeforeDestroyProvider.ConfigureFunc = internal.GetShutdownBeforeDestroyXOClient
+	testAccShutdownBeforeDestroyProviders = map[string]*schema.Provider{
+		"xenorchestra": testAccShutdownBeforeDestroyProvider,
 	}
 }
 

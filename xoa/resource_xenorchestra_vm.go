@@ -61,6 +61,7 @@ func resourceVm() *schema.Resource {
 	delete(vmSchema, "cdrom")
 	delete(vmSchema, "installation_method")
 	delete(vmSchema, "destroy_cloud_config_vdi_after_boot")
+	delete(vmSchema, "shutdown_before_destroy")
 	delete(vmSchema, "share")
 	vmSchema["id"] = &schema.Schema{
 		Type:     schema.TypeString,
@@ -203,6 +204,14 @@ func resourceVmSchema() map[string]*schema.Schema {
 			ValidateFunc: validation.StringInSlice(validPowerState, false),
 			Optional:     true,
 			Default:      client.RunningPowerState,
+		},
+		"shutdown_before_destroy": &schema.Schema{
+			Type:     schema.TypeBool,
+			Optional: true,
+			Default:  false,
+			Description: "Whether a running VM should be cleanly shut down before it is destroyed. When `false`, Xen Orchestra hard shuts down the VM as part of its deletion. " +
+				"When `true`, the guest is asked to shut down and the VM is only deleted once it is halted; if the clean shutdown fails, the destroy fails and the VM is left untouched. " +
+				"A clean shutdown requires the guest's PV drivers (management agent) to be detected, and is currently bound to fixed timeouts of 2 minutes for driver detection and 2 minutes for the shutdown itself.",
 		},
 		"installation_method": &schema.Schema{
 			Type:          schema.TypeString,
@@ -878,6 +887,12 @@ func resourceVmReadContext(ctx context.Context, d *schema.ResourceData, m interf
 func resourceVmUpdateContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(client.XOClient)
 
+	// shutdown_before_destroy only affects the destroy behavior, so changing it
+	// alone must not go through the (slow) VM update.
+	if !d.HasChangeExcept("shutdown_before_destroy") {
+		return resourceVmReadContext(ctx, d, m)
+	}
+
 	id := d.Id()
 	nameLabel := d.Get("name_label").(string)
 	affinityHost := d.Get("affinity_host").(string)
@@ -1234,8 +1249,27 @@ func resourceVmUpdateContext(ctx context.Context, d *schema.ResourceData, m inte
 
 func resourceVmDeleteContext(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(client.XOClient)
+	id := d.Id()
 
-	err := c.DeleteVm(d.Id())
+	// Xen Orchestra always hard shuts down a running VM when deleting it.
+	// Shut it down cleanly first when requested, and fail rather than fall
+	// back to a hard shutdown so the guest is never cut off unexpectedly.
+	if d.Get("shutdown_before_destroy").(bool) {
+		vm, err := c.GetVm(client.Vm{Id: id})
+		if err != nil {
+			return diag.FromErr(err)
+		}
+
+		if vm.PowerState == client.RunningPowerState {
+			tflog.Info(ctx, "Cleanly shutting down VM before destroying it", map[string]interface{}{"id": id})
+			if err := c.HaltVm(id); err != nil {
+				return diag.Errorf("failed to cleanly shut down VM %s before destroying it, the VM was not deleted: %v. "+
+					"Shut it down manually or set shutdown_before_destroy to false to let Xen Orchestra hard shut it down", id, err)
+			}
+		}
+	}
+
+	err := c.DeleteVm(id)
 
 	if err != nil {
 		return diag.FromErr(err)
@@ -1316,6 +1350,9 @@ func RecordImportContext(ctx context.Context, d *schema.ResourceData, m interfac
 	err = recordToData(ctx, *vm, vifs, disks, cdroms, d)
 
 	if err := d.Set("destroy_cloud_config_vdi_after_boot", false); err != nil {
+		return rd, err
+	}
+	if err := d.Set("shutdown_before_destroy", false); err != nil {
 		return rd, err
 	}
 

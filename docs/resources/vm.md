@@ -173,6 +173,7 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 - `resource_set` (String)
 - `secure_boot` (Boolean) Enable UEFI secure boot for the VM.
 - `share` (Boolean) Allow the subjects of the resource set to use the VM. Only applies when resource_set is set. Can be changed on an existing VM, but setting it to `false` requires the VM to leave its resource set at the same time, since a VM shared in a resource set is always shared in Xen Orchestra (there is no unshare operation).
+- `shutdown_before_destroy` (Boolean) Whether a running VM should be cleanly shut down before it is destroyed. When `false`, Xen Orchestra hard shuts down the VM as part of its deletion. When `true`, the guest is asked to shut down and the VM is only deleted once it is halted; if the clean shutdown fails, the destroy fails and the VM is left untouched. A clean shutdown requires the guest's PV drivers (management agent) to be detected, and is currently bound to fixed timeouts of 2 minutes for driver detection and 2 minutes for the shutdown itself.
 - `start_delay` (Number) Number of seconds the VM should be delayed from starting.
 - `tags` (Set of String) The tags (labels) applied to the given entity. Not used for filtering if empty.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))

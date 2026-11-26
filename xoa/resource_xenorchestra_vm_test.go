@@ -506,6 +506,77 @@ func TestAccXenorchestraVm_destroyCloudConfigRequiresRunningVmExceptIgnoring(t *
 	})
 }
 
+func TestAccXenorchestraVm_shutdownBeforeDestroy(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { testAccPreCheck(t) },
+		// Use a provider whose XO client fails to delete a VM that isn't halted,
+		// and fails VM updates. This verifies that the VM is cleanly shut down
+		// before being destroyed, and that toggling shutdown_before_destroy
+		// doesn't update the VM.
+		Providers:    testAccShutdownBeforeDestroyProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigShutdownBeforeDestroy(vmName, true),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "power_state", client.RunningPowerState),
+					resource.TestCheckResourceAttr(resourceName, "shutdown_before_destroy", "true")),
+			},
+			{
+				Config: testAccVmConfigShutdownBeforeDestroy(vmName, false),
+				Check:  resource.TestCheckResourceAttr(resourceName, "shutdown_before_destroy", "false"),
+			},
+			{
+				Config: testAccVmConfigShutdownBeforeDestroy(vmName, true),
+				Check:  resource.TestCheckResourceAttr(resourceName, "shutdown_before_destroy", "true"),
+			},
+		},
+	})
+}
+
+func TestAccXenorchestraVm_shutdownBeforeDestroyWithHaltedVm(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
+	stopVm := func() {
+		c, err := client.NewClient(client.GetConfigFromEnv())
+		if err != nil {
+			t.Fatalf("failed to create client with error: %v", err)
+		}
+
+		vm, err := c.GetVm(client.Vm{
+			NameLabel: vmName,
+		})
+		if err != nil {
+			t.Fatalf("failed to find VM with error: %v", err)
+		}
+
+		if err := c.HaltVm(vm.Id); err != nil {
+			t.Fatalf("failed to halt VM with error: %v", err)
+		}
+	}
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccShutdownBeforeDestroyProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigShutdownBeforeDestroy(vmName, true),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "shutdown_before_destroy", "true")),
+			},
+			{
+				PreConfig: stopVm,
+				Config:    testAccVmConfigShutdownBeforeDestroy(vmName, true),
+				Destroy:   true,
+			},
+		},
+	})
+}
+
 func TestAccXenorchestraVm_createWithPowerStateChanges(t *testing.T) {
 	resourceName := "xenorchestra_vm.bar"
 	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
@@ -2461,6 +2532,35 @@ resource "xenorchestra_vm" "bar" {
 
 func testAccVmConfig(vmName string) string {
 	return testAccVmConfigWithWaitForIp(vmName, "")
+}
+
+func testAccVmConfigShutdownBeforeDestroy(vmName string, shutdownBeforeDestroy bool) string {
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccTemplateConfig() + fmt.Sprintf(`
+data "xenorchestra_network" "network" {
+    name_label = "%s"
+    pool_id = "%s"
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 4295000000
+    cpus  = 1
+    cloud_config = xenorchestra_cloud_config.bar.template
+    name_label = "%s"
+    name_description = "description"
+    template = data.xenorchestra_template.template.id
+    network {
+	network_id = data.xenorchestra_network.network.id
+    }
+
+    disk {
+      sr_id = "%s"
+      name_label = "disk 1"
+      size = 10001317888
+    }
+
+    shutdown_before_destroy = %t
+}
+`, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id, shutdownBeforeDestroy)
 }
 
 func testAccVmConfigWithWaitForIp(vmName, expectedIpCidr string) string {
