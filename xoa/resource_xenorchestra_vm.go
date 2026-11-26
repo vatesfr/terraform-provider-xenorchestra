@@ -77,6 +77,14 @@ func resourceVm() *schema.Resource {
 	}
 }
 
+// isSameTemplate reports whether the template ID stored in the state refers to
+// the template UUID recorded by Xen Orchestra when the VM was created. The ID of
+// a default template is prefixed by its pool ID (`<pool id>-<template uuid>`),
+// while the VM only records the template UUID.
+func isSameTemplate(templateId, templateUuid string) bool {
+	return templateId == templateUuid || strings.HasSuffix(templateId, "-"+templateUuid)
+}
+
 func vmCustomizeDiff(ctx context.Context, diff *schema.ResourceDiff, v interface{}) error {
 	// Check power state and cloudConfig constraints
 	destroyCloudConfig := diff.Get("destroy_cloud_config_vdi_after_boot").(bool)
@@ -215,6 +223,9 @@ func resourceVmSchema() map[string]*schema.Schema {
 			Description: "The ID of the VM template to create the new VM from.",
 			Required:    true,
 			ForceNew:    true,
+			DiffSuppressFunc: func(_, oldValue, newValue string, _ *schema.ResourceData) bool {
+				return oldValue != "" && isSameTemplate(newValue, oldValue)
+			},
 		},
 		"cloud_config": &schema.Schema{
 			Description: "The content of the cloud-init config to use. See the cloud init docs for more [information](https://cloudinit.readthedocs.io/en/latest/topics/examples.html).",
@@ -1349,7 +1360,7 @@ func recordToData(ctx context.Context, resource client.Vm, vifs []client.VIF, di
 	d.Set("name_description", resource.NameDescription)
 	d.Set("high_availability", resource.HA)
 	d.Set("auto_poweron", resource.AutoPoweron)
-	if resource.Template != "" {
+	if resource.Template != "" && !isSameTemplate(d.Get("template").(string), resource.Template) {
 		d.Set("template", resource.Template)
 	}
 	if resource.ResourceSet != nil {
