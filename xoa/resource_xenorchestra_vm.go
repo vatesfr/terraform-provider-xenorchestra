@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -86,6 +87,26 @@ func isSameTemplate(templateId, templateUuid string) bool {
 	return templateId == templateUuid || strings.HasSuffix(templateId, "-"+templateUuid)
 }
 
+// vmConfigHasCloudConfigWithoutDisk reports whether the VM configuration sets a
+// cloud_config without any disk. The raw configuration is used because
+// cloud_config is often unknown at plan time (e.g. when it comes from a
+// xenorchestra_cloud_config resource) and the disk list can be unknown when it
+// is built with a dynamic block: an unknown cloud_config counts as set, an
+// unknown disk list as non empty.
+func vmConfigHasCloudConfigWithoutDisk(config cty.Value) bool {
+	if config.IsNull() || !config.IsKnown() {
+		return false
+	}
+
+	cloudConfig := config.GetAttr("cloud_config")
+	if cloudConfig.IsKnown() && (cloudConfig.IsNull() || cloudConfig.AsString() == "") {
+		return false
+	}
+
+	disks := config.GetAttr("disk")
+	return disks.IsKnown() && (disks.IsNull() || disks.LengthInt() == 0)
+}
+
 func vmCustomizeDiff(ctx context.Context, diff *schema.ResourceDiff, v interface{}) error {
 	// Check power state and cloudConfig constraints
 	destroyCloudConfig := diff.Get("destroy_cloud_config_vdi_after_boot").(bool)
@@ -99,6 +120,13 @@ func vmCustomizeDiff(ctx context.Context, diff *schema.ResourceDiff, v interface
 
 	if powerStateChanged && destroyCloudConfig && powerState != client.RunningPowerState {
 		return fmt.Errorf("power_state must be `%s` when destroy_cloud_config_vdi_after_boot set to `true`", client.RunningPowerState)
+	}
+
+	// Xen Orchestra creates the cloud-init drive on the SR of the VM's first
+	// disk, so it fails to create a VM that has a cloud_config but no disk.
+	// The cloud-init drive is only created along with the VM.
+	if diff.Id() == "" && vmConfigHasCloudConfigWithoutDisk(diff.GetRawConfig()) {
+		return fmt.Errorf("at least one disk must be specified when cloud_config is set")
 	}
 
 	// Check memory constraints
@@ -444,8 +472,8 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 		},
 		"disk": &schema.Schema{
 			Type:        schema.TypeList,
-			Required:    true,
-			Description: "The disk the VM will have access to.",
+			Optional:    true,
+			Description: "The disk the VM will have access to. A VM can be created without any disk (e.g. to live boot from an ISO or the network), in which case any disk of the template is removed. Such a VM cannot use `cloud_config`, since Xen Orchestra stores the cloud-init drive on the SR of the VM's first disk.",
 			Elem: &schema.Resource{
 				Schema: map[string]*schema.Schema{
 					"sr_id": &schema.Schema{

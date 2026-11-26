@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -309,6 +310,38 @@ func Test_isSameTemplate(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			if got := isSameTemplate(c.templateId, uuid); got != c.expected {
+				t.Errorf("expected %t, got %t", c.expected, got)
+			}
+		})
+	}
+}
+
+func Test_vmConfigHasCloudConfigWithoutDisk(t *testing.T) {
+	diskType := cty.Object(map[string]cty.Type{"sr_id": cty.String})
+	disks := cty.ListVal([]cty.Value{cty.ObjectVal(map[string]cty.Value{"sr_id": cty.StringVal("sr")})})
+	noDisk := cty.ListValEmpty(diskType)
+	config := func(cloudConfig, disk cty.Value) cty.Value {
+		return cty.ObjectVal(map[string]cty.Value{"cloud_config": cloudConfig, "disk": disk})
+	}
+
+	cases := []struct {
+		name     string
+		config   cty.Value
+		expected bool
+	}{
+		{"cloud config without disk", config(cty.StringVal("#cloud-config"), noDisk), true},
+		{"cloud config without disk block", config(cty.StringVal("#cloud-config"), cty.NullVal(cty.List(diskType))), true},
+		{"unknown cloud config without disk", config(cty.UnknownVal(cty.String), noDisk), true},
+		{"cloud config with a disk", config(cty.StringVal("#cloud-config"), disks), false},
+		{"cloud config with unknown disks", config(cty.StringVal("#cloud-config"), cty.UnknownVal(cty.List(diskType))), false},
+		{"no cloud config without disk", config(cty.NullVal(cty.String), noDisk), false},
+		{"empty cloud config without disk", config(cty.StringVal(""), noDisk), false},
+		{"null config", cty.NullVal(cty.Object(map[string]cty.Type{"cloud_config": cty.String, "disk": cty.List(diskType)})), false},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := vmConfigHasCloudConfigWithoutDisk(c.config); got != c.expected {
 				t.Errorf("expected %t, got %t", c.expected, got)
 			}
 		})
@@ -1181,6 +1214,65 @@ func TestAccXenorchestraVm_createWithDisklessTemplateAndISO(t *testing.T) {
 					internal.TestCheckTypeSetElemAttrPair(resourceName, "cdrom.0.*", "data.xenorchestra_vdi.iso", "id"),
 					resource.TestCheckResourceAttr(vdiDataSourceName, "parent", ""),
 				),
+			},
+		},
+	})
+}
+
+func TestAccXenorchestraVm_createWithoutDisksFromDisklessTemplateAndISO(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigWithoutDisks(vmName, testAccNonDefaultTemplateConfig(disklessTestTemplate.NameLabel)),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "disk.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "cdrom.#", "1"),
+					internal.TestCheckTypeSetElemAttrPair(resourceName, "cdrom.0.*", "data.xenorchestra_vdi.iso", "id"),
+				),
+			},
+		},
+	})
+}
+
+// The disks of the template must be removed when the VM has none.
+func TestAccXenorchestraVm_createWithoutDisksFromDiskTemplate(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigWithoutDisks(vmName, testAccTemplateConfig()),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "disk.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "cdrom.#", "1"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccXenorchestraVm_createWithoutDisksRejectsCloudConfig(t *testing.T) {
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config:      testAccVmConfigWithoutDisksWithCloudConfig(vmName),
+				ExpectError: regexp.MustCompile("at least one disk must be specified when cloud_config is set"),
+				PlanOnly:    true,
 			},
 		},
 	})
@@ -2431,6 +2523,65 @@ resource "xenorchestra_vm" "bar" {
     }
 }
 `, testIso.NameLabel, accTestPool.Id, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
+}
+
+func testAccVmConfigWithoutDisks(vmName, templateConfig string) string {
+	return templateConfig + fmt.Sprintf(`
+data "xenorchestra_vdi" "iso" {
+    name_label = "%s"
+    pool_id = "%s"
+}
+
+data "xenorchestra_network" "network" {
+    name_label = "%s"
+    pool_id = "%s"
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 4295000000
+    cpus  = 1
+    name_label = "%s"
+    name_description = "description"
+    template = data.xenorchestra_template.template.id
+    network {
+	network_id = data.xenorchestra_network.network.id
+    }
+
+    cdrom {
+      id = data.xenorchestra_vdi.iso.id
+    }
+}
+`, testIso.NameLabel, accTestPool.Id, accDefaultNetwork.NameLabel, accTestPool.Id, vmName)
+}
+
+func testAccVmConfigWithoutDisksWithCloudConfig(vmName string) string {
+	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccNonDefaultTemplateConfig(disklessTestTemplate.NameLabel) + fmt.Sprintf(`
+data "xenorchestra_vdi" "iso" {
+    name_label = "%s"
+    pool_id = "%s"
+}
+
+data "xenorchestra_network" "network" {
+    name_label = "%s"
+    pool_id = "%s"
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 4295000000
+    cpus  = 1
+    cloud_config = xenorchestra_cloud_config.bar.template
+    name_label = "%s"
+    name_description = "description"
+    template = data.xenorchestra_template.template.id
+    network {
+	network_id = data.xenorchestra_network.network.id
+    }
+
+    cdrom {
+      id = data.xenorchestra_vdi.iso.id
+    }
+}
+`, testIso.NameLabel, accTestPool.Id, accDefaultNetwork.NameLabel, accTestPool.Id, vmName)
 }
 
 func testAccVmConfigWithoutISO(vmName string) string {
