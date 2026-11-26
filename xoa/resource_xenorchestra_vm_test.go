@@ -264,6 +264,57 @@ func Test_shouldUpdateDisk(t *testing.T) {
 	}
 }
 
+// A state written by a previous version of the provider may hold the template
+// UUID recorded on the VM instead of the template ID from the configuration.
+func Test_templateDiffSuppressFunc(t *testing.T) {
+	uuid := "552bce37-51b2-445d-84f2-5f33fa112d7e"
+	defaultTemplateId := "6e0c5f16-923f-2971-a07d-ad1486f67309-" + uuid
+	suppress := resourceVmSchema()["template"].DiffSuppressFunc
+
+	cases := []struct {
+		name     string
+		old      string
+		new      string
+		expected bool
+	}{
+		{"state holds the uuid of the default template", uuid, defaultTemplateId, true},
+		{"state holds the default template id", defaultTemplateId, defaultTemplateId, true},
+		{"template changed", uuid, "af314f96-2921-0443-769c-9d75466ec8ef", false},
+		{"vm being created", "", defaultTemplateId, false},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := suppress("template", c.old, c.new, nil); got != c.expected {
+				t.Errorf("expected %t, got %t", c.expected, got)
+			}
+		})
+	}
+}
+
+func Test_isSameTemplate(t *testing.T) {
+	uuid := "552bce37-51b2-445d-84f2-5f33fa112d7e"
+	cases := []struct {
+		name       string
+		templateId string
+		expected   bool
+	}{
+		{"same uuid", uuid, true},
+		{"default template id prefixed by its pool id", "6e0c5f16-923f-2971-a07d-ad1486f67309-" + uuid, true},
+		{"other template", "af314f96-2921-0443-769c-9d75466ec8ef", false},
+		{"empty state", "", false},
+		{"uuid only sharing a suffix", "x" + uuid, false},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := isSameTemplate(c.templateId, uuid); got != c.expected {
+				t.Errorf("expected %t, got %t", c.expected, got)
+			}
+		})
+	}
+}
+
 func Test_shouldUpdateVif(t *testing.T) {
 	cases := []struct {
 		vif                  client.VIF
@@ -1000,6 +1051,33 @@ func TestAccXenorchestraVm_createWithTags(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "tags.#", "1"),
 					internal.TestCheckTypeSetAttr(resourceName, "tags.*", tag1),
 				),
+			},
+		},
+	})
+}
+
+// The ID of a default template is prefixed by its pool ID, while the VM only
+// records the template UUID: reading the VM must not lead to its replacement.
+func TestAccXenorchestraVm_createWithDefaultTemplate(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	templateDataSourceName := "data.xenorchestra_template.template"
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckXenorchestraVmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigWithDefaultTemplate(vmName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestMatchResourceAttr(templateDataSourceName, "id", regexp.MustCompile("^"+regexp.QuoteMeta(accTestPool.Id)+"-")),
+					resource.TestCheckResourceAttrPair(resourceName, "template", templateDataSourceName, "id"),
+				),
+			},
+			{
+				Config:   testAccVmConfigWithDefaultTemplate(vmName),
+				PlanOnly: true,
 			},
 		},
 	})
@@ -2209,6 +2287,43 @@ resource "xenorchestra_vm" "bar" {
     ]
 }
 `, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id, tag)
+}
+
+// testAccVmConfigWithDefaultTemplate creates a VM from "Other install media", a
+// default template available on every XCP-ng pool.
+func testAccVmConfigWithDefaultTemplate(vmName string) string {
+	return testAccNonDefaultTemplateConfig("Other install media") + fmt.Sprintf(`
+data "xenorchestra_vdi" "iso" {
+    name_label = "%s"
+    pool_id = "%s"
+}
+
+data "xenorchestra_network" "network" {
+    name_label = "%s"
+    pool_id = "%s"
+}
+
+resource "xenorchestra_vm" "bar" {
+    memory_max = 4295000000
+    cpus  = 1
+    name_label = "%s"
+    name_description = "description"
+    template = data.xenorchestra_template.template.id
+    network {
+	network_id = data.xenorchestra_network.network.id
+    }
+
+    cdrom {
+      id = data.xenorchestra_vdi.iso.id
+    }
+
+    disk {
+      sr_id = "%s"
+      name_label = "disk 1"
+      size = 10001317888
+    }
+}
+`, testIso.NameLabel, accTestPool.Id, accDefaultNetwork.NameLabel, accTestPool.Id, vmName, accDefaultSr.Id)
 }
 
 func testAccVmConfigWithISO(vmName string) string {
