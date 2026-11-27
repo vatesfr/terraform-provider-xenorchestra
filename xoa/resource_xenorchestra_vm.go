@@ -62,6 +62,7 @@ func resourceVm() *schema.Resource {
 	delete(vmSchema, "cdrom")
 	delete(vmSchema, "installation_method")
 	delete(vmSchema, "destroy_cloud_config_vdi_after_boot")
+	delete(vmSchema, "cloud_config_sr_id")
 	delete(vmSchema, "shutdown_before_destroy")
 	delete(vmSchema, "share")
 	vmSchema["id"] = &schema.Schema{
@@ -87,24 +88,48 @@ func isSameTemplate(templateId, templateUuid string) bool {
 	return templateId == templateUuid || strings.HasSuffix(templateId, "-"+templateUuid)
 }
 
-// vmConfigHasCloudConfigWithoutDisk reports whether the VM configuration sets a
-// cloud_config without any disk. The raw configuration is used because
-// cloud_config is often unknown at plan time (e.g. when it comes from a
-// xenorchestra_cloud_config resource) and the disk list can be unknown when it
-// is built with a dynamic block: an unknown cloud_config counts as set, an
-// unknown disk list as non empty.
-func vmConfigHasCloudConfigWithoutDisk(config cty.Value) bool {
+// validateCloudConfigDriveConfig checks, on the raw configuration of a VM to
+// create, the constraints on the cloud-init config drive of a VM without disks.
+// Xen Orchestra stores the drive on the SR of the VM's first disk; without
+// disks, the provider creates it on cloud_config_sr_id or on the default SR of
+// the pool, and Xen Orchestra cannot remove it after boot.
+//
+// The raw configuration is used because the disk list can be unknown when it
+// is built with a dynamic block, and cloud_config is often unknown at plan time
+// (e.g. when it comes from a xenorchestra_cloud_config resource). Unknown
+// values never lead to an error.
+func validateCloudConfigDriveConfig(config cty.Value) error {
 	if config.IsNull() || !config.IsKnown() {
-		return false
-	}
-
-	cloudConfig := config.GetAttr("cloud_config")
-	if cloudConfig.IsKnown() && (cloudConfig.IsNull() || cloudConfig.AsString() == "") {
-		return false
+		return nil
 	}
 
 	disks := config.GetAttr("disk")
-	return disks.IsKnown() && (disks.IsNull() || disks.LengthInt() == 0)
+	hasNoDisk := disks.IsKnown() && (disks.IsNull() || disks.LengthInt() == 0)
+	hasDisks := disks.IsKnown() && !hasNoDisk
+
+	cloudConfig := config.GetAttr("cloud_config")
+	cloudConfigUnset := cloudConfig.IsKnown() && (cloudConfig.IsNull() || cloudConfig.AsString() == "")
+
+	srId := config.GetAttr("cloud_config_sr_id")
+	srIdSet := srId.IsKnown() && !srId.IsNull() && srId.AsString() != ""
+
+	destroyAfterBoot := config.GetAttr("destroy_cloud_config_vdi_after_boot")
+	destroyAfterBootSet := destroyAfterBoot.IsKnown() && !destroyAfterBoot.IsNull() && destroyAfterBoot.True()
+
+	if srIdSet && cloudConfigUnset {
+		return fmt.Errorf("cloud_config must be specified when cloud_config_sr_id is set")
+	}
+
+	if srIdSet && hasDisks {
+		return fmt.Errorf("cloud_config_sr_id can only be set for a VM without disks: " +
+			"Xen Orchestra stores the cloud-init config drive on the SR of the VM's first disk")
+	}
+
+	if destroyAfterBootSet && hasNoDisk && !cloudConfigUnset {
+		return fmt.Errorf("destroy_cloud_config_vdi_after_boot cannot be set to `true` for a VM without disks")
+	}
+
+	return nil
 }
 
 func vmCustomizeDiff(ctx context.Context, diff *schema.ResourceDiff, v interface{}) error {
@@ -122,11 +147,11 @@ func vmCustomizeDiff(ctx context.Context, diff *schema.ResourceDiff, v interface
 		return fmt.Errorf("power_state must be `%s` when destroy_cloud_config_vdi_after_boot set to `true`", client.RunningPowerState)
 	}
 
-	// Xen Orchestra creates the cloud-init drive on the SR of the VM's first
-	// disk, so it fails to create a VM that has a cloud_config but no disk.
-	// The cloud-init drive is only created along with the VM.
-	if diff.Id() == "" && vmConfigHasCloudConfigWithoutDisk(diff.GetRawConfig()) {
-		return fmt.Errorf("at least one disk must be specified when cloud_config is set")
+	// The cloud-init config drive is only created along with the VM.
+	if diff.Id() == "" {
+		if err := validateCloudConfigDriveConfig(diff.GetRawConfig()); err != nil {
+			return err
+		}
 	}
 
 	// Check memory constraints
@@ -269,12 +294,19 @@ func resourceVmSchema() map[string]*schema.Schema {
 			Type:        schema.TypeString,
 			Optional:    true,
 		},
+		"cloud_config_sr_id": &schema.Schema{
+			Type:        schema.TypeString,
+			Optional:    true,
+			Computed:    true,
+			ForceNew:    true,
+			Description: "The ID of the SR on which the cloud-init config drive is created, for a VM without disks. Defaults to the default SR of the pool; the VM cannot be created if the pool has none. It can only be set along with `cloud_config` and for a VM without disks: otherwise, Xen Orchestra stores the cloud-init config drive on the SR of the VM's first disk.",
+		},
 		"destroy_cloud_config_vdi_after_boot": &schema.Schema{
 			Type:        schema.TypeBool,
 			Optional:    true,
 			Default:     false,
 			ForceNew:    true,
-			Description: "Determines whether the cloud config VDI should be deleted once the VM has booted. Defaults to `false`. If set to `true`, power_state must be set to `Running`.",
+			Description: "Determines whether the cloud config VDI should be deleted once the VM has booted. Defaults to `false`. If set to `true`, power_state must be set to `Running`. It cannot be set for a VM without disks.",
 		},
 		"core_os": &schema.Schema{
 			Type:     schema.TypeBool,
@@ -473,7 +505,7 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 		"disk": &schema.Schema{
 			Type:        schema.TypeList,
 			Optional:    true,
-			Description: "The disk the VM will have access to. A VM can be created without any disk (e.g. to live boot from an ISO or the network), in which case any disk of the template is removed. Such a VM cannot use `cloud_config`, since Xen Orchestra stores the cloud-init drive on the SR of the VM's first disk.",
+			Description: "The disk the VM will have access to. A VM can be created without any disk (e.g. to live boot from an ISO or the network), in which case any disk of the template is removed. Such a VM can still use `cloud_config`: its cloud-init config drive is created on `cloud_config_sr_id`.",
 			Elem: &schema.Resource{
 				Schema: map[string]*schema.Schema{
 					"sr_id": &schema.Schema{
@@ -666,6 +698,7 @@ func resourceVmCreateContext(ctx context.Context, d *schema.ResourceData, m inte
 		NameDescription:                d.Get("name_description").(string),
 		Template:                       d.Get("template").(string),
 		CloudConfig:                    d.Get("cloud_config").(string),
+		CloudConfigSrId:                d.Get("cloud_config_sr_id").(string),
 		CloneType:                      d.Get("clone_type").(string),
 		ResourceSet:                    rs,
 		HA:                             d.Get("high_availability").(string),
@@ -819,6 +852,20 @@ func disksToMapList(disks []client.Disk) []map[string]interface{} {
 	}
 
 	return sortDiskMapByPostion(result)
+}
+
+// cloudConfigDriveSrId returns the SR of the cloud-init config drive of a VM
+// without disks. For a VM with disks, Xen Orchestra stores the drive on the SR
+// of the first disk and cloud_config_sr_id does not apply.
+func cloudConfigDriveSrId(disks []client.Disk) (string, bool) {
+	srId := ""
+	for _, disk := range disks {
+		if disk.NameLabel != defaultCloudConfigDiskName {
+			return "", false
+		}
+		srId = disk.SrId
+	}
+	return srId, srId != ""
 }
 
 func cdromsToMapList(disks []client.Disk) []map[string]interface{} {
@@ -1491,6 +1538,12 @@ func recordToData(ctx context.Context, resource client.Vm, vifs []client.VIF, di
 	err = d.Set("disk", disksMapList)
 	if err != nil {
 		return err
+	}
+
+	if srId, ok := cloudConfigDriveSrId(disks); ok {
+		if err := d.Set("cloud_config_sr_id", srId); err != nil {
+			return err
+		}
 	}
 
 	cdsMapList := cdromsToMapList(cdroms)

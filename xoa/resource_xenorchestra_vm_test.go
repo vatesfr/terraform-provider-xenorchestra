@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"regexp"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -316,33 +317,89 @@ func Test_isSameTemplate(t *testing.T) {
 	}
 }
 
-func Test_vmConfigHasCloudConfigWithoutDisk(t *testing.T) {
+func Test_validateCloudConfigDriveConfig(t *testing.T) {
 	diskType := cty.Object(map[string]cty.Type{"sr_id": cty.String})
 	disks := cty.ListVal([]cty.Value{cty.ObjectVal(map[string]cty.Value{"sr_id": cty.StringVal("sr")})})
 	noDisk := cty.ListValEmpty(diskType)
-	config := func(cloudConfig, disk cty.Value) cty.Value {
-		return cty.ObjectVal(map[string]cty.Value{"cloud_config": cloudConfig, "disk": disk})
+	unknownDisks := cty.UnknownVal(cty.List(diskType))
+	cloudConfig := cty.StringVal("#cloud-config")
+	noCloudConfig := cty.NullVal(cty.String)
+	srId := cty.StringVal("sr")
+	noSrId := cty.NullVal(cty.String)
+	destroy := cty.True
+	noDestroy := cty.NullVal(cty.Bool)
+	config := func(cloudConfig, disk, srId, destroyAfterBoot cty.Value) cty.Value {
+		return cty.ObjectVal(map[string]cty.Value{
+			"cloud_config":                        cloudConfig,
+			"disk":                                disk,
+			"cloud_config_sr_id":                  srId,
+			"destroy_cloud_config_vdi_after_boot": destroyAfterBoot,
+		})
 	}
 
 	cases := []struct {
-		name     string
-		config   cty.Value
-		expected bool
+		name          string
+		config        cty.Value
+		expectedError string
 	}{
-		{"cloud config without disk", config(cty.StringVal("#cloud-config"), noDisk), true},
-		{"cloud config without disk block", config(cty.StringVal("#cloud-config"), cty.NullVal(cty.List(diskType))), true},
-		{"unknown cloud config without disk", config(cty.UnknownVal(cty.String), noDisk), true},
-		{"cloud config with a disk", config(cty.StringVal("#cloud-config"), disks), false},
-		{"cloud config with unknown disks", config(cty.StringVal("#cloud-config"), cty.UnknownVal(cty.List(diskType))), false},
-		{"no cloud config without disk", config(cty.NullVal(cty.String), noDisk), false},
-		{"empty cloud config without disk", config(cty.StringVal(""), noDisk), false},
-		{"null config", cty.NullVal(cty.Object(map[string]cty.Type{"cloud_config": cty.String, "disk": cty.List(diskType)})), false},
+		{"cloud config without disk", config(cloudConfig, noDisk, noSrId, noDestroy), ""},
+		{"cloud config without disk block", config(cloudConfig, cty.NullVal(cty.List(diskType)), noSrId, noDestroy), ""},
+		{"cloud config and SR without disk", config(cloudConfig, noDisk, srId, noDestroy), ""},
+		{"unknown cloud config and SR without disk", config(cty.UnknownVal(cty.String), noDisk, srId, noDestroy), ""},
+		{"cloud config and unknown SR without disk", config(cloudConfig, noDisk, cty.UnknownVal(cty.String), noDestroy), ""},
+		{"cloud config with a disk", config(cloudConfig, disks, noSrId, noDestroy), ""},
+		{"destroy after boot with a disk", config(cloudConfig, disks, noSrId, destroy), ""},
+		{"SR with unknown disks", config(cloudConfig, unknownDisks, srId, noDestroy), ""},
+		{"destroy after boot with unknown disks", config(cloudConfig, unknownDisks, noSrId, destroy), ""},
+		{"destroy after boot set to false without disk", config(cloudConfig, noDisk, noSrId, cty.False), ""},
+		{"unknown destroy after boot without disk", config(cloudConfig, noDisk, noSrId, cty.UnknownVal(cty.Bool)), ""},
+		{"no cloud config without disk", config(noCloudConfig, noDisk, noSrId, noDestroy), ""},
+		{"empty SR", config(noCloudConfig, disks, cty.StringVal(""), noDestroy), ""},
+		{"null config", cty.NullVal(cty.Object(map[string]cty.Type{})), ""},
+		{"SR without cloud config", config(noCloudConfig, noDisk, srId, noDestroy), "cloud_config must be specified when cloud_config_sr_id is set"},
+		{"SR with an empty cloud config", config(cty.StringVal(""), noDisk, srId, noDestroy), "cloud_config must be specified when cloud_config_sr_id is set"},
+		{"SR with a disk", config(cloudConfig, disks, srId, noDestroy), "cloud_config_sr_id can only be set for a VM without disks"},
+		{"destroy after boot without disk", config(cloudConfig, noDisk, noSrId, destroy), "destroy_cloud_config_vdi_after_boot cannot be set to `true` for a VM without disks"},
+		{"destroy after boot with unknown cloud config without disk", config(cty.UnknownVal(cty.String), noDisk, noSrId, destroy), "destroy_cloud_config_vdi_after_boot cannot be set to `true` for a VM without disks"},
 	}
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			if got := vmConfigHasCloudConfigWithoutDisk(c.config); got != c.expected {
-				t.Errorf("expected %t, got %t", c.expected, got)
+			err := validateCloudConfigDriveConfig(c.config)
+			if c.expectedError == "" {
+				if err != nil {
+					t.Errorf("expected no error, got %v", err)
+				}
+				return
+			}
+			if err == nil || !strings.Contains(err.Error(), c.expectedError) {
+				t.Errorf("expected error containing %q, got %v", c.expectedError, err)
+			}
+		})
+	}
+}
+
+func Test_cloudConfigDriveSrId(t *testing.T) {
+	drive := client.Disk{VDI: client.VDI{NameLabel: defaultCloudConfigDiskName, SrId: "drive sr"}}
+	disk := client.Disk{VDI: client.VDI{NameLabel: "disk", SrId: "disk sr"}}
+
+	cases := []struct {
+		name       string
+		disks      []client.Disk
+		expectedId string
+		expectedOk bool
+	}{
+		{"only the cloud-init config drive", []client.Disk{drive}, "drive sr", true},
+		{"cloud-init config drive and a disk", []client.Disk{drive, disk}, "", false},
+		{"only a disk", []client.Disk{disk}, "", false},
+		{"no disk", nil, "", false},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			id, ok := cloudConfigDriveSrId(c.disks)
+			if id != c.expectedId || ok != c.expectedOk {
+				t.Errorf("expected (%q, %t), got (%q, %t)", c.expectedId, c.expectedOk, id, ok)
 			}
 		})
 	}
@@ -1263,19 +1320,145 @@ func TestAccXenorchestraVm_createWithoutDisksFromDiskTemplate(t *testing.T) {
 	})
 }
 
-func TestAccXenorchestraVm_createWithoutDisksRejectsCloudConfig(t *testing.T) {
+// A VM without disks gets its cloud-init config drive on cloud_config_sr_id,
+// and the drive is removed along with the VM.
+func TestAccXenorchestraVm_createWithoutDisksWithCloudConfig(t *testing.T) {
+	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
+	var driveVdiId string
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		CheckDestroy: resource.ComposeAggregateTestCheckFunc(
+			testAccCheckXenorchestraVmDestroy,
+			testAccCheckVdiDestroyed(&driveVdiId),
+		),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigWithoutDisksWithCloudConfig(vmName, fmt.Sprintf("%q", accDefaultSr.Id)),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "disk.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "power_state", client.RunningPowerState),
+					resource.TestCheckResourceAttr(resourceName, "cloud_config_sr_id", accDefaultSr.Id),
+					testAccVmHasCloudConfigDrive(resourceName, accDefaultSr.Id, &driveVdiId),
+				),
+			},
+			{
+				Config:   testAccVmConfigWithoutDisksWithCloudConfig(vmName, fmt.Sprintf("%q", accDefaultSr.Id)),
+				PlanOnly: true,
+			},
+		},
+	})
+}
+
+// Without cloud_config_sr_id, the drive of a VM without disks is created on
+// the default SR of the pool.
+func TestAccXenorchestraVm_createWithoutDisksWithCloudConfigOnPoolDefaultSr(t *testing.T) {
+	if accTestPool.DefaultSR == "" {
+		t.Skip("the test pool has no default SR")
+	}
+	resourceName := "xenorchestra_vm.bar"
+	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
+	var driveVdiId string
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		CheckDestroy: resource.ComposeAggregateTestCheckFunc(
+			testAccCheckXenorchestraVmDestroy,
+			testAccCheckVdiDestroyed(&driveVdiId),
+		),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVmConfigWithoutDisksWithCloudConfig(vmName, "null"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccVmExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "disk.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "cloud_config_sr_id", accTestPool.DefaultSR),
+					testAccVmHasCloudConfigDrive(resourceName, accTestPool.DefaultSR, &driveVdiId),
+				),
+			},
+			{
+				Config:   testAccVmConfigWithoutDisksWithCloudConfig(vmName, "null"),
+				PlanOnly: true,
+			},
+		},
+	})
+}
+
+func TestAccXenorchestraVm_createWithoutDisksRejectsDestroyCloudConfigAfterBoot(t *testing.T) {
 	vmName := fmt.Sprintf("%s - %s", accTestPrefix, t.Name())
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config:      testAccVmConfigWithoutDisksWithCloudConfig(vmName),
-				ExpectError: regexp.MustCompile("at least one disk must be specified when cloud_config is set"),
+				Config: strings.Replace(testAccVmConfigWithoutDisksWithCloudConfig(vmName, "null"),
+					"installation_method", "destroy_cloud_config_vdi_after_boot = true\n    installation_method", 1),
+				ExpectError: regexp.MustCompile("destroy_cloud_config_vdi_after_boot cannot be set to `true` for a VM without disks"),
 				PlanOnly:    true,
 			},
 		},
 	})
+}
+
+// testAccVmHasCloudConfigDrive checks that the VM has a cloud-init config
+// drive on the given SR, and records its VDI ID.
+func testAccVmHasCloudConfigDrive(resourceName, srId string, vdiId *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("can't find VM resource: %s", resourceName)
+		}
+
+		c, err := client.NewClient(client.GetConfigFromEnv())
+		if err != nil {
+			return err
+		}
+		vm, err := c.GetVm(client.Vm{Id: rs.Primary.ID})
+		if err != nil {
+			return err
+		}
+		disks, err := c.GetDisks(vm)
+		if err != nil {
+			return err
+		}
+
+		for _, disk := range disks {
+			if disk.NameLabel != defaultCloudConfigDiskName {
+				continue
+			}
+			if disk.SrId != srId {
+				return fmt.Errorf("expected the cloud-init config drive on SR %s, found it on SR %s", srId, disk.SrId)
+			}
+			*vdiId = disk.VDIId
+			return nil
+		}
+		return fmt.Errorf("VM %s has no cloud-init config drive among its disks: %+v", vm.Id, disks)
+	}
+}
+
+// testAccCheckVdiDestroyed checks that the VDI recorded in vdiId no longer exists.
+func testAccCheckVdiDestroyed(vdiId *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		if *vdiId == "" {
+			return errors.New("no VDI was recorded")
+		}
+
+		c, err := client.NewClient(client.GetConfigFromEnv())
+		if err != nil {
+			return err
+		}
+		_, err = c.GetVDI(client.VDI{VDIId: *vdiId})
+		if _, ok := err.(client.NotFound); ok {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf("VDI %s still exists after the VM was destroyed", *vdiId)
+	}
 }
 
 func TestAccXenorchestraVm_insertAndEjectCd(t *testing.T) {
@@ -2554,13 +2737,11 @@ resource "xenorchestra_vm" "bar" {
 `, testIso.NameLabel, accTestPool.Id, accDefaultNetwork.NameLabel, accTestPool.Id, vmName)
 }
 
-func testAccVmConfigWithoutDisksWithCloudConfig(vmName string) string {
+// testAccVmConfigWithoutDisksWithCloudConfig returns the configuration of a VM
+// without disks booting from the network, with a cloud_config. srId is the HCL
+// expression of cloud_config_sr_id.
+func testAccVmConfigWithoutDisksWithCloudConfig(vmName, srId string) string {
 	return testAccCloudConfigConfig(fmt.Sprintf("vm-template-%s", vmName), "template") + testAccNonDefaultTemplateConfig(disklessTestTemplate.NameLabel) + fmt.Sprintf(`
-data "xenorchestra_vdi" "iso" {
-    name_label = "%s"
-    pool_id = "%s"
-}
-
 data "xenorchestra_network" "network" {
     name_label = "%s"
     pool_id = "%s"
@@ -2570,18 +2751,16 @@ resource "xenorchestra_vm" "bar" {
     memory_max = 4295000000
     cpus  = 1
     cloud_config = xenorchestra_cloud_config.bar.template
+    cloud_config_sr_id = %s
     name_label = "%s"
     name_description = "description"
     template = data.xenorchestra_template.template.id
     network {
 	network_id = data.xenorchestra_network.network.id
     }
-
-    cdrom {
-      id = data.xenorchestra_vdi.iso.id
-    }
+    installation_method = "network"
 }
-`, testIso.NameLabel, accTestPool.Id, accDefaultNetwork.NameLabel, accTestPool.Id, vmName)
+`, accDefaultNetwork.NameLabel, accTestPool.Id, srId, vmName)
 }
 
 func testAccVmConfigWithoutISO(vmName string) string {
