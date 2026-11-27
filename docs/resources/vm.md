@@ -155,13 +155,14 @@ $ xo-cli xo.getAllObjects filter='json:{"id": "cf7b5d7d-3cd5-6b7c-5025-5c935c8cd
 - `cdrom` (Block List, Max: 1) The ISO that should be attached to VM. This allows you to create a VM from a diskless template (any templates available from `xe template-list`) and install the OS from the following ISO. (see [below for nested schema](#nestedblock--cdrom))
 - `clone_type` (String) The type of clone to perform for the VM. Possible values include `fast` or `full` and defaults to `fast`. In order to perform a `full` clone, the VM template must not be a disk template.
 - `cloud_config` (String) The content of the cloud-init config to use. See the cloud init docs for more [information](https://cloudinit.readthedocs.io/en/latest/topics/examples.html).
+- `cloud_config_sr_id` (String) The ID of the SR on which the cloud-init config drive is created, for a VM without disks. Defaults to the default SR of the pool; the VM cannot be created if the pool has none. It can only be set along with `cloud_config` and for a VM without disks: otherwise, Xen Orchestra stores the cloud-init config drive on the SR of the VM's first disk.
 - `cloud_network_config` (String) The content of the cloud-init network configuration for the VM (uses [version 1](https://cloudinit.readthedocs.io/en/latest/topics/network-config-format-v1.html))
 - `core_os` (Boolean)
 - `cores_per_socket` (Number) The number of cores per socket for the VM's CPU topology. This value must evenly divide the total number of CPUs. If not set, the VM uses XO/XAPI defaults (typically 1 core per socket).
 - `cpu_cap` (Number) The CPU usage cap of the VM, in hundredths of vCPU (e.g. 100 = 1 vCPU max). 0 means no cap.
 - `cpu_weight` (Number) The relative CPU scheduling weight for the VM (dimensionless). Higher values give the VM more CPU time relative to others. Valid range is 1-65535. 0 uses the default weight.
-- `destroy_cloud_config_vdi_after_boot` (Boolean) Determines whether the cloud config VDI should be deleted once the VM has booted. Defaults to `false`. If set to `true`, power_state must be set to `Running`.
-- `disk` (Block List) The disk the VM will have access to. A VM can be created without any disk (e.g. to live boot from an ISO or the network), in which case any disk of the template is removed. Such a VM cannot use `cloud_config`, since Xen Orchestra stores the cloud-init drive on the SR of the VM's first disk. (see [below for nested schema](#nestedblock--disk))
+- `destroy_cloud_config_vdi_after_boot` (Boolean) Determines whether the cloud config VDI should be deleted once the VM has booted. Defaults to `false`. If set to `true`, power_state must be set to `Running`. It cannot be set for a VM without disks.
+- `disk` (Block List) The disk the VM will have access to. A VM can be created without any disk (e.g. to live boot from an ISO or the network), in which case any disk of the template is removed. Such a VM can still use `cloud_config`: its cloud-init config drive is created on `cloud_config_sr_id`. (see [below for nested schema](#nestedblock--disk))
 - `exp_nested_hvm` (Boolean) Boolean parameter that allows a VM to use nested virtualization.
 - `high_availability` (String) The restart priority for the VM. Possible values are `best-effort`, `restart` and empty string (no restarts on failure. Defaults to empty string
 - `host` (String)
